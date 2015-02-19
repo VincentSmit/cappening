@@ -1,2 +1,2 @@
-# Ontwerpproject
-Ontwerpproject - Locatiespel voor Happening
+# Cappening
+Locatie gebaseerd spel voor Happening
