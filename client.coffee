@@ -18,6 +18,10 @@ exports.render = ->
 		mainContent()
 	else if page == 'help'
         helpContent()
+    else if page == 'scores'
+        scoresContent()
+    else if page == 'log'
+        logContent()
 
 # Load the javascript necessary for the map
 loadMap = ->
@@ -113,9 +117,6 @@ renderFlags = ->
 		-flag.get()
 	
 addBar = ->
-    what = Page.state.get(0) 
-    what = "main" if not what?   
-    Page.setTitle what
     Dom.div !->
         Dom.style
             right: "0"
@@ -128,10 +129,10 @@ addBar = ->
             position: "absolute"
         #DIV button to main menu
         Dom.div !->
-            Dom.text "Main"
+            Dom.text "10 pnts"
             Dom.cls 'bar-button'
-            Dom.onTap !->   
-                Page.nav 'main'
+            Dom.style ->
+                backgroundColor: "red"
         #DIV button to help page
         Dom.div !->
             Dom.text  "?"
@@ -140,16 +141,16 @@ addBar = ->
                 Page.nav 'help' 
         #DIV button to help page
         Dom.div !->
+            Dom.text "Event Log"
+            Dom.cls 'bar-button'
+            Dom.onTap !->   
+                Page.nav 'log'
+        #DIV button to help page
+        Dom.div !->
             Dom.text "Scores"
             Dom.cls 'bar-button'
             Dom.onTap !->   
-                Page.nav 'main'
-        #DIV button to help page
-        Dom.div !->
-            Dom.text "Event log"
-            Dom.cls 'bar-button'
-            Dom.onTap !->   
-                Page.nav 'main'
+                Page.nav 'scores'
 
 # Home page with map
 mainContent = ->
@@ -164,6 +165,12 @@ helpContent = ->
     Dom.text "There are " + Plugin.users.count().get() + " users playing"
     Dom.br()
     Dom.text "You need to venture to the real location of a beacon to conquer it"
+    
+scoresContent = ->
+	Dom.text "The scores of all team / players"
+    
+logContent = ->
+	Dom.text "The log file of all events"   
 	
 	
 	
