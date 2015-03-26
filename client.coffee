@@ -9,16 +9,16 @@ Ui = require 'ui'
 
 exports.render = ->
 	# Load the map
-	renderFlags()
 	loadMap()
+	renderFlags()
 
 # Load the javascript necessary for the map
 loadMap = ->
 	log "loadMap started"
 	
 	# Insert map element
-	mapToCreate = not document.getElementById("map")?
-	if(mapToCreate)
+	createMap = not document.getElementById("map")?
+	if createMap
 		mapelement = document.createElement "div"
 		mapelement.setAttribute 'id', 'map'
 		mapelement.style.width = '100%'
@@ -42,7 +42,7 @@ loadMap = ->
 		Dom._get().setAttribute 'id', 'map'
 	###
 	# Only insert these the first time
-	if(not document.getElementById("mapboxJavascript")?)
+	if not document.getElementById("mapboxJavascript")?
 		log "  Started loading javascript and CSS"
 		# Insert CSS
 		css = document.createElement "link"
@@ -68,17 +68,21 @@ loadMap = ->
 				setupMap()
 		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.js'
 		document.getElementsByTagName('head')[0].appendChild javascript
-	if mapToCreate
+	if createMap
 		setupMap()
 		
 # Initialize the map with tiles
 setupMap = ->
-	log "Initializing MapBox map"
-	# Tile version
-	L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
-	window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d')
-	layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
-	setupListeners()
+	log "setupMap"
+	if L? and L.mapbox?
+		log "Initializing MapBox map"
+		# Tile version
+		L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
+		window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d')
+		layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
+		setupListeners()
+		Obs.observe !->
+			renderFlags()
 
 # Setup click events etc
 setupListeners = ->
