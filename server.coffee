@@ -1,19 +1,14 @@
 Db = require 'db'
 
 exports.onInstall = ->
-	# set the counter to 0 on plugin installation
-	Db.shared.set 'counter', 0
 
-# exported functions prefixed with 'client_' are callable by our client code using `require('plugin').rpc`
-exports.client_incr = ->
-	log 'hello world!' # write to the plugin origin's log
-	Db.shared.modify 'counter', (v) -> v+1
-
-exports.client_getTime = (cb) ->
-	cb.reply new Date()
-
-exports.client_error = ->
-	{}.noSuchMethod()
+exports.onUpgrade = !->
+	# Reset flags to keep a clean debug environment
+	Db.shared.set 'flags'
+	
+exports.client_addMarker = (location) ->
+	log 'Adding marker: lat=', location.lat, ', lng=', location.lng
+	Db.shared.set 'flags', location.lat.toString()+'_'+location.lng.toString(), {location: location}
 
 exports.onHttp = (request) ->
 	if (data = request.data)?
