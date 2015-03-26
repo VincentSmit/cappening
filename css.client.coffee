@@ -15,6 +15,7 @@ Dom.css
 		height: '40px'
 		backgroundColor: '#ABABAB'
 		margin: '-44px 0 0 0'
+		boxShadow: 'none'
 	'.bar-button:first-of-type::after':
 		display: 'none'
 	'.mapbox-logo':

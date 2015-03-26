@@ -121,37 +121,39 @@ renderFlags = ->
 		-flag.get()
 	
 addBar = ->
-    Dom.div !->
-        Dom.style
-            right: "0"
-            left: "0"
-            top: "0"
-            height: "50px"
-            position: "absolute"
+	Dom.div !->
+		Dom.style
+			right: "0"
+			left: "0"
+			top: "0"
+			height: "50px"
+			position: "absolute"
+			zIndex: "5"
+			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
         #DIV button to help page
-        Dom.div !->
-            Dom.text  "?"
-            Dom.cls 'bar-button'                
-            Dom.onTap !->
-                Page.nav 'help' 
+		Dom.div !->
+			Dom.text  "?"
+			Dom.cls 'bar-button'                
+			Dom.onTap !->
+				Page.nav 'help' 
         #DIV button to help page
-        Dom.div !->
-            Dom.text "Event Log"
-            Dom.cls 'bar-button'
-            Dom.onTap !->   
-                Page.nav 'log'
-        #DIV button to help page
-        Dom.div !->
-            Dom.text "Scores"
-            Dom.cls 'bar-button'
-            Dom.onTap !->   
-                Page.nav 'scores'
-        #DIV button to main menu
-        Dom.div !->
-            Dom.text "10 pnts"
-            Dom.cls 'bar-button'
-            Dom.style ->
-                backgroundColor: "#000"
+		Dom.div !->
+			Dom.text "Event Log"
+			Dom.cls 'bar-button'
+			Dom.onTap !->   
+				Page.nav 'log'
+		#DIV button to help page
+		Dom.div !->
+			Dom.text "Scores"
+			Dom.cls 'bar-button'
+			Dom.onTap !->   
+				Page.nav 'scores'
+		#DIV button to main menu
+		Dom.div !->
+			Dom.text "10 pnts"
+			Dom.cls 'bar-button'
+			Dom.style ->
+				backgroundColor: "#000"
 # Home page with map
 mainContent = ->
 	renderFlags()
