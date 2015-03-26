@@ -89,7 +89,7 @@ setupMap = ->
 		log "Initializing MapBox map"
 		# Tile version
 		L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
-		window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d')
+		window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d', {zoomControl:false})
 		layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
 		setupListeners()
 		Obs.observe !->
@@ -111,9 +111,12 @@ setupListeners = ->
 renderFlags = ->	
 	Db.shared.observeEach 'flags', (flag) !->
 		if window.map?
-			log 'Adding flag: ', flag, ' lat=', flag.get('location', 'lat'), ', lng=', flag.get('location', 'lng')
-			marker = L.marker(L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))).addTo(window.map)
-			marker.setPopupContent("<p><p>")
+			lat = flag.get('location', 'lat')
+			lng = flag.get('location', 'lng')
+			log 'Adding flag: ', flag, ' lat=', lat, ', lng=', lng
+			marker = L.marker(L.latLng(lat, lng))
+			marker.bindPopup("lat: " + lat + "<br>long: " + lng)
+			marker.addTo(window.map)
 	, (flag) ->
 		-flag.get()
 	
