@@ -113,6 +113,7 @@ renderFlags = ->
 		if window.map?
 			log 'Adding flag: ', flag, ' lat=', flag.get('location', 'lat'), ', lng=', flag.get('location', 'lng')
 			marker = L.marker(L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))).addTo(window.map)
+			marker.setPopupContent("<p><p>")
 	, (flag) ->
 		-flag.get()
 	
@@ -123,21 +124,12 @@ addBar = ->
             left: "0"
             top: "0"
             height: "50px"
-            textAlign: 'center'
-            verticalAlign: "middle"
-            color: "white" 
             position: "absolute"
-        #DIV button to main menu
-        Dom.div !->
-            Dom.text "10 pnts"
-            Dom.cls 'bar-button'
-            Dom.style ->
-                backgroundColor: "red"
         #DIV button to help page
         Dom.div !->
             Dom.text  "?"
             Dom.cls 'bar-button'                
-            Dom.onTap !->   
+            Dom.onTap !->
                 Page.nav 'help' 
         #DIV button to help page
         Dom.div !->
@@ -151,7 +143,12 @@ addBar = ->
             Dom.cls 'bar-button'
             Dom.onTap !->   
                 Page.nav 'scores'
-
+        #DIV button to main menu
+        Dom.div !->
+            Dom.text "10 pnts"
+            Dom.cls 'bar-button'
+            Dom.style ->
+                backgroundColor: "#000"
 # Home page with map
 mainContent = ->
 	renderFlags()
@@ -171,9 +168,6 @@ scoresContent = ->
     
 logContent = ->
 	Dom.text "The log file of all events"   
-	
-	
-	
 	
 	
 	
