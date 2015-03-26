@@ -6,12 +6,18 @@ Plugin = require 'plugin'
 Page = require 'page'
 Server = require 'server'
 Ui = require 'ui'
+CSS = require 'css'
 
 exports.render = ->
-	# Load the map
-    addBar()
-	renderFlags()
-	loadMap()
+	# Set page title
+	page = Page.state.get(0)
+	page = "main" if not page?   
+	Page.setTitle page
+	# Display the correct page
+	if page == 'main'
+		mainContent()
+	else if page == 'help'
+        helpContent()
 
 # Load the javascript necessary for the map
 loadMap = ->
@@ -24,7 +30,7 @@ loadMap = ->
 		mapelement.setAttribute 'id', 'map'
 		mapelement.style.width = '100%'
 		mapelement.style.position = 'absolute'
-		mapelement.style.top = '0'
+		mapelement.style.top = '50px'
 		mapelement.style.bottom = '0'
 		mapelement.style.left = '0'
 		mapelement.style.right = '0'
@@ -74,12 +80,16 @@ loadMap = ->
 		
 # Initialize the map with tiles
 setupMap = ->
-	log "Initializing MapBox map"
-	# Tile version
-	L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
-	window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d')
-	layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
-	setupListeners()
+	log "setupMap"
+	if L? and L.mapbox?
+		log "Initializing MapBox map"
+		# Tile version
+		L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
+		window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d')
+		layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
+		setupListeners()
+		Obs.observe !->
+			renderFlags()
 
 # Setup click events etc
 setupListeners = ->
@@ -102,7 +112,7 @@ renderFlags = ->
 	, (flag) ->
 		-flag.get()
 	
-addBar ->
+addBar = ->
     what = Page.state.get(0) 
     what = "main" if not what?   
     Page.setTitle what
@@ -121,52 +131,39 @@ addBar ->
             Dom.text "Main"
             Dom.cls 'bar-button'
             Dom.onTap !->   
-                    Page.nav 'main'
+                Page.nav 'main'
         #DIV button to help page
         Dom.div !->
             Dom.text  "?"
             Dom.cls 'bar-button'                
             Dom.onTap !->   
-                    Page.nav 'help' 
+                Page.nav 'help' 
         #DIV button to help page
         Dom.div !->
             Dom.text "Scores"
             Dom.cls 'bar-button'
             Dom.onTap !->   
-                    Page.nav 'main'
+                Page.nav 'main'
         #DIV button to help page
         Dom.div !->
             Dom.text "Event log"
             Dom.cls 'bar-button'
             Dom.onTap !->   
-                    Page.nav 'main'
-    if what == 'help'
-        helpContent()
-    else if what == 'main'
-        mainContent()
-        
-mainContent = !->
-    Dom.br()
-    Dom.br()
-    Dom.text "The street map needs to be displayed here q.q"
-      
-                
-helpContent = !->
-    Dom.br()
-    Dom.br()
+                Page.nav 'main'
+
+# Home page with map
+mainContent = ->
+	renderFlags()
+	loadMap()
+	addBar()
+
+# Help page 
+helpContent = ->
     Dom.h2 "King of the Hill instructions!"
     Dom.br()
     Dom.text "There are " + Plugin.users.count().get() + " users playing"
     Dom.br()
-    Dom.text "You need to venture to the real location of a beacon to conquer it"	
-
-Dom.css
-    '.bar-button':
-        height: "100%"
-        width: "25%"
-        float: "right"
-        backgroundColor: "grey"
-        lineHeight: "50px"	
+    Dom.text "You need to venture to the real location of a beacon to conquer it"
 	
 	
 	
