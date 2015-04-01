@@ -11,7 +11,7 @@ Geoloc = require 'geoloc'
 
 exports.render = ->
 	
-	Geoloc.subscribe()
+
 
 
 	# Set page title
