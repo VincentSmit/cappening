@@ -7,8 +7,13 @@ Page = require 'page'
 Server = require 'server'
 Ui = require 'ui'
 CSS = require 'css'
+Geoloc = require 'geoloc'
 
 exports.render = ->
+	
+	Geoloc.subscribe()
+
+
 	# Set page title
 	page = Page.state.get(0)
 	page = "main" if not page?   
@@ -22,6 +27,15 @@ exports.render = ->
         scoresContent()
     else if page == 'log'
         logContent()
+	Geoloc.auth !->
+		state = Geoloc.track()
+		location = state.get('latlong');
+		location = location.split(',')
+		marker = L.marker(L.latLng(location[0], location[1]))
+		marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
+		marker.addTo(window.map)
+	
+	
 
 # Load the javascript necessary for the map
 loadMap = ->
