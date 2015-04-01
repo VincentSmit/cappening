@@ -27,14 +27,18 @@ exports.render = ->
         scoresContent()
     else if page == 'log'
         logContent()
-	Geoloc.auth !->
+	if !Geoloc.isSubscribed()
+		Geoloc.subscribe()
+	if Geoloc.isSubscribed()
 		state = Geoloc.track()
 		location = state.get('latlong');
-		location = location.split(',')
-		marker = L.marker(L.latLng(location[0], location[1]))
-		marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
-		marker.addTo(window.map)
-	
+		if location?
+			location = location.split(',')
+			marker = L.marker(L.latLng(location[0], location[1]))
+			marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
+			marker.addTo(window.map)
+		else
+			log 'location could not be found'
 	
 
 # Load the javascript necessary for the map
