@@ -8,6 +8,8 @@ Server = require 'server'
 Ui = require 'ui'
 CSS = require 'css'
 Geoloc = require 'geoloc'
+Form = require 'form'
+Num = require 'num'
 
 exports.render = ->
 	
@@ -39,8 +41,24 @@ exports.render = ->
 			marker.addTo(window.map)
 		else
 			log 'location could not be found'
-	
 
+			
+exports.renderSettings = !->
+	Dom.div !->
+		Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+		Dom.div !->
+			Dom.style Flex: 'true'
+			Dom.text tr "Round time in hours "
+		Num.render
+			name: 'time'
+			value: 0||7*24
+	if Db.shared
+		Form.check
+			name: 'restart'
+			text: tr 'Restart'
+			sub: tr 'Check this to destroy the current game and start a new one.'
+
+		
 # Load the javascript necessary for the map
 loadMap = ->
 	log "loadMap started"
