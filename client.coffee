@@ -10,22 +10,20 @@ CSS = require 'css'
 Geoloc = require 'geoloc'
 
 exports.render = ->
-	
-
-
-
-	# Set page title
+	#players = Db.shared.peek('players')
+	#teams = Db.shared.peek('teams')
+		# Set page title
 	page = Page.state.get(0)
-	page = "main" if not page?   
+	page = "Map" if not page?   
 	Page.setTitle page
 	# Display the correct page
-	if page == 'main'
+	if page == 'Map'
 		mainContent()
-	else if page == 'help'
+	else if page == 'Help'
         helpContent()
-    else if page == 'scores'
+    else if page == 'Scores'
         scoresContent()
-    else if page == 'log'
+    else if page == 'Log'
         logContent()
 	if !Geoloc.isSubscribed()
 		Geoloc.subscribe()
@@ -153,25 +151,27 @@ addBar = ->
 			Dom.text  "?"
 			Dom.cls 'bar-button'                
 			Dom.onTap !->
-				Page.nav 'help' 
+				Page.nav 'Help' 
         #DIV button to help page
 		Dom.div !->
 			Dom.text "Event Log"
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
-				Page.nav 'log'
+				Page.nav 'Log'
 		#DIV button to help page
 		Dom.div !->
 			Dom.text "Scores"
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
-				Page.nav 'scores'
+				Page.nav 'Scores'
 		#DIV button to main menu
 		Dom.div !->
 			Dom.text "10 pnts"
 			Dom.cls 'bar-button'
-			Dom.style ->
-				backgroundColor: "#000"
+			Dom.onTap !->
+				Modal.show tr("Team Points"), !->
+					Dom.text tr("Your team has 10 points!")
+					
 # Home page with map
 mainContent = ->
 	renderFlags()
@@ -180,14 +180,57 @@ mainContent = ->
 
 # Help page 
 helpContent = ->
-    Dom.h2 "King of the Hill instructions!"
-    Dom.br()
-    Dom.text "There are " + Plugin.users.count().get() + " users playing"
-    Dom.br()
-    Dom.text "You need to venture to the real location of a beacon to conquer it"
+	Dom.h2 "King of the Hill instructions!"
+	Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over X teams"
+	Dom.br()
+	Dom.br()
+	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
+	Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
+	Dom.text "When the bar at the bottom of your screen has been filled with your team color, you've conquered the beacon. "
+	Dom.text "A neutral beacon will take 1 minute to conquer, but an occupied beacon will take two. You first need to drain the opponents' color, before you can fill it with yours! "
+	Dom.br()
+	Dom.br()
+	Dom.h2 "Rules"
+	Dom.text "You gain 100 points for being the first team to conquer a certain beacon. "
+	Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
+	Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
+	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 100 to 80, 60, 40 and 20. "
+	Dom.text "However, when a beacon is conquered, it is safe for 1 hour (can't be captured by another team). "
+	Dom.text "The team with the highest score at the end of the game wins. "
+	Dom.br()
+	Dom.br()
+	Dom.h2 "Use of Map & Tabs"
+	Dom.text "To find locations of beacons you can navigate over the map by swiping. To obtain a more precise location you can zoom in and out by pinching. "
+	Dom.br()
+	Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
+	Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
+	Dom.br()
+	Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
+	
     
 scoresContent = ->
-	Dom.text "The scores of all team / players"
+	Dom.text "The scores of all players:"
+	#users = Db.shared.ref('users')
+	teams = Obs.create
+		1: {name: 'red'}
+		2: {name: 'yellow'}
+	users = Obs.create
+		1: {name: 'Lars', score: 10, team: 'red'}
+		2: {name: 'Thijs', score: 30, team: 'red'}
+		3: {name: 'Sem', score: 9001, team: 'yellow'}
+	Dom.div ->
+		users.iterate (user) ->
+			Dom.text tr("%1 has a score of %2", user.get('name'), user.get('score'))
+			Dom.br()
+	Dom.br()		
+	Dom.text "The scores of all teams:"
+	Dom.div ->
+		teams.iterate (team) ->
+			teamscore = 0
+			users.iterate (user) ->
+				teamscore = teamscore + user.get('score') if user.get('team') == team.get('name') 			
+			Dom.text tr("Team %2 has a score of %1", teamscore, team.get('name'))
+			Dom.br()
     
 logContent = ->
 	Dom.text "The log file of all events"   

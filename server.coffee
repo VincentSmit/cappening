@@ -16,4 +16,5 @@ exports.onHttp = (request) ->
 	else
 		data = Db.shared.get('http')
 	request.respond 200, data || "no data"
+	
 
