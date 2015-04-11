@@ -11,19 +11,19 @@ Geoloc = require 'geoloc'
 Form = require 'form'
 Num = require 'num'
 
+window.mapReady = Obs.create(false)
+
 exports.render = ->
 	log 'FULL RENDER'
 	loadMap()
 	# Ask for location
 	if !Geoloc.isSubscribed()
 		Geoloc.subscribe()
-
-	# gamestate check
+		# gamestate check
 	gameState = Db.shared.get('gameState')
 	if gameState is 0 # Setting up game by user that added plugin
 		setupContent()
 	else if gameState is 1 # Game is running
-		disableAddMarkerClick()
 		# Set page title
 		page = Page.state.get(0)
 		page = "main" if not page?   
@@ -36,15 +36,15 @@ exports.render = ->
 		else if page == 'scores'
 			scoresContent()
 		else if page == 'log'
-			logContent()	
+			logContent()
 
 exports.renderSettings = !->
 	if Db.shared
 		Form.check
 			name: 'restart'
 			text: tr 'Restart'
-			sub: tr 'Check this to destroy the current game and start a new one.'
-			
+			sub: tr 'Check this to destroy the current game and start a new one.'	
+	
 # Load the javascript necessary for the map
 loadMap = ->
 	log "loadMap started"
@@ -52,6 +52,7 @@ loadMap = ->
 	# Insert map element
 	mapToCreate = not document.getElementById("map")?
 	if(mapToCreate)
+		mapReady.modify () -> false
 		mapelement = document.createElement "div"
 		mapelement.setAttribute 'id', 'map'
 		mapelement.style.width = '100%'
@@ -109,29 +110,13 @@ loadMap = ->
 # Initialize the map with tiles
 setupMap = ->
 	log "setupMap"
-	if L? and L.mapbox?
+	if L? and map?
 		log "Initializing MapBox map"
-		window.boundaryRectangle = null
-		window.locationOne = null
-		window.locationTwo = null
 		# Tile version
 		L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
 		window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
 		layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
-		Obs.observe !->
-			renderFlags()
-
-# Add marker listener controls
-enableAddMarkerClick = ->
-	map.on 'contextmenu', addMarkerListener
-disableAddMarkerClick = ->
-	map.off 'contextmenu', addMarkerListener
-addMarkerListener = (event) ->
-	log 'click: ', event
-	Server.send 'addMarker', event.latlng, !->
-		# TODO fix predict function
-		log 'test prediction add marker'
-		Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
+		mapReady.modify () -> (L? and map?)
 
 # Add flags to the map
 renderFlags = ->
@@ -144,30 +129,31 @@ renderFlags = ->
 	#			marker = L.marker(L.latLng(location[0], location[1]))
 	#			marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
 	#			if window.flagCurrentLocation
-	#				window.map.removeLayer window.flagCurrentLocation
-	#			marker.addTo(window.map)
+	#				map.removeLayer window.flagCurrentLocation
+	#			marker.addTo(map)
 	#			window.flagCurrentLocation = marker
 	#		else
 	#			log 'location could not be found'
 	Db.shared.observeEach 'game', 'flags', (flag) !->
-		if window.map? and L?
+		if mapReady.get()
 			if not window.flagMarkers?
 				window.flagMarkers = [];
 			lat = flag.get('location', 'lat')
 			lng = flag.get('location', 'lng')
 			log 'Adding flag: ', flag, ' lat=', lat, ', lng=', lng
 			location = L.latLng(lat, lng)
-			result = true;
-			for flag in window.flagMarkers
-				result = result and not sameLocation location, flag
-			if result
-				marker = L.marker(location)
-				marker.bindPopup("lat: " + lat + "<br>long: " + lng)
-				marker.addTo(window.map)
-				window.flagMarkers.push marker
-				log 'Added marker, marker list: ', window.flagMarkers
-			else
-				log 'Marker already on the map, not added'
+			marker = L.marker(location)
+			marker.bindPopup("lat: " + lat + "<br>long: " + lng)
+			marker.addTo(map)
+			window.flagMarkers.push marker
+			log 'Added marker, marker list: ', flagMarkers
+		Obs.onClean ->
+			log 'flag in onclean: ', flag
+			for loopFlag in window.flagMarkers
+				if sameLocation flag, loopFlag
+					map.removeLayer flag if flag?
+					flagMarkers.splice(flagMarkers.indexOf(loopFlag))
+					log 'Flag removed, onClean()'
 	, (flag) ->
 		-flag.get()
 	
@@ -207,18 +193,20 @@ addBar = ->
 				backgroundColor: "#000"
 # Home page with map
 mainContent = ->
-	if window.map?
-		loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
-		loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
-		window.map.setMaxBounds(L.latLngBounds(loc1, loc2))
-		map.removeLayer boundaryRectangle if boundaryRectangle?
-		map.removeLayer locationOne if locationOne?
-		map.removeLayer locationTwo if locationTwo?
+	Obs.observe ->
+		if mapReady.get()
+			# Limit scrolling to the bounds and also limit the zoom level
+			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
+			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
+			map.setMaxBounds(L.latLngBounds(loc1, loc2))
+			map._layersMinZoom = map.getBoundsZoom(map.getBounds())
+		Obs.onClean ->
+			map.setMaxBounds()
+			map._layersMinZoom = 0
 	showMap()
 	renderFlags()
 	loadMap()
 	addBar()
-	showMap()
 
 # Help page 
 helpContent = ->
@@ -313,32 +301,30 @@ setupContent = ->
 						Db.local.set('currentSetupPage', 'setup2')
 			showMap()
 			Obs.observe ->
-				if map?
+				if mapReady.get()
+					# Corner 1
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
+					window.locationOne = L.marker(loc1, {draggable: true})
+					locationOne.on 'dragend', ->
+						log 'marker drag 1'
+						markerDragged()
+					locationOne.addTo(map)
+					# Corner 2
 					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
-					if window.locationOne?
-						window.locationOne.setLatLng(loc1)
-					else
-						window.locationOne = L.marker(loc1, {draggable: true})
-						window.locationOne.on 'dragend', ->
-							log 'marker drag 1'
-							markerDragged()
-						window.locationOne.addTo(window.map)
-					if window.locationTwo?
-						window.locationTwo.setLatLng(loc2)
-					else
-						window.locationTwo = L.marker(loc2, {draggable: true})
-						window.locationTwo.on 'dragend', ->
-							log 'marker drag 2'
-							markerDragged()
-						window.locationTwo.addTo(window.map)
-					if window.boundaryRectangle?
-						window.boundaryRectangle.setBounds(L.latLngBounds(loc1, loc2))
-					else
-						window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 1})
-						window.boundaryRectangle.addTo(window.map)
+					window.locationTwo = L.marker(loc2, {draggable: true})
+					locationTwo.on 'dragend', ->
+						log 'marker drag 2'
+						markerDragged()
+					locationTwo.addTo(map)
+					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 1})
+					boundaryRectangle.addTo(map)
+				Obs.onClean ->
+					log 'onClean() rectangle + corners'
+					if mapReady.get()
+						map.removeLayer locationOne if locationOne?
+						map.removeLayer locationTwo if locationTwo?
+						map.removeLayer boundaryRectangle if boundaryRectangle?
 		else if currentPage is 'setup2' # Setup flags
-			enableAddMarkerClick()
 			map.removeLayer locationOne if locationOne?
 			map.removeLayer locationTwo if locationTwo?
 			# Bar to indicate the setup progress
@@ -350,7 +336,6 @@ setupContent = ->
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-left'
 					Dom.onTap !->
-						disableAddMarkerClick()
 						Db.local.set('currentSetupPage', 'setup1')
 				# Middle block
 				Dom.div !->
@@ -362,26 +347,37 @@ setupContent = ->
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
 					Dom.onTap !->
-						disableAddMarkerClick()
 						Server.send 'startGame', !->
 							log 'Predict function gameStart?'
 			showMap()
 			renderFlags()
 			Obs.observe ->
-				if map?
+				if mapReady.get()
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
-					if window.boundaryRectangle?
-						window.boundaryRectangle.setBounds(L.latLngBounds(loc1, loc2))
-					else
-						window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 1})
-						window.boundaryRectangle.addTo(window.map)
+					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 1})
+					boundaryRectangle.addTo(map)
+					map.on('contextmenu', addMarkerListener)
+				Obs.onClean ->
+					log 'onClean() rectangle'
+					if mapReady.get()
+						map.removeLayer boundaryRectangle if boundaryRectangle?
+						map.off('contextmenu', addMarkerListener)
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
 
+# Listener that checks for clicking the map
+addMarkerListener = (event) ->
+	log 'click: ', event
+	Server.send 'addMarker', event.latlng, !->
+		# TODO fix predict function
+		log 'test prediction add marker'
+		Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
+		
+# Update the play area square thing
 markerDragged = ->
-	if map?
+	if mapReady.get()
 		Server.send 'setBounds', window.locationOne.getLatLng(), window.locationTwo.getLatLng(), !->
 			log 'Predict function setbounds?'
 	
@@ -392,14 +388,13 @@ sameLocation = (location1, location2) -> location1? and location2? and location1
 hideMap = ->
 	log 'hidemap'
 	map = document.getElementById("map")
-	if map?
+	if mapReady.get()
 		map.style.visibility = 'hidden'
 		map.style.opacity = '0'
 # Show the map
 showMap = ->
 	log 'showmap'
 	map = document.getElementById("map")
-	if map?
+	if mapReady.get()
 		map.style.visibility = 'visible'
 		map.style.opacity = '1'
-	
