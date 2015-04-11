@@ -12,53 +12,39 @@ Form = require 'form'
 Num = require 'num'
 
 exports.render = ->
-	
-
-
-
-	# Set page title
-	page = Page.state.get(0)
-	page = "main" if not page?   
-	Page.setTitle page
-	# Display the correct page
-	if page == 'main'
-		mainContent()
-	else if page == 'help'
-        helpContent()
-    else if page == 'scores'
-        scoresContent()
-    else if page == 'log'
-        logContent()
+	log 'FULL RENDER'
+	loadMap()
+	# Ask for location
 	if !Geoloc.isSubscribed()
 		Geoloc.subscribe()
-	if Geoloc.isSubscribed()
-		state = Geoloc.track()
-		location = state.get('latlong');
-		if location?
-			location = location.split(',')
-			marker = L.marker(L.latLng(location[0], location[1]))
-			marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
-			marker.addTo(window.map)
-		else
-			log 'location could not be found'
 
-			
+	# gamestate check
+	gameState = Db.shared.get('gameState')
+	if gameState is 0 # Setting up game by user that added plugin
+		setupContent()
+	else if gameState is 1 # Game is running
+		disableAddMarkerClick()
+		# Set page title
+		page = Page.state.get(0)
+		page = "main" if not page?   
+		Page.setTitle page
+		# Display the correct page
+		if page == 'main'
+			mainContent()
+		else if page == 'help'
+			helpContent()
+		else if page == 'scores'
+			scoresContent()
+		else if page == 'log'
+			logContent()	
+
 exports.renderSettings = !->
-	Dom.div !->
-		Dom.style Box: "middle", padding: '12px 40px 12px 8px'
-		Dom.div !->
-			Dom.style Flex: 'true'
-			Dom.text tr "Round time in hours "
-		Num.render
-			name: 'time'
-			value: 0||7*24
 	if Db.shared
 		Form.check
 			name: 'restart'
 			text: tr 'Restart'
 			sub: tr 'Check this to destroy the current game and start a new one.'
-
-		
+			
 # Load the javascript necessary for the map
 loadMap = ->
 	log "loadMap started"
@@ -75,6 +61,8 @@ loadMap = ->
 		mapelement.style.left = '0'
 		mapelement.style.right = '0'
 		mapelement.style.backgroundColor = '#030303'
+		mapelement.style.visibility = 'hidden'
+		mapelement.style.opacity = '0'
 		mainElement = document.getElementsByTagName("main")[0]
 		mainElement.insertBefore(mapelement, mainElement.childNodes[0])
 	###
@@ -123,36 +111,63 @@ setupMap = ->
 	log "setupMap"
 	if L? and L.mapbox?
 		log "Initializing MapBox map"
+		window.boundaryRectangle = null
+		window.locationOne = null
+		window.locationTwo = null
 		# Tile version
 		L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
-		window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d', {zoomControl:false})
+		window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
 		layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
-		setupListeners()
 		Obs.observe !->
 			renderFlags()
 
-# Setup click events etc
-setupListeners = ->
-	# Register listener for adding markers
-	onClick = (event) ->
-		log 'click: ', event
-		#marker = L.marker(event.latlng, {draggeble: true, title: 'flag'}).addTo(window.map)
-		Server.send 'addMarker', event.latlng, ->
-			# TODO fix predict function
-			log 'test'
-			Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
-	map.on 'contextmenu', onClick
+# Add marker listener controls
+enableAddMarkerClick = ->
+	map.on 'contextmenu', addMarkerListener
+disableAddMarkerClick = ->
+	map.off 'contextmenu', addMarkerListener
+addMarkerListener = (event) ->
+	log 'click: ', event
+	Server.send 'addMarker', event.latlng, !->
+		# TODO fix predict function
+		log 'test prediction add marker'
+		Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
 
 # Add flags to the map
-renderFlags = ->	
-	Db.shared.observeEach 'flags', (flag) !->
-		if window.map?
+renderFlags = ->
+	#if Geoloc.isSubscribed()
+	#	Obs.observe -> # Creates new observe scope, because state changes a lot this spams the console a bit
+	#		state = Geoloc.track()
+	#		location = state.get('latlong');
+	#		if location?
+	#			location = location.split(',')
+	#			marker = L.marker(L.latLng(location[0], location[1]))
+	#			marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
+	#			if window.flagCurrentLocation
+	#				window.map.removeLayer window.flagCurrentLocation
+	#			marker.addTo(window.map)
+	#			window.flagCurrentLocation = marker
+	#		else
+	#			log 'location could not be found'
+	Db.shared.observeEach 'game', 'flags', (flag) !->
+		if window.map? and L?
+			if not window.flagMarkers?
+				window.flagMarkers = [];
 			lat = flag.get('location', 'lat')
 			lng = flag.get('location', 'lng')
 			log 'Adding flag: ', flag, ' lat=', lat, ', lng=', lng
-			marker = L.marker(L.latLng(lat, lng))
-			marker.bindPopup("lat: " + lat + "<br>long: " + lng)
-			marker.addTo(window.map)
+			location = L.latLng(lat, lng)
+			result = true;
+			for flag in window.flagMarkers
+				result = result and not sameLocation location, flag
+			if result
+				marker = L.marker(location)
+				marker.bindPopup("lat: " + lat + "<br>long: " + lng)
+				marker.addTo(window.map)
+				window.flagMarkers.push marker
+				log 'Added marker, marker list: ', window.flagMarkers
+			else
+				log 'Marker already on the map, not added'
 	, (flag) ->
 		-flag.get()
 	
@@ -172,7 +187,7 @@ addBar = ->
 			Dom.cls 'bar-button'                
 			Dom.onTap !->
 				Page.nav 'help' 
-        #DIV button to help page
+        #DIV button to Event log
 		Dom.div !->
 			Dom.text "Event Log"
 			Dom.cls 'bar-button'
@@ -192,9 +207,18 @@ addBar = ->
 				backgroundColor: "#000"
 # Home page with map
 mainContent = ->
+	if window.map?
+		loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
+		loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
+		window.map.setMaxBounds(L.latLngBounds(loc1, loc2))
+		map.removeLayer boundaryRectangle if boundaryRectangle?
+		map.removeLayer locationOne if locationOne?
+		map.removeLayer locationTwo if locationTwo?
+	showMap()
 	renderFlags()
 	loadMap()
 	addBar()
+	showMap()
 
 # Help page 
 helpContent = ->
@@ -208,7 +232,174 @@ scoresContent = ->
 	Dom.text "The scores of all team / players"
     
 logContent = ->
-	Dom.text "The log file of all events"   
+	Dom.text "The log file of all events"
 	
+setupContent = ->
+	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove
+		setupPhase = Db.shared.get('setupPhase')
+		currentPage = Db.local.get('currentSetupPage')
+		log 'currentPage=', currentPage
+		if not currentPage?
+			currentPage = 'setup' + setupPhase
+			Db.local.set('currentSetupPage', currentPage)
+			log '  changed to: ', currentPage
+		if currentPage is 'setup0' # Setup team and round time
+			hideMap()
+			# Bar to indicate the setup progress
+			Dom.div !->
+				Dom.cls 'stepbar'
+				# Left button
+				Dom.div !->
+					Dom.text tr("Prev")
+					Dom.cls 'stepbar-button'
+					Dom.cls 'stepbar-left'
+					Dom.cls 'stepbar-disable'
+				# Middle block
+				Dom.div !->
+					Dom.text tr("Basic settings")
+					Dom.cls 'stepbar-middle'
+				# Right button
+				Dom.div !->
+					Dom.text tr("Next")
+					Dom.cls 'stepbar-button'
+					Dom.cls 'stepbar-right'
+					Dom.onTap !->
+						Server.sync 'setupBasic', 1, 1, !-> # TODO handle form numbers correctly
+							log 'Prediction of going to next setupPhase'
+						Db.local.set('currentSetupPage', 'setup1')
+			Dom.div !->
+				Dom.style margin: "52px"
+			Dom.h2 tr("Round time")
+			Dom.div !->
+				Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+				Dom.div !->
+					Dom.style Flex: 'true'
+					Dom.text tr "Fill in the round time (hours), this determines how long a game lasts. Recommended: 1 week (168 hours)."
+				Num.render
+					name: 'time'
+					value: (if Db.shared then Db.shared.peek('roundTime') else 1)||24*28 # 4 weeks max
+			Dom.h2 tr("Number of teams")
+			Dom.div !->
+				Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+				Dom.div !->
+					Dom.style Flex: 'true'
+					Dom.text tr "Fill in the number of teams."
+					Dom.br()
+					Dom.text tr "Recommended default: 2."
+				Num.render
+					name: 'teams'
+					value: (if Db.shared then Db.shared.peek('numberOfTeams') else 1)||6
+		else if currentPage is 'setup1' # Setup map boundaries
+			# Bar to indicate the setup progress
+			Dom.div !->
+				Dom.cls 'stepbar'
+				# Left button
+				Dom.div !->
+					Dom.text tr("Prev")
+					Dom.cls 'stepbar-button'
+					Dom.cls 'stepbar-left'
+					Dom.onTap !->
+						Db.local.set('currentSetupPage', 'setup0')
+				# Middle block
+				Dom.div !->
+					Dom.text tr("Boundary setup")
+					Dom.cls 'stepbar-middle'
+				# Right button
+				Dom.div !->
+					Dom.text tr("Next")
+					Dom.cls 'stepbar-button'
+					Dom.cls 'stepbar-right'
+					Dom.onTap !->
+						Db.local.set('currentSetupPage', 'setup2')
+			showMap()
+			Obs.observe ->
+				if map?
+					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
+					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
+					if window.locationOne?
+						window.locationOne.setLatLng(loc1)
+					else
+						window.locationOne = L.marker(loc1, {draggable: true})
+						window.locationOne.on 'dragend', ->
+							log 'marker drag 1'
+							markerDragged()
+						window.locationOne.addTo(window.map)
+					if window.locationTwo?
+						window.locationTwo.setLatLng(loc2)
+					else
+						window.locationTwo = L.marker(loc2, {draggable: true})
+						window.locationTwo.on 'dragend', ->
+							log 'marker drag 2'
+							markerDragged()
+						window.locationTwo.addTo(window.map)
+					if window.boundaryRectangle?
+						window.boundaryRectangle.setBounds(L.latLngBounds(loc1, loc2))
+					else
+						window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 1})
+						window.boundaryRectangle.addTo(window.map)
+		else if currentPage is 'setup2' # Setup flags
+			enableAddMarkerClick()
+			map.removeLayer locationOne if locationOne?
+			map.removeLayer locationTwo if locationTwo?
+			# Bar to indicate the setup progress
+			Dom.div !->
+				Dom.cls 'stepbar'
+				# Left button
+				Dom.div !->
+					Dom.text tr("Prev")
+					Dom.cls 'stepbar-button'
+					Dom.cls 'stepbar-left'
+					Dom.onTap !->
+						disableAddMarkerClick()
+						Db.local.set('currentSetupPage', 'setup1')
+				# Middle block
+				Dom.div !->
+					Dom.text tr("Flag setup")
+					Dom.cls 'stepbar-middle'
+				# Right button
+				Dom.div !->
+					Dom.text tr("Start")
+					Dom.cls 'stepbar-button'
+					Dom.cls 'stepbar-right'
+					Dom.onTap !->
+						disableAddMarkerClick()
+						Server.send 'startGame', !->
+							log 'Predict function gameStart?'
+			showMap()
+			renderFlags()
+			Obs.observe ->
+				if map?
+					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
+					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
+					if window.boundaryRectangle?
+						window.boundaryRectangle.setBounds(L.latLngBounds(loc1, loc2))
+					else
+						window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 1})
+						window.boundaryRectangle.addTo(window.map)
+	else
+		Dom.text tr("Admin/plugin owner is setting up the game")
+		# Show map and current settings
+
+markerDragged = ->
+	if map?
+		Server.send 'setBounds', window.locationOne.getLatLng(), window.locationTwo.getLatLng(), !->
+			log 'Predict function setbounds?'
 	
+# Compare 2 locations to see if they are the same
+sameLocation = (location1, location2) -> location1? and location2? and location1.lat is location2.lat and location1.lng is location2.lng
+	
+# Hide the map
+hideMap = ->
+	log 'hidemap'
+	map = document.getElementById("map")
+	if map?
+		map.style.visibility = 'hidden'
+		map.style.opacity = '0'
+# Show the map
+showMap = ->
+	log 'showmap'
+	map = document.getElementById("map")
+	if map?
+		map.style.visibility = 'visible'
+		map.style.opacity = '1'
 	
