@@ -199,7 +199,7 @@ mainContent = ->
 			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 			map.setMaxBounds(L.latLngBounds(loc1, loc2))
-			map._layersMinZoom = map.getBoundsZoom(map.getBounds())
+			map._layersMinZoom = map.getBoundsZoom(L.latLngBounds(loc1, loc2))
 		Obs.onClean ->
 			map.setMaxBounds()
 			map._layersMinZoom = 0
@@ -316,7 +316,7 @@ setupContent = ->
 						log 'marker drag 2'
 						markerDragged()
 					locationTwo.addTo(map)
-					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 1})
+					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 5, clickable: false})
 					boundaryRectangle.addTo(map)
 				Obs.onClean ->
 					log 'onClean() rectangle + corners'
@@ -355,7 +355,7 @@ setupContent = ->
 				if mapReady.get()
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
-					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 1})
+					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 5, fillOpacity: 0.05, clickable: false})
 					boundaryRectangle.addTo(map)
 					map.on('contextmenu', addMarkerListener)
 				Obs.onClean ->
