@@ -20,23 +20,24 @@ exports.render = ->
 	if !Geoloc.isSubscribed()
 		Geoloc.subscribe()
 		# gamestate check
-	gameState = Db.shared.get('gameState')
-	if gameState is 0 # Setting up game by user that added plugin
-		setupContent()
-	else if gameState is 1 # Game is running
-		# Set page title
-		page = Page.state.get(0)
-		page = "main" if not page?   
-		Page.setTitle page
-		# Display the correct page
-		if page == 'main'
-			mainContent()
-		else if page == 'help'
-			helpContent()
-		else if page == 'scores'
-			scoresContent()
-		else if page == 'log'
-			logContent()
+	Obs.observe ->
+		gameState = Db.shared.get('gameState')
+		if gameState is 0 # Setting up game by user that added plugin
+			setupContent()
+		else if gameState is 1 # Game is running
+			# Set page title
+			page = Page.state.get(0)
+			page = "main" if not page?   
+			Page.setTitle page
+			# Display the correct page
+			if page == 'main'
+				mainContent()
+			else if page == 'help'
+				helpContent()
+			else if page == 'scores'
+				scoresContent()
+			else if page == 'log'
+				logContent()
 
 exports.renderSettings = !->
 	if Db.shared
@@ -50,11 +51,11 @@ loadMap = ->
 	log "loadMap started"
 	
 	# Insert map element
-	mapToCreate = not document.getElementById("map")?
+	mapToCreate = not document.getElementById("OpenStreetMap")?
 	if(mapToCreate)
 		mapReady.modify () -> false
 		mapelement = document.createElement "div"
-		mapelement.setAttribute 'id', 'map'
+		mapelement.setAttribute 'id', 'OpenStreetMap'
 		mapelement.style.width = '100%'
 		mapelement.style.position = 'absolute'
 		mapelement.style.top = '50px'
@@ -66,6 +67,7 @@ loadMap = ->
 		mapelement.style.opacity = '0'
 		mainElement = document.getElementsByTagName("main")[0]
 		mainElement.insertBefore(mapelement, mainElement.childNodes[0])
+		log "  Created html element for map"
 	###
 	Dom.div ->
 		Dom.style
@@ -75,7 +77,7 @@ loadMap = ->
 			top: '0'
 			left: '0'
 			backgroundColor: '#030303'
-		Dom._get().setAttribute 'id', 'map'
+		Dom._get().setAttribute 'id', 'OpenStreetMap'
 	###
 	# Only insert these the first time
 	if(not document.getElementById("mapboxJavascript")?)
@@ -104,22 +106,34 @@ loadMap = ->
 				setupMap()
 		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.js'
 		document.getElementsByTagName('head')[0].appendChild javascript
-	if mapToCreate
-		setupMap()
+	setupMap()
 		
 # Initialize the map with tiles
 setupMap = ->
-	log "setupMap"
-	if L? and map?
-		log "Initializing MapBox map"
-		# Tile version
-		L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
-		window.map = L.mapbox.map('map', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
-		layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
-		mapReady.modify () -> (L? and map?)
+	Obs.observe ->
+		log "setupMap"
+		if map?
+			log "  map already initialized"
+		else if not L?
+			log "  javascript not yet loaded"
+		else
+			# Tile version
+			L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
+			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
+			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
+			log "  Initialized MapBox map"
+			mapReady.modify () -> (L? and map?)
+		Obs.onClean ->
+			log "onClean() of setupMap()"
+			if map?
+				map.remove()
+				window.map = null
+				log "  removed map"
+
 
 # Add flags to the map
 renderFlags = ->
+	log "rendering flags"
 	#if Geoloc.isSubscribed()
 	#	Obs.observe -> # Creates new observe scope, because state changes a lot this spams the console a bit
 	#		state = Geoloc.track()
@@ -137,23 +151,27 @@ renderFlags = ->
 	Db.shared.observeEach 'game', 'flags', (flag) !->
 		if mapReady.get()
 			if not window.flagMarkers?
+				log "flagMarkers list reset"
 				window.flagMarkers = [];
-			lat = flag.get('location', 'lat')
-			lng = flag.get('location', 'lng')
-			log 'Adding flag: ', flag, ' lat=', lat, ', lng=', lng
-			location = L.latLng(lat, lng)
+			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
+			log "Added flag"
 			marker = L.marker(location)
-			marker.bindPopup("lat: " + lat + "<br>long: " + lng)
+			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
 			marker.addTo(map)
-			window.flagMarkers.push marker
-			log 'Added marker, marker list: ', flagMarkers
+			flagMarkers.push marker
+			#log 'Added marker, marker list: ', flagMarkers
+		else 
+			log "  map not ready yet"
 		Obs.onClean ->
-			log 'flag in onclean: ', flag
-			for loopFlag in window.flagMarkers
-				if sameLocation flag, loopFlag
-					map.removeLayer flag if flag?
-					flagMarkers.splice(flagMarkers.indexOf(loopFlag))
-					log 'Flag removed, onClean()'
+			if flagMarkers?
+				i = 0;
+				while i<flagMarkers.length
+					if sameLocation L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng')), flagMarkers[i].getLatLng()
+						map.removeLayer flagMarkers[i]
+						flagMarkers.splice(flagMarkers.indexOf(flagMarkers[i]), 1)
+						log 'onClean() flag'
+					else
+						i++
 	, (flag) ->
 		-flag.get()
 	
@@ -300,6 +318,7 @@ setupContent = ->
 					Dom.onTap !->
 						Db.local.set('currentSetupPage', 'setup2')
 			showMap()
+			renderFlags()
 			Obs.observe ->
 				if mapReady.get()
 					# Corner 1
@@ -382,19 +401,21 @@ markerDragged = ->
 			log 'Predict function setbounds?'
 	
 # Compare 2 locations to see if they are the same
-sameLocation = (location1, location2) -> location1? and location2? and location1.lat is location2.lat and location1.lng is location2.lng
+sameLocation = (location1, location2) ->
+	#log "sameLocation(), location1: ", location1, ", location2: ", location2
+	return location1? and location2? and location1.lat is location2.lat and location1.lng is location2.lng
 	
 # Hide the map
 hideMap = ->
 	log 'hidemap'
-	map = document.getElementById("map")
+	mapElement = document.getElementById("OpenStreetMap")
 	if mapReady.get()
-		map.style.visibility = 'hidden'
-		map.style.opacity = '0'
+		mapElement.style.visibility = 'hidden'
+		mapElement.style.opacity = '0'
 # Show the map
 showMap = ->
 	log 'showmap'
-	map = document.getElementById("map")
+	mapElement = document.getElementById("OpenStreetMap")
 	if mapReady.get()
-		map.style.visibility = 'visible'
-		map.style.opacity = '1'
+		mapElement.style.visibility = 'visible'
+		mapElement.style.opacity = '1'
