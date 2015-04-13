@@ -11,7 +11,7 @@ Geoloc = require 'geoloc'
 Form = require 'form'
 Num = require 'num'
 
-window.mapReady = Obs.create(false)
+window.redraw = Obs.create(0)
 
 exports.render = ->
 	log 'FULL RENDER'
@@ -21,6 +21,7 @@ exports.render = ->
 		Geoloc.subscribe()
 		# gamestate check
 	Obs.observe ->
+		hey = redraw.get();
 		gameState = Db.shared.get('gameState')
 		if gameState is 0 # Setting up game by user that added plugin
 			setupContent()
@@ -51,9 +52,8 @@ loadMap = ->
 	log "loadMap started"
 	
 	# Insert map element
-	mapToCreate = not document.getElementById("OpenStreetMap")?
-	if(mapToCreate)
-		mapReady.modify () -> false
+	Obs.observe ->
+		#mapReady.modify () -> false
 		mapelement = document.createElement "div"
 		mapelement.setAttribute 'id', 'OpenStreetMap'
 		mapelement.style.width = '100%'
@@ -68,6 +68,10 @@ loadMap = ->
 		mainElement = document.getElementsByTagName("main")[0]
 		mainElement.insertBefore(mapelement, mainElement.childNodes[0])
 		log "  Created html element for map"
+		Obs.onClean ->
+			log "  Removed html element for map"
+			toRemove = document.getElementById('OpenStreetMap');
+			toRemove.parentNode.removeChild(toRemove);
 	###
 	Dom.div ->
 		Dom.style
@@ -100,10 +104,12 @@ loadMap = ->
 					log "MapBox script loaded"
 					javascript.onreadystatechange = 'null'
 					setupMap()
+					redraw.modify (v) -> v+1
 		else  # Other browsers
 			javascript.onload = ->
 				log "MapBox script loaded"
 				setupMap()
+				redraw.modify (v) -> v+1
 		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.js'
 		document.getElementsByTagName('head')[0].appendChild javascript
 	setupMap()
@@ -122,7 +128,7 @@ setupMap = ->
 			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
 			log "  Initialized MapBox map"
-			mapReady.modify () -> (L? and map?)
+			#mapReady.modify () -> (L? and map?)
 		Obs.onClean ->
 			log "onClean() of setupMap()"
 			if map?
@@ -149,7 +155,7 @@ renderFlags = ->
 	#		else
 	#			log 'location could not be found'
 	Db.shared.observeEach 'game', 'flags', (flag) !->
-		if mapReady.get()
+		if mapReady() and map?
 			if not window.flagMarkers?
 				log "flagMarkers list reset"
 				window.flagMarkers = [];
@@ -163,7 +169,7 @@ renderFlags = ->
 		else 
 			log "  map not ready yet"
 		Obs.onClean ->
-			if flagMarkers?
+			if flagMarkers? and map?
 				i = 0;
 				while i<flagMarkers.length
 					if sameLocation L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng')), flagMarkers[i].getLatLng()
@@ -212,15 +218,16 @@ addBar = ->
 # Home page with map
 mainContent = ->
 	Obs.observe ->
-		if mapReady.get()
+		if mapReady() and map?
 			# Limit scrolling to the bounds and also limit the zoom level
 			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 			map.setMaxBounds(L.latLngBounds(loc1, loc2))
 			map._layersMinZoom = map.getBoundsZoom(L.latLngBounds(loc1, loc2))
 		Obs.onClean ->
-			map.setMaxBounds()
-			map._layersMinZoom = 0
+			if map?
+				map.setMaxBounds()
+				map._layersMinZoom = 0
 	showMap()
 	renderFlags()
 	loadMap()
@@ -320,7 +327,7 @@ setupContent = ->
 			showMap()
 			renderFlags()
 			Obs.observe ->
-				if mapReady.get()
+				if mapReady()
 					# Corner 1
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 					window.locationOne = L.marker(loc1, {draggable: true})
@@ -339,7 +346,7 @@ setupContent = ->
 					boundaryRectangle.addTo(map)
 				Obs.onClean ->
 					log 'onClean() rectangle + corners'
-					if mapReady.get()
+					if mapReady()
 						map.removeLayer locationOne if locationOne?
 						map.removeLayer locationTwo if locationTwo?
 						map.removeLayer boundaryRectangle if boundaryRectangle?
@@ -371,7 +378,7 @@ setupContent = ->
 			showMap()
 			renderFlags()
 			Obs.observe ->
-				if mapReady.get()
+				if mapReady()
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 5, fillOpacity: 0.05, clickable: false})
@@ -379,7 +386,7 @@ setupContent = ->
 					map.on('contextmenu', addMarkerListener)
 				Obs.onClean ->
 					log 'onClean() rectangle'
-					if mapReady.get()
+					if mapReady()
 						map.removeLayer boundaryRectangle if boundaryRectangle?
 						map.off('contextmenu', addMarkerListener)
 	else
@@ -396,7 +403,7 @@ addMarkerListener = (event) ->
 		
 # Update the play area square thing
 markerDragged = ->
-	if mapReady.get()
+	if mapReady()
 		Server.send 'setBounds', window.locationOne.getLatLng(), window.locationTwo.getLatLng(), !->
 			log 'Predict function setbounds?'
 	
@@ -409,13 +416,16 @@ sameLocation = (location1, location2) ->
 hideMap = ->
 	log 'hidemap'
 	mapElement = document.getElementById("OpenStreetMap")
-	if mapReady.get()
+	if mapReady()
 		mapElement.style.visibility = 'hidden'
 		mapElement.style.opacity = '0'
 # Show the map
 showMap = ->
 	log 'showmap'
 	mapElement = document.getElementById("OpenStreetMap")
-	if mapReady.get()
+	if mapReady()
 		mapElement.style.visibility = 'visible'
 		mapElement.style.opacity = '1'
+		
+mapReady = ->
+	return L? and map?
