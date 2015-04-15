@@ -295,6 +295,7 @@ renderMap = ->
 	###
 	loadOpenStreetMap()
 	setupMap()
+	#renderLocation();
 	
 loadOpenStreetMap = ->
 	# Only insert these the first time
@@ -350,28 +351,14 @@ setupMap = ->
 # Add flags to the map
 renderFlags = ->
 	log "rendering flags"
-	###
-	if Geoloc.isSubscribed()
-		Obs.observe -> # Creates new observe scope, because state changes a lot this spams the console a bit
-			state = Geoloc.track()
-			location = state.get('latlong');
-			if location?
-				location = location.split(',')
-				marker = L.marker(L.latLng(location[0], location[1]))
-				marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
-				if window.flagCurrentLocation
-					map.removeLayer window.flagCurrentLocation
-				marker.addTo(map)
-				window.flagCurrentLocation = marker
-			else
-				log 'location could not be found'
-	###
 	Db.shared.observeEach 'game', 'flags', (flag) !->
 		if mapReady() and map?
 			if not window.flagMarkers?
 				log "flagMarkers list reset"
 				window.flagMarkers = [];
 			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
+			log "Added circle"
+			renderCircle(location.lat, location.lng, {})
 			log "Added flag"
 			marker = L.marker(location)
 			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
@@ -415,4 +402,31 @@ sameLocation = (location1, location2) ->
 # Check if the map can be used	
 mapReady = ->
 	return L? and map?
-		
+#Commented out because causes a lot of spam needs to be fixed!
+###		
+renderLocation = -> 
+	if Geoloc.isSubscribed()
+		Obs.observe -> # Creates new observe scope, because state changes a lot this spams the console a bit
+			state = Geoloc.track()
+			location = state.get('latlong');
+			if location?
+				location = location.split(',')
+				if mapReady()
+					marker = L.marker(L.latLng(location[0], location[1]))
+					marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
+					if window.flagCurrentLocation
+						map.removeLayer window.flagCurrentLocation
+					marker.addTo(map)
+					window.flagCurrentLocation = marker
+			else
+				log 'location could not be found'
+###
+renderCircle = (lat, long, team)-> 
+	#Render the flag
+	circle = L.circle([lat, long], 500, {
+		color: 'red',
+		fillColor: '#f03',
+		fillOpacity: 0.5
+	}).addTo(window.map);
+	
+
