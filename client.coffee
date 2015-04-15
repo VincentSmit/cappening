@@ -16,7 +16,7 @@ window.redraw = Obs.create(0)
 # ========== Events ==========
 exports.render = ->
 	log 'FULL RENDER'
-	#loadMap()
+	loadOpenStreetMap()
 	# Ask for location
 	if !Geoloc.isSubscribed()
 		Geoloc.subscribe()
@@ -40,7 +40,6 @@ exports.render = ->
 				scoresContent()
 			else if page == 'log'
 				logContent()
-	loadOpenStreetMap()
 
 exports.renderSettings = !->
 	if Db.shared
@@ -88,17 +87,22 @@ addBar = ->
 
 # Home page with map
 mainContent = ->
+	log "mainContent()"
 	renderMap()
 	renderFlags()
 	Obs.observe ->
-		if mapReady() and map?
+		log "  Map bounds and minzoom set"
+		if mapReady()
 			# Limit scrolling to the bounds and also limit the zoom level
 			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
-			map.setMaxBounds(L.latLngBounds(loc1, loc2))
-			map._layersMinZoom = map.getBoundsZoom(L.latLngBounds(loc1, loc2))
+			bounds = L.latLngBounds(loc1, loc2)
+			map.setMaxBounds(bounds)
+			map.fitBounds(bounds);
+			map._layersMinZoom = map.getBoundsZoom(bounds)
 		Obs.onClean ->
 			if map?
+				log "  Map bounds and minzoom reset"
 				map.setMaxBounds()
 				map._layersMinZoom = 0
 	addBar()
@@ -260,8 +264,9 @@ setupContent = ->
 # ========== Map functions ==========
 # Render a map
 renderMap = ->
-	log "renderMap started"
+	log "renderMap()"
 	# Insert map element
+	###
 	Dom.div ->
 		Dom.style
 			position: 'absolute'
@@ -271,36 +276,38 @@ renderMap = ->
 			left: '0'
 			backgroundColor: '#030303'
 		Dom._get().setAttribute 'id', 'OpenStreetMap'
-	### javascript way to do it:
+	###
+	# javascript way to do it:
 	Obs.observe ->
-		#mapReady.modify () -> false
-		mapelement = document.createElement "div"
-		mapelement.setAttribute 'id', 'OpenStreetMap'
-		mapelement.style.width = '100%'
-		mapelement.style.position = 'absolute'
-		mapelement.style.top = '50px'
-		mapelement.style.bottom = '0'
-		mapelement.style.left = '0'
-		mapelement.style.right = '0'
-		mapelement.style.backgroundColor = '#030303'
-		#mapelement.style.visibility = 'hidden'
-		#mapelement.style.opacity = '0'
-		mainElement = document.getElementsByTagName("main")[0]
-		mainElement.insertBefore(mapelement, mainElement.childNodes[0])
-		log "  Created html element for map"
+		if mapElement?
+			# use it again
+			mainElement = document.getElementsByTagName("main")[0]
+			mainElement.insertBefore(mapElement, mainElement.childNodes[0])
+			log "  Reused html element for map"
+		else
+			window.mapElement = document.createElement "div"
+			mapElement.setAttribute 'id', 'OpenStreetMap'
+			mapElement.style.position = 'absolute'
+			mapElement.style.top = '50px'
+			mapElement.style.bottom = '0'
+			mapElement.style.left = '0'
+			mapElement.style.right = '0'
+			mapElement.style.backgroundColor = '#030303'
+			mainElement = document.getElementsByTagName("main")[0]
+			mainElement.insertBefore(mapElement, mainElement.childNodes[0])
+			log "  Created html element for map"
 		Obs.onClean ->
-			log "  Removed html element for map"
+			log "Removed html element for map (stored for later)"
 			toRemove = document.getElementById('OpenStreetMap');
 			toRemove.parentNode.removeChild(toRemove);
-	###
-	loadOpenStreetMap()
 	setupMap()
 	#renderLocation();
 	
 loadOpenStreetMap = ->
+	log "loadOpenStreetMap()"
 	# Only insert these the first time
 	if(not document.getElementById("mapboxJavascript")?)
-		log "Started loading OpenStreetMap files"
+		log "  Started loading OpenStreetMap files"
 		# Insert CSS
 		css = document.createElement "link"
 		css.setAttribute "rel", "stylesheet"
@@ -324,12 +331,14 @@ loadOpenStreetMap = ->
 				log "OpenStreetMap files loaded"
 				redraw.modify (v) -> v+1
 		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.js'
-		document.getElementsByTagName('head')[0].appendChild javascript	
+		document.getElementsByTagName('head')[0].appendChild javascript
+	else 
+		log "  OpenStreetMap files already loaded"
 
 # Initialize the map with tiles
 setupMap = ->
 	Obs.observe ->
-		log "setupMap"
+		log "setupMap()"
 		if map?
 			log "  map already initialized"
 		else if not L?
@@ -340,31 +349,24 @@ setupMap = ->
 			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
 			log "  Initialized MapBox map"
-			#mapReady.modify () -> (L? and map?)
-		Obs.onClean ->
-			log "onClean() of setupMap()"
-			if map?
-				map.remove()
-				window.map = null
-				log "  removed map"
 
 # Add flags to the map
 renderFlags = ->
 	log "rendering flags"
 	Db.shared.observeEach 'game', 'flags', (flag) !->
 		if mapReady() and map?
+			# Add the marker to the map
 			if not window.flagMarkers?
 				log "flagMarkers list reset"
 				window.flagMarkers = [];
 			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
-			log "Added flag"
 			marker = L.marker(location)
 			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
 			marker.addTo(map)
 			flagMarkers.push marker
 			#log 'Added marker, marker list: ', flagMarkers
 			
-			log "Added circle"
+			# Add the area circle to the map 
 			if not window.flagCircles?
 				log "flagCircles list reset"
 				window.flagCircles = [];
@@ -377,21 +379,27 @@ renderFlags = ->
 				fillColor: teamColor,
 				fillOpacity: 0.3
 				weight: 2
-			}).addTo(window.map);
+			});
+			circle.addTo(map)
 			flagCircles.push circle
-			#log 'Added circle, circle list: ', flagCircles
+			log "Added flag and circle"
 		else 
 			log "  map not ready yet"
 		Obs.onClean ->
 			if flagMarkers? and map?
+				log 'onClean() flag+circle'
 				i = 0;
 				while i<flagMarkers.length
 					if sameLocation L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng')), flagMarkers[i].getLatLng()
 						map.removeLayer flagMarkers[i]
-						map.removeLayer flagCircles[i]
 						flagMarkers.splice(flagMarkers.indexOf(flagMarkers[i]), 1)
+					else
+						i++
+				i = 0;
+				while i<flagCircles.length
+					if sameLocation L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng')), flagCircles[i].getLatLng()
+						map.removeLayer flagCircles[i]
 						flagCircles.splice(flagCircles.indexOf(flagCircles[i]), 1)
-						log 'onClean() flag'
 					else
 						i++
 	, (flag) ->
