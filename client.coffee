@@ -13,9 +13,10 @@ Num = require 'num'
 
 window.redraw = Obs.create(0)
 
+# ========== Events ==========
 exports.render = ->
 	log 'FULL RENDER'
-	loadMap()
+	#loadMap()
 	# Ask for location
 	if !Geoloc.isSubscribed()
 		Geoloc.subscribe()
@@ -39,6 +40,7 @@ exports.render = ->
 				scoresContent()
 			else if page == 'log'
 				logContent()
+	loadOpenStreetMap()
 
 exports.renderSettings = !->
 	if Db.shared
@@ -46,141 +48,9 @@ exports.renderSettings = !->
 			name: 'restart'
 			text: tr 'Restart'
 			sub: tr 'Check this to destroy the current game and start a new one.'	
-	
-# Load the javascript necessary for the map
-loadMap = ->
-	log "loadMap started"
-	
-	# Insert map element
-	Obs.observe ->
-		#mapReady.modify () -> false
-		mapelement = document.createElement "div"
-		mapelement.setAttribute 'id', 'OpenStreetMap'
-		mapelement.style.width = '100%'
-		mapelement.style.position = 'absolute'
-		mapelement.style.top = '50px'
-		mapelement.style.bottom = '0'
-		mapelement.style.left = '0'
-		mapelement.style.right = '0'
-		mapelement.style.backgroundColor = '#030303'
-		mapelement.style.visibility = 'hidden'
-		mapelement.style.opacity = '0'
-		mainElement = document.getElementsByTagName("main")[0]
-		mainElement.insertBefore(mapelement, mainElement.childNodes[0])
-		log "  Created html element for map"
-		Obs.onClean ->
-			log "  Removed html element for map"
-			toRemove = document.getElementById('OpenStreetMap');
-			toRemove.parentNode.removeChild(toRemove);
-	###
-	Dom.div ->
-		Dom.style
-			position: 'absolute'
-			height: '100%'
-			width: '100%'
-			top: '0'
-			left: '0'
-			backgroundColor: '#030303'
-		Dom._get().setAttribute 'id', 'OpenStreetMap'
-	###
-	# Only insert these the first time
-	if(not document.getElementById("mapboxJavascript")?)
-		log "  Started loading javascript and CSS"
-		# Insert CSS
-		css = document.createElement "link"
-		css.setAttribute "rel", "stylesheet"
-		css.setAttribute "type", "text/css"
-		css.setAttribute "id", "mapboxCSS"
-		css.setAttribute "href", "https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.css"
-		document.getElementsByTagName("head")[0].appendChild css
-		
-		# Insert javascript
-		javascript = document.createElement 'script'
-		javascript.setAttribute 'type', 'text/javascript'
-		javascript.setAttribute 'id', 'mapboxJavascript'
-		if javascript.readyState  # Internet Explorer
-			javascript.onreadystatechange = ->
-				if javascript.readyState == "loaded" || javascript.readyState == "complete"
-					log "MapBox script loaded"
-					javascript.onreadystatechange = 'null'
-					setupMap()
-					redraw.modify (v) -> v+1
-		else  # Other browsers
-			javascript.onload = ->
-				log "MapBox script loaded"
-				setupMap()
-				redraw.modify (v) -> v+1
-		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.js'
-		document.getElementsByTagName('head')[0].appendChild javascript
-	setupMap()
-		
-# Initialize the map with tiles
-setupMap = ->
-	Obs.observe ->
-		log "setupMap"
-		if map?
-			log "  map already initialized"
-		else if not L?
-			log "  javascript not yet loaded"
-		else
-			# Tile version
-			L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
-			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
-			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
-			log "  Initialized MapBox map"
-			#mapReady.modify () -> (L? and map?)
-		Obs.onClean ->
-			log "onClean() of setupMap()"
-			if map?
-				map.remove()
-				window.map = null
-				log "  removed map"
 
-
-# Add flags to the map
-renderFlags = ->
-	log "rendering flags"
-	#if Geoloc.isSubscribed()
-	#	Obs.observe -> # Creates new observe scope, because state changes a lot this spams the console a bit
-	#		state = Geoloc.track()
-	#		location = state.get('latlong');
-	#		if location?
-	#			location = location.split(',')
-	#			marker = L.marker(L.latLng(location[0], location[1]))
-	#			marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
-	#			if window.flagCurrentLocation
-	#				map.removeLayer window.flagCurrentLocation
-	#			marker.addTo(map)
-	#			window.flagCurrentLocation = marker
-	#		else
-	#			log 'location could not be found'
-	Db.shared.observeEach 'game', 'flags', (flag) !->
-		if mapReady() and map?
-			if not window.flagMarkers?
-				log "flagMarkers list reset"
-				window.flagMarkers = [];
-			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
-			log "Added flag"
-			marker = L.marker(location)
-			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
-			marker.addTo(map)
-			flagMarkers.push marker
-			#log 'Added marker, marker list: ', flagMarkers
-		else 
-			log "  map not ready yet"
-		Obs.onClean ->
-			if flagMarkers? and map?
-				i = 0;
-				while i<flagMarkers.length
-					if sameLocation L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng')), flagMarkers[i].getLatLng()
-						map.removeLayer flagMarkers[i]
-						flagMarkers.splice(flagMarkers.indexOf(flagMarkers[i]), 1)
-						log 'onClean() flag'
-					else
-						i++
-	, (flag) ->
-		-flag.get()
-	
+			
+# ========== Content fuctions ==========
 addBar = ->
 	Dom.div !->
 		Dom.style
@@ -215,8 +85,11 @@ addBar = ->
 			Dom.cls 'bar-button'
 			Dom.style ->
 				backgroundColor: "#000"
+
 # Home page with map
 mainContent = ->
+	renderMap()
+	renderFlags()
 	Obs.observe ->
 		if mapReady() and map?
 			# Limit scrolling to the bounds and also limit the zoom level
@@ -228,9 +101,6 @@ mainContent = ->
 			if map?
 				map.setMaxBounds()
 				map._layersMinZoom = 0
-	showMap()
-	renderFlags()
-	loadMap()
 	addBar()
 
 # Help page 
@@ -249,15 +119,10 @@ logContent = ->
 	
 setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove
-		setupPhase = Db.shared.get('setupPhase')
 		currentPage = Db.local.get('currentSetupPage')
+		currentPage = 'setup0' if not currentPage?
 		log 'currentPage=', currentPage
-		if not currentPage?
-			currentPage = 'setup' + setupPhase
-			Db.local.set('currentSetupPage', currentPage)
-			log '  changed to: ', currentPage
 		if currentPage is 'setup0' # Setup team and round time
-			hideMap()
 			# Bar to indicate the setup progress
 			Dom.div !->
 				Dom.cls 'stepbar'
@@ -324,7 +189,7 @@ setupContent = ->
 					Dom.cls 'stepbar-right'
 					Dom.onTap !->
 						Db.local.set('currentSetupPage', 'setup2')
-			showMap()
+			renderMap()
 			renderFlags()
 			Obs.observe ->
 				if mapReady()
@@ -351,8 +216,6 @@ setupContent = ->
 						map.removeLayer locationTwo if locationTwo?
 						map.removeLayer boundaryRectangle if boundaryRectangle?
 		else if currentPage is 'setup2' # Setup flags
-			map.removeLayer locationOne if locationOne?
-			map.removeLayer locationTwo if locationTwo?
 			# Bar to indicate the setup progress
 			Dom.div !->
 				Dom.cls 'stepbar'
@@ -375,7 +238,7 @@ setupContent = ->
 					Dom.onTap !->
 						Server.send 'startGame', !->
 							log 'Predict function gameStart?'
-			showMap()
+			renderMap()
 			renderFlags()
 			Obs.observe ->
 				if mapReady()
@@ -392,6 +255,143 @@ setupContent = ->
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
+
+		
+# ========== Map functions ==========
+# Render a map
+renderMap = ->
+	log "renderMap started"
+	# Insert map element
+	Dom.div ->
+		Dom.style
+			position: 'absolute'
+			top: '50px'
+			right: '0'
+			bottom: '0'
+			left: '0'
+			backgroundColor: '#030303'
+		Dom._get().setAttribute 'id', 'OpenStreetMap'
+	### javascript way to do it:
+	Obs.observe ->
+		#mapReady.modify () -> false
+		mapelement = document.createElement "div"
+		mapelement.setAttribute 'id', 'OpenStreetMap'
+		mapelement.style.width = '100%'
+		mapelement.style.position = 'absolute'
+		mapelement.style.top = '50px'
+		mapelement.style.bottom = '0'
+		mapelement.style.left = '0'
+		mapelement.style.right = '0'
+		mapelement.style.backgroundColor = '#030303'
+		#mapelement.style.visibility = 'hidden'
+		#mapelement.style.opacity = '0'
+		mainElement = document.getElementsByTagName("main")[0]
+		mainElement.insertBefore(mapelement, mainElement.childNodes[0])
+		log "  Created html element for map"
+		Obs.onClean ->
+			log "  Removed html element for map"
+			toRemove = document.getElementById('OpenStreetMap');
+			toRemove.parentNode.removeChild(toRemove);
+	###
+	loadOpenStreetMap()
+	setupMap()
+	
+loadOpenStreetMap = ->
+	# Only insert these the first time
+	if(not document.getElementById("mapboxJavascript")?)
+		log "Started loading OpenStreetMap files"
+		# Insert CSS
+		css = document.createElement "link"
+		css.setAttribute "rel", "stylesheet"
+		css.setAttribute "type", "text/css"
+		css.setAttribute "id", "mapboxCSS"
+		css.setAttribute "href", "https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.css"
+		document.getElementsByTagName("head")[0].appendChild css
+		
+		# Insert javascript
+		javascript = document.createElement 'script'
+		javascript.setAttribute 'type', 'text/javascript'
+		javascript.setAttribute 'id', 'mapboxJavascript'
+		if javascript.readyState  # Internet Explorer
+			javascript.onreadystatechange = ->
+				if javascript.readyState == "loaded" || javascript.readyState == "complete"
+					log "OpenStreetMap files loaded"
+					javascript.onreadystatechange = 'null'
+					redraw.modify (v) -> v+1
+		else  # Other browsers
+			javascript.onload = ->
+				log "OpenStreetMap files loaded"
+				redraw.modify (v) -> v+1
+		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.js'
+		document.getElementsByTagName('head')[0].appendChild javascript	
+
+# Initialize the map with tiles
+setupMap = ->
+	Obs.observe ->
+		log "setupMap"
+		if map?
+			log "  map already initialized"
+		else if not L?
+			log "  javascript not yet loaded"
+		else
+			# Tile version
+			L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
+			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
+			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
+			log "  Initialized MapBox map"
+			#mapReady.modify () -> (L? and map?)
+		Obs.onClean ->
+			log "onClean() of setupMap()"
+			if map?
+				map.remove()
+				window.map = null
+				log "  removed map"
+
+# Add flags to the map
+renderFlags = ->
+	log "rendering flags"
+	###
+	if Geoloc.isSubscribed()
+		Obs.observe -> # Creates new observe scope, because state changes a lot this spams the console a bit
+			state = Geoloc.track()
+			location = state.get('latlong');
+			if location?
+				location = location.split(',')
+				marker = L.marker(L.latLng(location[0], location[1]))
+				marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
+				if window.flagCurrentLocation
+					map.removeLayer window.flagCurrentLocation
+				marker.addTo(map)
+				window.flagCurrentLocation = marker
+			else
+				log 'location could not be found'
+	###
+	Db.shared.observeEach 'game', 'flags', (flag) !->
+		if mapReady() and map?
+			if not window.flagMarkers?
+				log "flagMarkers list reset"
+				window.flagMarkers = [];
+			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
+			log "Added flag"
+			marker = L.marker(location)
+			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
+			marker.addTo(map)
+			flagMarkers.push marker
+			#log 'Added marker, marker list: ', flagMarkers
+		else 
+			log "  map not ready yet"
+		Obs.onClean ->
+			if flagMarkers? and map?
+				i = 0;
+				while i<flagMarkers.length
+					if sameLocation L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng')), flagMarkers[i].getLatLng()
+						map.removeLayer flagMarkers[i]
+						flagMarkers.splice(flagMarkers.indexOf(flagMarkers[i]), 1)
+						log 'onClean() flag'
+					else
+						i++
+	, (flag) ->
+		-flag.get()
 
 # Listener that checks for clicking the map
 addMarkerListener = (event) ->
@@ -412,20 +412,7 @@ sameLocation = (location1, location2) ->
 	#log "sameLocation(), location1: ", location1, ", location2: ", location2
 	return location1? and location2? and location1.lat is location2.lat and location1.lng is location2.lng
 	
-# Hide the map
-hideMap = ->
-	log 'hidemap'
-	mapElement = document.getElementById("OpenStreetMap")
-	if mapReady()
-		mapElement.style.visibility = 'hidden'
-		mapElement.style.opacity = '0'
-# Show the map
-showMap = ->
-	log 'showmap'
-	mapElement = document.getElementById("OpenStreetMap")
-	if mapReady()
-		mapElement.style.visibility = 'visible'
-		mapElement.style.opacity = '1'
-		
+# Check if the map can be used	
 mapReady = ->
 	return L? and map?
+		
