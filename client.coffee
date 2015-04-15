@@ -357,14 +357,29 @@ renderFlags = ->
 				log "flagMarkers list reset"
 				window.flagMarkers = [];
 			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
-			log "Added circle"
-			renderCircle(location.lat, location.lng, {})
 			log "Added flag"
 			marker = L.marker(location)
 			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
 			marker.addTo(map)
 			flagMarkers.push marker
 			#log 'Added marker, marker list: ', flagMarkers
+			
+			log "Added circle"
+			if not window.flagCircles?
+				log "flagCircles list reset"
+				window.flagCircles = [];
+			teamNumber = flag.get('owner')
+			teamColor=  '#FFFFFF'
+			if !(teamNumber is -1)
+				teamColor = Db.shared.get('game', 'teams', teamNumber, 'color')
+			circle = L.circle(location, 250, {
+				color: teamColor,
+				fillColor: teamColor,
+				fillOpacity: 0.3
+				weight: 2
+			}).addTo(window.map);
+			flagCircles.push circle
+			#log 'Added circle, circle list: ', flagCircles
 		else 
 			log "  map not ready yet"
 		Obs.onClean ->
@@ -373,7 +388,9 @@ renderFlags = ->
 				while i<flagMarkers.length
 					if sameLocation L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng')), flagMarkers[i].getLatLng()
 						map.removeLayer flagMarkers[i]
+						map.removeLayer flagCircles[i]
 						flagMarkers.splice(flagMarkers.indexOf(flagMarkers[i]), 1)
+						flagCircles.splice(flagCircles.indexOf(flagCircles[i]), 1)
 						log 'onClean() flag'
 					else
 						i++
@@ -421,12 +438,3 @@ renderLocation = ->
 			else
 				log 'location could not be found'
 ###
-renderCircle = (lat, long, team)-> 
-	#Render the flag
-	circle = L.circle([lat, long], 500, {
-		color: 'red',
-		fillColor: '#f03',
-		fillOpacity: 0.5
-	}).addTo(window.map);
-	
-

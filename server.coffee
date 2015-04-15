@@ -23,6 +23,7 @@ exports.onHttp = (request) ->
 exports.client_addMarker = (location) ->
 	log 'Adding marker: lat=', location.lat, ', lng=', location.lng
 	Db.shared.set 'game', 'flags', location.lat.toString()+'_'+location.lng.toString(), {location: location}
+	Db.shared.set 'game', 'flags', location.lat.toString()+'_'+location.lng.toString(), 'owner', -1 
 
 exports.client_setupBasic = (roundTime, numberOfTeams) ->
 	log 'setup of basic settings received: roundTime=' + roundTime + ", numberOfTeams=" + numberOfTeams
