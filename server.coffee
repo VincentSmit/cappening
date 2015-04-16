@@ -10,18 +10,7 @@ exports.onInstall = ->
 exports.onUpgrade = !->
 	# Reset values for debugging. TODO: remove
 	initializeGame()
-	# Reset flags to keep a clean debug environment
-	Db.shared.set 'flags'
-	
-exports.client_makeTeams = ->
-	teams[4]
-	playerArray[Plugin.users.count().get()]
-	for i in [0..teams.length] by 1
-		teams[i].set
-			name: i+1  #teamnaam en referentie naar teamkleur
-			players: playerArray #lege lijst waar spelers over verdeeld worden
-	Db.shared.set 'teams', teams
-	
+
 exports.client_addMarker = (location) ->
 	log 'Adding marker: lat=', location.lat, ', lng=', location.lng
 	Db.shared.set 'flags', location.lat.toString()+'_'+location.lng.toString(), {location: location}
@@ -60,6 +49,19 @@ exports.client_setBounds = (one, two) ->
 # Start the game
 exports.client_startGame = ->
 	Db.shared.set 'gameState', 1
+	userIds = Plugin.userIds()
+	teams = Db.shared.get('numberOfTeams')
+	log 'teams are:', teams
+	team = 0
+	while(userIds.length > 0)
+		randomNumber = Math.floor(Math.random() * userIds.length)
+		Db.shared.set 'game', 'teams', team, 'users', Plugin.userName(userIds[randomNumber]), 'userScore', 0
+		userIds.splice(randomNumber,1)
+		team++
+		team = 0 if team >= teams
+		
+		
+			
 
 # ========== Functions ==========
 # Setup an empty game
@@ -67,5 +69,6 @@ initializeGame = ->
 	Db.shared.set 'game', 'flags', {}
 	Db.shared.set 'game', 'bounds', {one: {lat: 52.249822176849, lng: 6.8396973609924}, two: {lat: 52.236578295702, lng: 6.8598246574402}}
 	Db.shared.set 'gameState', 0
+
 
 

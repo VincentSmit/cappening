@@ -71,13 +71,13 @@ addBar = ->
 			Dom.text "Event Log"
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
-				Page.nav 'Log'
+				Page.nav 'log'
 		#DIV button to help page
 		Dom.div !->
 			Dom.text "Scores"
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
-				Page.nav 'Scores'
+				Page.nav 'scores'
 		#DIV button to main menu
 		Dom.div !->
 			Dom.text "10 pnts"
@@ -135,44 +135,15 @@ helpContent = ->
 	Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
 	Dom.br()
 	Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
-	
-    
+	  
 scoresContent = ->
-	Dom.text "The scores of all players:"
-	#users = Db.shared.ref('users')
-	
-	teams = Db.shared.ref('teams')	
-	x = 0
-	Plugin.users.iterate (user) ->	
-		for i in [0..3] by 1
-			user.set(players.add('user')) if teams.get('name') == x+1
-		x = (x+1)%4
+	Dom.text "The scores of all players:"	
 	Dom.div ->
-		teams.iterate (team) ->
-			Dom.text "hoi"
-			Dom.text tr("team %1 has players: %2", team.get('name'), team.get('players'))
-		
-	#teams = Obs.create
-	#	1: {name: 'red'}
-	#	2: {name: 'yellow'}
-	users = Obs.create
-		1: {name: 'Lars', score: 10, team: 'red'}
-		2: {name: 'Thijs', score: 30, team: 'red'}
-		3: {name: 'Sem', score: 9001, team: 'yellow'}
-	Dom.div ->
-		users.iterate (user) ->
-			Dom.text tr("%1 has a score of %2", user.get('name'), user.get('score'))
-			Dom.br()
-	Dom.br()		
-	Dom.text "The scores of all teams:"
-	Dom.div ->
-		teams.iterate (team) ->
-			teamscore = 0
-			users.iterate (user) ->
-				teamscore = teamscore + user.get('score') if user.get('team') == team.get('name') 			
-			Dom.text tr("Team %2 has a score of %1", teamscore, team.get('name'))
-			Dom.br()
-    
+		Db.shared.observeEach 'game', 'teams', (team) !->
+			log team
+			Dom.text tr("team %1: ", team.get('name'))	
+
+
 logContent = ->
 	Dom.text "The log file of all events"
 	
