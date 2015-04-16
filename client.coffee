@@ -347,7 +347,7 @@ setupMap = ->
 			# Tile version
 			L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
 			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
-			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d')
+			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "  Initialized MapBox map"
 
 # Add flags to the map
