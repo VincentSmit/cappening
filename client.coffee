@@ -140,9 +140,21 @@ helpContent = ->
 scoresContent = ->
 	Dom.text "The scores of all players:"
 	#users = Db.shared.ref('users')
-	teams = Obs.create
-		1: {name: 'red'}
-		2: {name: 'yellow'}
+	
+	teams = Db.shared.ref('teams')	
+	x = 0
+	Plugin.users.iterate (user) ->	
+		for i in [0..3] by 1
+			user.set(players.add('user')) if teams.get('name') == x+1
+		x = (x+1)%4
+	Dom.div ->
+		teams.iterate (team) ->
+			Dom.text "hoi"
+			Dom.text tr("team %1 has players: %2", team.get('name'), team.get('players'))
+		
+	#teams = Obs.create
+	#	1: {name: 'red'}
+	#	2: {name: 'yellow'}
 	users = Obs.create
 		1: {name: 'Lars', score: 10, team: 'red'}
 		2: {name: 'Thijs', score: 30, team: 'red'}
