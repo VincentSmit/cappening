@@ -301,7 +301,7 @@ renderMap = ->
 			toRemove = document.getElementById('OpenStreetMap');
 			toRemove.parentNode.removeChild(toRemove);
 	setupMap()
-	#renderLocation();
+	renderLocation();
 	
 loadOpenStreetMap = ->
 	log "loadOpenStreetMap()"
@@ -427,14 +427,15 @@ sameLocation = (location1, location2) ->
 # Check if the map can be used	
 mapReady = ->
 	return L? and map?
-#Commented out because causes a lot of spam needs to be fixed!
-###		
+
+# Render the location of the user on the map (currently broken)
 renderLocation = -> 
 	if Geoloc.isSubscribed()
-		Obs.observe -> # Creates new observe scope, because state changes a lot this spams the console a bit
-			state = Geoloc.track()
+		state = Geoloc.track()
+		Obs.observe ->
 			location = state.get('latlong');
 			if location?
+				log 'Rendered location on the map'
 				location = location.split(',')
 				if mapReady()
 					marker = L.marker(L.latLng(location[0], location[1]))
@@ -444,5 +445,9 @@ renderLocation = ->
 					marker.addTo(map)
 					window.flagCurrentLocation = marker
 			else
-				log 'location could not be found'
-###
+				log 'Location could not be found'
+			Obs.onClean ->
+				if mapReady() and flagCurrentLocation?
+					map.removeLayer flagCurrentLocation
+					window.flagCurrentLocation = null
+
