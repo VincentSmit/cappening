@@ -100,3 +100,20 @@ Dom.css
 		cursor: 'default'
 	'.stepbar-disable:active':
 		backgroundColor: 'transparent !important'
+# Team selection elements
+	'.team-text':
+		flexGrow: '1'
+		flexShrink: '1'
+	'.team-button':
+		flexGrow: '0'
+		flexShrink: '0'
+		width: '50px'
+		height: '50px'
+		lineHeight: '50px'
+		marginLeft: '2px'
+		fontSize: '25px'
+		textAlign: 'center'
+		backgroundColor: '#CCCCCC'
+	'.team-button-current':
+		backgroundColor: '#0077cf'
+		color: '#FFFFFF'
