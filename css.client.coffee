@@ -102,15 +102,14 @@ Dom.css
 		backgroundColor: 'transparent !important'
 # Team selection elements
 	'.team-text':
-		flexGrow: '1'
-		flexShrink: '1'
+		float: 'left'
+		margin: '0 10px 5px 0'
 	'.team-button':
-		flexGrow: '0'
-		flexShrink: '0'
+		float: 'left'
 		width: '50px'
 		height: '50px'
 		lineHeight: '50px'
-		marginLeft: '2px'
+		margin: '0 2px 2px 0'
 		fontSize: '25px'
 		textAlign: 'center'
 		backgroundColor: '#CCCCCC'

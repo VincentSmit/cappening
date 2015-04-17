@@ -162,26 +162,12 @@ setupContent = ->
 						value: (if Db.shared then Db.shared.peek('roundTime') else 1)||24*28 # 4 weeks max
 				Dom.h2 tr("Number of teams")
 				Dom.div !->
-					Dom.style display: 'flex'
-					Dom.div !->
-						Dom.text tr("Select the number of teams:")
-						Dom.cls "team-text"
+					Dom.text tr("Select the number of teams:")
+					Dom.cls "team-text"
+				Dom.div !->
+					Dom.style float: 'left'
 					for number in [2..6]
 						addTeamButton(number)
-
-				###
-				Dom.div !->
-					Dom.style Box: "middle", padding: '12px 40px 12px 8px'
-					Dom.div !->
-						Dom.style Flex: 'true'
-						Dom.text tr "Fill in the number of teams."
-						Dom.br()
-						Dom.text tr "Recommended default: 2."
-					ding = Num.render
-						name: 'teams'
-						value: (if Db.shared then Db.shared.peek('numberOfTeams') else 1)||6
-					log 'ding = ', ding
-				###
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
