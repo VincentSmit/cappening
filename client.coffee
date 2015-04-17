@@ -355,8 +355,17 @@ renderFlags = ->
 			if not window.flagMarkers?
 				log "flagMarkers list reset"
 				window.flagMarkers = [];
+			teamNumber = flag.get('owner')
+			teamColor=  Db.shared.get('colors', teamNumber, 'hex')
+			
+			areaIcon = L.icon({
+				iconUrl: Plugin.resourceUri(teamColor.substring(1) + '.png'),
+				iconSize:     [95, 95], 
+				iconAnchor:   [47, 89], 
+			});
+			
 			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
-			marker = L.marker(location)
+			marker = L.marker(location, {icon: areaIcon})
 			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
 			marker.addTo(map)
 			flagMarkers.push marker
@@ -366,10 +375,8 @@ renderFlags = ->
 			if not window.flagCircles?
 				log "flagCircles list reset"
 				window.flagCircles = [];
-			teamNumber = flag.get('owner')
-			teamColor=  '#FFFFFF'
-			if !(teamNumber is -1)
-				teamColor = Db.shared.get('game', 'teams', teamNumber, 'color')
+
+			
 			circle = L.circle(location, 250, {
 				color: teamColor,
 				fillColor: teamColor,
