@@ -45,6 +45,8 @@ Dom.css
 		boxSizing: 'border-box'
 		display: 'flex'
 		flexDirection: 'row'
+		flexGrow: '0'
+		flexShrink: '0'
 	'.stepbar-middle': # The middle section
 		flexGrow: '1'
 		flexShrink: '1'
@@ -55,6 +57,8 @@ Dom.css
 		borderColor: 'inherit'
 		fontSize: '16px'
 		color: '#EFEFEF'
+		flexGrow: '0'
+		flexShrink: '0'
 	'.stepbar-button:hover':
 		backgroundColor: '#7C7C7C'
 	'.stepbar-button:active':
