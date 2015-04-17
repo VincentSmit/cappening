@@ -1,4 +1,9 @@
 Dom.css
+# Main element
+	'main':
+		padding: '0'
+		display: 'flex'
+		flexDirection: 'column'
 # Main content page
 	'.bar-button':
 		height: "100%"
@@ -21,16 +26,18 @@ Dom.css
 		display: 'none'
 	'.mapbox-logo':
 		display: "none"
+# Map element
+	'#OpenStreetMap':
+		width: '100%'
+		flexGrow: '1'
+		flexShrink: '1'
+		backgroundColor: '#030303'
 # Plugin setup pages
 	'.stepbar': # The bar at the top
 		color: "white"
 		backgroundColor: "#888"
 		lineHeight: "50px"
 		textAlign: "center"
-		right: "0"
-		left: "0"
-		top: "0"
-		position: "absolute"
 		zIndex: "5"
 		boxShadow: "0 3px 5px 0 rgba(0, 0, 0, 0.2)"
 		borderColor: "#EFEFEF"
@@ -48,8 +55,6 @@ Dom.css
 		borderColor: 'inherit'
 		fontSize: '16px'
 		color: '#EFEFEF'
-		flexGrow: '0'
-		flexShrink: '0'
 	'.stepbar-button:hover':
 		backgroundColor: '#7C7C7C'
 	'.stepbar-button:active':

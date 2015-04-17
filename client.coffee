@@ -88,6 +88,7 @@ addBar = ->
 # Home page with map
 mainContent = ->
 	log "mainContent()"
+	addBar()
 	renderMap()
 	renderFlags()
 	Obs.observe ->
@@ -105,7 +106,6 @@ mainContent = ->
 				log "  Map bounds and minzoom reset"
 				map.setMaxBounds()
 				map._layersMinZoom = 0
-	addBar()
 
 # Help page 
 helpContent = ->
@@ -150,27 +150,28 @@ setupContent = ->
 							log 'Prediction of going to next setupPhase'
 						Db.local.set('currentSetupPage', 'setup1')
 			Dom.div !->
-				Dom.style margin: "52px"
-			Dom.h2 tr("Round time")
-			Dom.div !->
-				Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+				Dom.style padding: '8px'
+				Dom.h2 tr("Round time")
 				Dom.div !->
-					Dom.style Flex: 'true'
-					Dom.text tr "Fill in the round time (hours), this determines how long a game lasts. Recommended: 1 week (168 hours)."
-				Num.render
-					name: 'time'
-					value: (if Db.shared then Db.shared.peek('roundTime') else 1)||24*28 # 4 weeks max
-			Dom.h2 tr("Number of teams")
-			Dom.div !->
-				Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+					Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+					Dom.div !->
+						Dom.style Flex: 'true'
+						Dom.text tr "Fill in the round time (hours), this determines how long a game lasts. Recommended: 1 week (168 hours)."
+					Num.render
+						name: 'time'
+						value: (if Db.shared then Db.shared.peek('roundTime') else 1)||24*28 # 4 weeks max
+				Dom.h2 tr("Number of teams")
 				Dom.div !->
-					Dom.style Flex: 'true'
-					Dom.text tr "Fill in the number of teams."
-					Dom.br()
-					Dom.text tr "Recommended default: 2."
-				Num.render
-					name: 'teams'
-					value: (if Db.shared then Db.shared.peek('numberOfTeams') else 1)||6
+					Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+					Dom.div !->
+						Dom.style Flex: 'true'
+						Dom.text tr "Fill in the number of teams."
+						Dom.br()
+						Dom.text tr "Recommended default: 2."
+					ding = Num.render
+						name: 'teams'
+						value: (if Db.shared then Db.shared.peek('numberOfTeams') else 1)||6
+					log 'ding = ', ding
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -239,6 +240,7 @@ setupContent = ->
 					Dom.text tr("Start")
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
+					log '  setup2 new'
 					Dom.onTap !->
 						Server.send 'startGame', !->
 							log 'Predict function gameStart?'
@@ -282,19 +284,13 @@ renderMap = ->
 		if mapElement?
 			# use it again
 			mainElement = document.getElementsByTagName("main")[0]
-			mainElement.insertBefore(mapElement, mainElement.childNodes[0])
+			mainElement.insertBefore(mapElement, null)  # Inserts the element at the end
 			log "  Reused html element for map"
 		else
 			window.mapElement = document.createElement "div"
 			mapElement.setAttribute 'id', 'OpenStreetMap'
-			mapElement.style.position = 'absolute'
-			mapElement.style.top = '50px'
-			mapElement.style.bottom = '0'
-			mapElement.style.left = '0'
-			mapElement.style.right = '0'
-			mapElement.style.backgroundColor = '#030303'
 			mainElement = document.getElementsByTagName("main")[0]
-			mainElement.insertBefore(mapElement, mainElement.childNodes[0])
+			mainElement.insertBefore(mapElement, null)  # Inserts the element at the end
 			log "  Created html element for map"
 		Obs.onClean ->
 			log "Removed html element for map (stored for later)"
