@@ -3,11 +3,13 @@ Db = require 'db'
 # ========== Events ==========
 # Game install
 exports.onInstall = ->
+	initializeColors()
 	initializeGame()
 
 # Game update 
 exports.onUpgrade = !->
 	# Reset values for debugging. TODO: remove
+	initializeColors()
 	initializeGame()
 
 # Config changes (by admin or plugin adder)
@@ -51,4 +53,16 @@ initializeGame = ->
 	Db.shared.set 'game', 'flags', {}
 	Db.shared.set 'game', 'bounds', {one: {lat: 52.249822176849, lng: 6.8396973609924}, two: {lat: 52.236578295702, lng: 6.8598246574402}}
 	Db.shared.set 'gameState', 0
+
+initializeColors = ->
+	Db.shared.set 'colors', 
+		{
+			'-1': {name: 'neutral', capitalizedName: 'Neutral', hex: '#C4C4C4'},
+			0:    {name: 'blue',    capitalizedName: 'Blue',    hex: '#0054FF'},
+			1:    {name: 'red',     capitalizedName: 'Red',     hex: '#FF3C00'},
+			2:    {name: 'green',   capitalizedName: 'Green',   hex: '#009F22'},
+			3:    {name: 'yellow',  capitalizedName: 'Yellow',  hex: '#F6FF00'},
+			4:    {name: 'orange',  capitalizedName: 'Orange',  hex: '#FFB400'},
+			5:    {name: 'purple',  capitalizedName: 'Purple',  hex: '#E700D4'}
+		}
 
