@@ -165,7 +165,7 @@ setupContent = ->
 					Dom.text tr("Select the number of teams:")
 					Dom.cls "team-text"
 				Dom.div !->
-					Dom.style float: 'left'
+					Dom.style float: 'left', clear: 'both'
 					for number in [2..6]
 						addTeamButton(number)
 		else if currentPage is 'setup1' # Setup map boundaries
