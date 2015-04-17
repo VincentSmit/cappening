@@ -57,8 +57,8 @@ initializeGame = ->
 initializeColors = ->
 	Db.shared.set 'colors', 
 		{
-			'-1': {name: 'neutral', capitalizedName: 'Neutral', hex: '#C4C4C4'},
-			0:    {name: 'blue',    capitalizedName: 'Blue',    hex: '#0054FF'},
+			'-1': {name: 'neutral', capitalizedName: 'Neutral', hex: '#999999'},
+			0:    {name: 'blue',    capitalizedName: 'Blue',    hex: '#3882b6'},
 			1:    {name: 'red',     capitalizedName: 'Red',     hex: '#FF3C00'},
 			2:    {name: 'green',   capitalizedName: 'Green',   hex: '#009F22'},
 			3:    {name: 'yellow',  capitalizedName: 'Yellow',  hex: '#F6FF00'},

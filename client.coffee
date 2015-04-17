@@ -360,8 +360,12 @@ renderFlags = ->
 			
 			areaIcon = L.icon({
 				iconUrl: Plugin.resourceUri(teamColor.substring(1) + '.png'),
-				iconSize:     [95, 95], 
-				iconAnchor:   [47, 89], 
+				iconSize:     [24, 40], 
+				iconAnchor:   [12, 39], 
+				popupAnchor:  [-3, -75]
+				shadowUrl: Plugin.resourceUri('markerShadow.png'),
+				shadowSize: [41, 41],
+				shadowAnchor: [12, 39]
 			});
 			
 			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
