@@ -57,6 +57,7 @@ initializeGame = ->
 	Db.shared.set 'game', 'flags', {}
 	Db.shared.set 'game', 'bounds', {one: {lat: 52.249822176849, lng: 6.8396973609924}, two: {lat: 52.236578295702, lng: 6.8598246574402}}
 	Db.shared.set 'game', 'numberOfTeams', 2
+	Db.shared.set 'game', 'beaconRadius', 200
 
 
 

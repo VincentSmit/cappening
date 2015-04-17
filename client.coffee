@@ -401,7 +401,7 @@ renderFlags = ->
 				window.flagCircles = [];
 
 			
-			circle = L.circle(location, 250, {
+			circle = L.circle(location, Db.shared.get('game', 'beaconRadius'), {
 				color: teamColor,
 				fillColor: teamColor,
 				fillOpacity: 0.3
@@ -435,11 +435,30 @@ renderFlags = ->
 # Listener that checks for clicking the map
 addMarkerListener = (event) ->
 	log 'click: ', event
-	Server.send 'addMarker', event.latlng, !->
-		# TODO fix predict function
-		log 'test prediction add marker'
-		Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
-		
+	#Check if marker is not close to other marker
+	flags = Db.shared.peek('game', 'flags')
+	log flags
+	tooClose= false;
+	if flags isnt {}
+		for flag, loc of flags
+			log flag
+			log loc
+			log event.latlng.distanceTo(convertLatLng(loc.location))
+			if event.latlng.distanceTo(convertLatLng(loc.location)) < Db.shared.get('game', 'beaconRadius')*2 and !tooClose
+				tooClose = true
+				
+	if tooClose
+		#Todo give error message flag too close to each other
+	else
+		Server.send 'addMarker', event.latlng, !->
+			# TODO fix predict function
+			log 'test prediction add marker'
+			Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
+
+convertLatLng = (location) ->
+	return L.latLng(location.lat, location.lng)
+	
+			
 # Update the play area square thing
 markerDragged = ->
 	if mapReady()
