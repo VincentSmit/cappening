@@ -421,18 +421,21 @@ renderFlags = ->
 # Listener that checks for clicking the map
 addMarkerListener = (event) ->
 	log 'click: ', event
+	beaconRadius = Db.shared.get('game', 'beaconRadius')
 	#Check if marker is not close to other marker
 	flags = Db.shared.peek('game', 'flags')
-	log flags
 	tooClose= false;
 	if flags isnt {}
 		for flag, loc of flags
-			log flag
-			log loc
-			log event.latlng.distanceTo(convertLatLng(loc.location))
-			if event.latlng.distanceTo(convertLatLng(loc.location)) < Db.shared.get('game', 'beaconRadius')*2 and !tooClose
-				tooClose = true
-				
+			if event.latlng.distanceTo(convertLatLng(loc.location)) < beaconRadius*2 and !tooClose
+				tooClose = true;
+				log 'event is too close to other circle'
+	#Check if marker area is passing the game border
+	if !tooClose
+		circle = L.circle(event.latlng, beaconRadius)
+		tooClose = !(boundaryRectangle.getBounds().contains(circle.getBounds()))
+		log 'event is too close to game boundary'
+		
 	if tooClose
 		#Todo give error message flag too close to each other
 	else
