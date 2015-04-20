@@ -109,15 +109,45 @@ mainContent = ->
 
 # Help page 
 helpContent = ->
-    Dom.h2 "King of the Hill instructions!"
-    Dom.br()
-    Dom.text "There are " + Plugin.users.count().get() + " users playing"
-    Dom.br()
-    Dom.text "You need to venture to the real location of a beacon to conquer it"
-    
+	Dom.h2 "King of the Hill instructions!"
+	Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over X teams"
+	Dom.br()
+	Dom.br()
+	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
+	Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
+	Dom.text "When the bar at the bottom of your screen has been filled with your team color, you've conquered the beacon. "
+	Dom.text "A neutral beacon will take 1 minute to conquer, but an occupied beacon will take two. You first need to drain the opponents' color, before you can fill it with yours! "
+	Dom.br()
+	Dom.br()
+	Dom.h2 "Rules"
+	Dom.text "You gain 100 points for being the first team to conquer a certain beacon. "
+	Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
+	Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
+	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 100 to 80, 60, 40 and 20. "
+	Dom.text "However, when a beacon is conquered, it is safe for 1 hour (can't be captured by another team). "
+	Dom.text "The team with the highest score at the end of the game wins. "
+	Dom.br()
+	Dom.br()
+	Dom.h2 "Use of Map & Tabs"
+	Dom.text "To find locations of beacons you can navigate over the map by swiping. To obtain a more precise location you can zoom in and out by pinching. "
+	Dom.br()
+	Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
+	Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
+	Dom.br()
+	Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
+	  
 scoresContent = ->
-	Dom.text "The scores of all team / players"
-    
+	Dom.text "The scores of all players:"	
+	Dom.div ->
+		Db.shared.observeEach 'game', 'teams', (team) !->
+			log 'team', team.n
+			Dom.h1 tr("Scores of team %1", team.n)
+			Db.shared.observeEach 'game', 'teams', team.n , 'users', (user) !->
+				log 'user', user.n
+				Dom.text tr("%1 has a score of: %2", user.n, user.get('userScore'))	
+				Dom.br()
+
+
 logContent = ->
 	Dom.text "The log file of all events"
 	
