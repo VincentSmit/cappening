@@ -140,8 +140,12 @@ scoresContent = ->
 	Dom.text "The scores of all players:"	
 	Dom.div ->
 		Db.shared.observeEach 'game', 'teams', (team) !->
-			log team
-			Dom.text tr("team %1: ", team.get('name'))	
+			log 'team', team.n
+			Dom.h1 tr("Scores of team %1", team.n)
+			Db.shared.observeEach 'game', 'teams', team.n , 'users', (user) !->
+				log 'user', user.n
+				Dom.text tr("%1 has a score of: %2", user.n, user.get('userScore'))	
+				Dom.br()
 
 
 logContent = ->

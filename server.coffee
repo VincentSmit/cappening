@@ -51,11 +51,12 @@ exports.client_startGame = ->
 	Db.shared.set 'gameState', 1
 	userIds = Plugin.userIds()
 	teams = Db.shared.get('numberOfTeams')
-	log 'teams are:', teams
+	teams = 3
 	team = 0
 	while(userIds.length > 0)
 		randomNumber = Math.floor(Math.random() * userIds.length)
 		Db.shared.set 'game', 'teams', team, 'users', Plugin.userName(userIds[randomNumber]), 'userScore', 0
+		log 'team', team, 'has player', Plugin.userName(userIds[randomNumber]) 
 		userIds.splice(randomNumber,1)
 		team++
 		team = 0 if team >= teams
@@ -69,6 +70,7 @@ initializeGame = ->
 	Db.shared.set 'game', 'flags', {}
 	Db.shared.set 'game', 'bounds', {one: {lat: 52.249822176849, lng: 6.8396973609924}, two: {lat: 52.236578295702, lng: 6.8598246574402}}
 	Db.shared.set 'gameState', 0
+	Db.shared.set 'game', 'teams', {}
 
 
 
