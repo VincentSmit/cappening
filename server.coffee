@@ -22,14 +22,6 @@ exports.onConfig = (config) !->
 	if config.restart
 		log 'Restarting game'
 		initializeGame()
-
-# No idea
-exports.onHttp = (request) ->
-	if (data = request.data)?
-		Db.shared.set 'http', data
-	else
-		data = Db.shared.get('http')
-	request.respond 200, data || 'no data'
 	
 #========== Client calls ==========
 # Add a flag (during setup phase)
