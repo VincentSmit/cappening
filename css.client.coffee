@@ -1,9 +1,11 @@
 Dom.css
 # Main element
-	'main':
-		padding: '0'
-		display: 'flex'
-		flexDirection: 'column'
+	'#main':
+		padding: '0 !important'
+		display_: 'flex'
+		_flexDirection: 'column'
+	'.container':
+		padding: '8px'
 # Main content page
 	'.bar-button':
 		height: "100%"
@@ -29,8 +31,8 @@ Dom.css
 # Map element
 	'#OpenStreetMap':
 		width: '100%'
-		flexGrow: '1'
-		flexShrink: '1'
+		_flexGrow: '1'
+		_flexShrink: '1'
 		backgroundColor: '#030303'
 # Plugin setup pages
 	'.stepbar': # The bar at the top
@@ -43,13 +45,13 @@ Dom.css
 		borderColor: "#EFEFEF"
 		fontSize: '20px'
 		boxSizing: 'border-box'
-		display: 'flex'
-		flexDirection: 'row'
-		flexGrow: '0'
-		flexShrink: '0'
+		display_: 'flex'
+		_flexDirection: 'row'
+		_flexGrow: '0'
+		_flexShrink: '0'
 	'.stepbar-middle': # The middle section
-		flexGrow: '1'
-		flexShrink: '1'
+		_flexGrow: '1'
+		_flexShrink: '1'
 		textOverflow: 'ellipsis'
 		whiteSpace: 'nowrap'
 		overflow: 'hidden'
@@ -57,8 +59,8 @@ Dom.css
 		borderColor: 'inherit'
 		fontSize: '16px'
 		color: '#EFEFEF'
-		flexGrow: '0'
-		flexShrink: '0'
+		_flexGrow: '0'
+		_flexShrink: '0'
 	'.stepbar-button:hover':
 		backgroundColor: '#7C7C7C'
 	'.stepbar-button:active':
