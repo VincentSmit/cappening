@@ -88,6 +88,7 @@ addBar = ->
 # Home page with map
 mainContent = ->
 	log "mainContent()"
+	addBar()
 	renderMap()
 	renderFlags()
 	Obs.observe ->
@@ -105,7 +106,6 @@ mainContent = ->
 				log "  Map bounds and minzoom reset"
 				map.setMaxBounds()
 				map._layersMinZoom = 0
-	addBar()
 
 # Help page 
 helpContent = ->
@@ -176,31 +176,28 @@ setupContent = ->
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
 					Dom.onTap !->
-						Server.sync 'setupBasic', 1, 1, !-> # TODO handle form numbers correctly
+						Server.sync 'setupBasic', 1, !-> # TODO handle form numbers correctly
 							log 'Prediction of going to next setupPhase'
 						Db.local.set('currentSetupPage', 'setup1')
 			Dom.div !->
-				Dom.style margin: "52px"
-			Dom.h2 tr("Round time")
-			Dom.div !->
-				Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+				Dom.style padding: '8px'
+				Dom.h2 tr("Round time")
 				Dom.div !->
-					Dom.style Flex: 'true'
-					Dom.text tr "Fill in the round time (hours), this determines how long a game lasts. Recommended: 1 week (168 hours)."
-				Num.render
-					name: 'time'
-					value: (if Db.shared then Db.shared.peek('roundTime') else 1)||24*28 # 4 weeks max
-			Dom.h2 tr("Number of teams")
-			Dom.div !->
-				Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+					Dom.style Box: "middle", padding: '12px 40px 12px 8px'
+					Dom.div !->
+						Dom.style Flex: 'true'
+						Dom.text tr "Fill in the round time (hours), this determines how long a game lasts. Recommended: 1 week (168 hours)."
+					Num.render
+						name: 'time'
+						value: (if Db.shared then Db.shared.peek('roundTime') else 1)||24*28 # 4 weeks max
+				Dom.h2 tr("Number of teams")
 				Dom.div !->
-					Dom.style Flex: 'true'
-					Dom.text tr "Fill in the number of teams."
-					Dom.br()
-					Dom.text tr "Recommended default: 2."
-				Num.render
-					name: 'teams'
-					value: (if Db.shared then Db.shared.peek('numberOfTeams') else 1)||6
+					Dom.text tr("Select the number of teams:")
+					Dom.cls "team-text"
+				Dom.div !->
+					Dom.style float: 'left', clear: 'both'
+					for number in [2..6]
+						addTeamButton(number)
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -269,6 +266,7 @@ setupContent = ->
 					Dom.text tr("Start")
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
+					log '  setup2 new'
 					Dom.onTap !->
 						Server.send 'startGame', !->
 							log 'Predict function gameStart?'
@@ -290,6 +288,16 @@ setupContent = ->
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
 
+addTeamButton = (number) ->
+	Dom.div !->
+		Dom.text number
+		Dom.cls "team-button"
+		if Db.shared.get('game', 'numberOfTeams') is number
+			Dom.cls "team-button-current"
+		else
+			Dom.onTap !->
+				Server.send 'setTeams', number
+					# predict?
 		
 # ========== Map functions ==========
 # Render a map
@@ -312,19 +320,13 @@ renderMap = ->
 		if mapElement?
 			# use it again
 			mainElement = document.getElementsByTagName("main")[0]
-			mainElement.insertBefore(mapElement, mainElement.childNodes[0])
+			mainElement.insertBefore(mapElement, null)  # Inserts the element at the end
 			log "  Reused html element for map"
 		else
 			window.mapElement = document.createElement "div"
 			mapElement.setAttribute 'id', 'OpenStreetMap'
-			mapElement.style.position = 'absolute'
-			mapElement.style.top = '50px'
-			mapElement.style.bottom = '0'
-			mapElement.style.left = '0'
-			mapElement.style.right = '0'
-			mapElement.style.backgroundColor = '#030303'
 			mainElement = document.getElementsByTagName("main")[0]
-			mainElement.insertBefore(mapElement, mainElement.childNodes[0])
+			mainElement.insertBefore(mapElement, null)  # Inserts the element at the end
 			log "  Created html element for map"
 		Obs.onClean ->
 			log "Removed html element for map (stored for later)"
@@ -389,8 +391,21 @@ renderFlags = ->
 			if not window.flagMarkers?
 				log "flagMarkers list reset"
 				window.flagMarkers = [];
+			teamNumber = flag.get('owner')
+			teamColor=  Db.shared.get('colors', teamNumber, 'hex')
+			
+			areaIcon = L.icon({
+				iconUrl: Plugin.resourceUri(teamColor.substring(1) + '.png'),
+				iconSize:     [24, 40], 
+				iconAnchor:   [12, 39], 
+				popupAnchor:  [-3, -75]
+				shadowUrl: Plugin.resourceUri('markerShadow.png'),
+				shadowSize: [41, 41],
+				shadowAnchor: [12, 39]
+			});
+			
 			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
-			marker = L.marker(location)
+			marker = L.marker(location, {icon: areaIcon})
 			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
 			marker.addTo(map)
 			flagMarkers.push marker
@@ -400,11 +415,9 @@ renderFlags = ->
 			if not window.flagCircles?
 				log "flagCircles list reset"
 				window.flagCircles = [];
-			teamNumber = flag.get('owner')
-			teamColor=  '#FFFFFF'
-			if !(teamNumber is -1)
-				teamColor = Db.shared.get('game', 'teams', teamNumber, 'color')
-			circle = L.circle(location, 250, {
+
+			
+			circle = L.circle(location, Db.shared.get('game', 'beaconRadius'), {
 				color: teamColor,
 				fillColor: teamColor,
 				fillOpacity: 0.3
@@ -438,11 +451,33 @@ renderFlags = ->
 # Listener that checks for clicking the map
 addMarkerListener = (event) ->
 	log 'click: ', event
-	Server.send 'addMarker', event.latlng, !->
-		# TODO fix predict function
-		log 'test prediction add marker'
-		Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
+	beaconRadius = Db.shared.get('game', 'beaconRadius')
+	#Check if marker is not close to other marker
+	flags = Db.shared.peek('game', 'flags')
+	tooClose= false;
+	if flags isnt {}
+		for flag, loc of flags
+			if event.latlng.distanceTo(convertLatLng(loc.location)) < beaconRadius*2 and !tooClose
+				tooClose = true;
+				log 'event is too close to other circle'
+	#Check if marker area is passing the game border
+	if !tooClose
+		circle = L.circle(event.latlng, beaconRadius)
+		tooClose = !(boundaryRectangle.getBounds().contains(circle.getBounds()))
+		log 'event is too close to game boundary'
 		
+	if tooClose
+		#Todo give error message flag too close to each other
+	else
+		Server.send 'addMarker', event.latlng, !->
+			# TODO fix predict function
+			log 'test prediction add marker'
+			Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
+
+convertLatLng = (location) ->
+	return L.latLng(location.lat, location.lng)
+	
+			
 # Update the play area square thing
 markerDragged = ->
 	if mapReady()

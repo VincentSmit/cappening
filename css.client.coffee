@@ -1,4 +1,9 @@
 Dom.css
+# Main element
+	'main':
+		padding: '0'
+		display: 'flex'
+		flexDirection: 'column'
 # Main content page
 	'.bar-button':
 		height: "100%"
@@ -21,16 +26,18 @@ Dom.css
 		display: 'none'
 	'.mapbox-logo':
 		display: "none"
+# Map element
+	'#OpenStreetMap':
+		width: '100%'
+		flexGrow: '1'
+		flexShrink: '1'
+		backgroundColor: '#030303'
 # Plugin setup pages
 	'.stepbar': # The bar at the top
 		color: "white"
 		backgroundColor: "#888"
 		lineHeight: "50px"
 		textAlign: "center"
-		right: "0"
-		left: "0"
-		top: "0"
-		position: "absolute"
 		zIndex: "5"
 		boxShadow: "0 3px 5px 0 rgba(0, 0, 0, 0.2)"
 		borderColor: "#EFEFEF"
@@ -38,6 +45,8 @@ Dom.css
 		boxSizing: 'border-box'
 		display: 'flex'
 		flexDirection: 'row'
+		flexGrow: '0'
+		flexShrink: '0'
 	'.stepbar-middle': # The middle section
 		flexGrow: '1'
 		flexShrink: '1'
@@ -91,3 +100,19 @@ Dom.css
 		cursor: 'default'
 	'.stepbar-disable:active':
 		backgroundColor: 'transparent !important'
+# Team selection elements
+	'.team-text':
+		float: 'left'
+		margin: '0 10px 5px 0'
+	'.team-button':
+		float: 'left'
+		width: '50px'
+		height: '50px'
+		lineHeight: '50px'
+		margin: '0 2px 2px 0'
+		fontSize: '25px'
+		textAlign: 'center'
+		backgroundColor: '#CCCCCC'
+	'.team-button-current':
+		backgroundColor: '#0077cf'
+		color: '#FFFFFF'
