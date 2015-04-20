@@ -9,7 +9,7 @@ Ui = require 'ui'
 CSS = require 'css'
 Geoloc = require 'geoloc'
 Form = require 'form'
-Num = require 'num'
+#Num = require 'num'
 
 window.redraw = Obs.create(0)
 
@@ -157,6 +157,10 @@ setupContent = ->
 		currentPage = 'setup0' if not currentPage?
 		log 'currentPage=', currentPage
 		if currentPage is 'setup0' # Setup team and round time
+			# Variables
+			numberOfTeams = Obs.create Db.shared.peek('game', 'numberOfTeams')
+			roundTimeNumber = Obs.create Db.shared.peek('game', 'roundTimeNumber')
+			roundTimeUnit = Obs.create Db.shared.peek('game', 'roundTimeUnit')
 			# Bar to indicate the setup progress
 			Dom.div !->
 				Dom.cls 'stepbar'
@@ -176,28 +180,88 @@ setupContent = ->
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
 					Dom.onTap !->
-						Server.sync 'setupBasic', 1, !-> # TODO handle form numbers correctly
-							log 'Prediction of going to next setupPhase'
+						Server.send 'setTeams', numberOfTeams.get()
+						Server.send 'setRoundTime', roundTimeNumber.get(), roundTimeUnit.get()
 						Db.local.set('currentSetupPage', 'setup1')
 			Dom.div !->
 				Dom.style padding: '8px'
-				Dom.h2 tr("Round time")
-				Dom.div !->
-					Dom.style Box: "middle", padding: '12px 40px 12px 8px'
-					Dom.div !->
-						Dom.style Flex: 'true'
-						Dom.text tr "Fill in the round time (hours), this determines how long a game lasts. Recommended: 1 week (168 hours)."
-					Num.render
-						name: 'time'
-						value: (if Db.shared then Db.shared.peek('roundTime') else 1)||24*28 # 4 weeks max
+				# Teams input
 				Dom.h2 tr("Number of teams")
 				Dom.div !->
 					Dom.text tr("Select the number of teams:")
 					Dom.cls "team-text"
 				Dom.div !->
-					Dom.style float: 'left', clear: 'both'
+					log 'numberOfTeams.get(): ', numberOfTeams.get()
+					Dom.style margin: '0 0 20px 0', height: '50px'
+					renderTeamButton = (number) ->
+						Dom.div !->
+							Dom.text number
+							Dom.cls "team-button"
+							if numberOfTeams.peek() is number
+								Dom.cls "team-button-current"
+							else
+								Dom.onTap !->
+									numberOfTeams.set number
 					for number in [2..6]
-						addTeamButton(number)
+						renderTeamButton number
+				# Duration input
+				Dom.h2 tr("Round time")
+				Dom.text tr "Select the round time, recommended: 7 days."
+				Dom.div !->
+					Dom.style Box: "middle", margin: '10px 0 10px 0', flexGrow: '0', flexShrink: '0'
+					sanitize = (value) ->
+						if value < 1
+							return 1
+						else if value > 999
+							return 999
+						else
+							return value
+					renderArrow = (direction) !->
+						Dom.div !->
+							Dom.style
+								width: 0
+								height: 0
+								borderStyle: "solid"
+								borderWidth: "#{if direction>0 then 0 else 20}px 20px #{if direction>0 then 20 else 0}px 20px"
+								borderColor: "#{if roundTimeNumber.get()<=1 then 'transparent' else '#0077cf'} transparent #{if roundTimeNumber.get()>=999 then 'transparent' else '#0077cf'} transparent"
+							if (direction>0 and roundTimeNumber.get()<999) or (direction<0 and roundTimeNumber.get()>1)
+								Dom.onTap !->
+									roundTimeNumber.set sanitize(roundTimeNumber.peek()+direction)
+					# Number input
+					Dom.div !->
+						Dom.style Box: "vertical center", margin: '0 10px 0 0'
+						renderArrow 1
+						Dom.input !->
+							inputElement = Dom.get()
+							Dom.prop
+								size: 2
+								value: roundTimeNumber.get()
+							Dom.style
+								fontFamily: 'monospace'
+								fontSize: '30px'
+								fontWeight: 'bold'
+								textAlign: 'center'
+								border: 'inherit'
+								backgroundColor: 'inherit'
+								color: 'inherit'
+							Dom.on 'input change', !-> roundTimeNumber.set sanitize(inputElement.value())
+							Dom.on 'click', !-> inputElement.select()
+						renderArrow -1
+					# Unit inputs
+					Dom.div !->
+						Dom.style float: 'left', clear: 'both'
+						renderTimeButton = (unit) ->
+							Dom.div !->
+								Dom.text unit
+								Dom.cls "time-button"
+								if roundTimeUnit.get() is unit
+									Dom.cls "time-button-current"
+								else
+									Dom.onTap !->
+										roundTimeUnit.set unit
+						renderTimeButton 'Hours'
+						renderTimeButton 'Days'
+						renderTimeButton 'Months'
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -288,17 +352,7 @@ setupContent = ->
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
 
-addTeamButton = (number) ->
-	Dom.div !->
-		Dom.text number
-		Dom.cls "team-button"
-		if Db.shared.get('game', 'numberOfTeams') is number
-			Dom.cls "team-button-current"
-		else
-			Dom.onTap !->
-				Server.send 'setTeams', number
-					# predict?
-		
+
 # ========== Map functions ==========
 # Render a map
 renderMap = ->

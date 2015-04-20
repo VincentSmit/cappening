@@ -102,7 +102,6 @@ Dom.css
 		backgroundColor: 'transparent !important'
 # Team selection elements
 	'.team-text':
-		float: 'left'
 		margin: '0 10px 5px 0'
 	'.team-button':
 		float: 'left'
@@ -114,5 +113,20 @@ Dom.css
 		textAlign: 'center'
 		backgroundColor: '#CCCCCC'
 	'.team-button-current':
-		backgroundColor: '#0077cf'
+		backgroundColor: '#0077cf !important'
+		color: '#FFFFFF'
+# Time unit selection buttons
+	'.time-text':
+		margin: '0 10px 5px 0'
+	'.time-button':
+		float: 'left'
+		height: '50px'
+		lineHeight: '50px'
+		margin: '0 2px 2px 0'
+		padding: '0 10px 0 10px'
+		fontSize: '20px'
+		textAlign: 'center'
+		backgroundColor: '#CCCCCC'
+	'.time-button-current':
+		backgroundColor: '#0077cf !important'
 		color: '#FFFFFF'
