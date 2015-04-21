@@ -48,7 +48,7 @@ exports.client_setBounds = (one, two) ->
 exports.client_startGame = ->
 	Db.shared.set 'gameState', 1
 	userIds = Plugin.userIds()
-	teams = Db.shared.get('numberOfTeams')
+	teams = Db.shared.get('game','numberOfTeams')
 	team = 0
 	while(userIds.length > 0)
 		randomNumber = Math.floor(Math.random() * userIds.length)
