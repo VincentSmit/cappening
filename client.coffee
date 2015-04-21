@@ -525,9 +525,9 @@ addMarkerListener = (event) ->
 		circle = L.circle(event.latlng, beaconRadius)
 		outsideGame = !(boundaryRectangle.getBounds().contains(circle.getBounds()))
 		if outsideGame
-			result 'Beacon is outside the game border'
+			result = 'Beacon is outside the game border'
 		
-	if tooClose
+	if tooClose or outsideGame
 		Modal.show(result)
 		
 	else
