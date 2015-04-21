@@ -514,24 +514,27 @@ addMarkerListener = (event) ->
 	#Check if marker is not close to other marker
 	flags = Db.shared.peek('game', 'flags')
 	tooClose= false;
+	result = ''
 	if flags isnt {}
 		for flag, loc of flags
 			if event.latlng.distanceTo(convertLatLng(loc.location)) < beaconRadius*2 and !tooClose
 				tooClose = true;
-				log 'event is too close to other circle'
+				result = 'Beacon is placed too close to other beacon'
 	#Check if marker area is passing the game border
 	if !tooClose
 		circle = L.circle(event.latlng, beaconRadius)
-		tooClose = !(boundaryRectangle.getBounds().contains(circle.getBounds()))
-		log 'event is too close to game boundary'
+		outsideGame = !(boundaryRectangle.getBounds().contains(circle.getBounds()))
+		if outsideGame
+			result 'Beacon is outside the game border'
 		
 	if tooClose
-		#Todo give error message flag too close to each other
+		Modal.show(result)
+		
 	else
 		Server.send 'addMarker', event.latlng, !->
 			# TODO fix predict function
 			log 'test prediction add marker'
-			Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
+			Db.shared.set 'game', 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
 
 convertLatLng = (location) ->
 	return L.latLng(location.lat, location.lng)
@@ -562,12 +565,19 @@ renderLocation = ->
 				log 'Rendered location on the map'
 				location = location.split(',')
 				if mapReady()
-					marker = L.marker(L.latLng(location[0], location[1]))
+					latLngObj= L.latLng(location[0], location[1])
+					marker = L.marker(latLngObj)
 					marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
 					if window.flagCurrentLocation
 						map.removeLayer window.flagCurrentLocation
 					marker.addTo(map)
 					window.flagCurrentLocation = marker
+					areaBounds = boundaryRectangle.getBounds()
+					if !(areaBounds.contains(latLngObj))
+						distance = latLngObj.distanceTo(areaBounds.getCenter())
+						log 'you are too far away to play the game.'
+						log distance + 'meters from center'
+						
 			else
 				log 'Location could not be found'
 			Obs.onClean ->
