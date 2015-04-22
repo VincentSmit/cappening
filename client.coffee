@@ -9,7 +9,6 @@ Ui = require 'ui'
 CSS = require 'css'
 Geoloc = require 'geoloc'
 Form = require 'form'
-#Num = require 'num'
 
 window.redraw = Obs.create(0)
 

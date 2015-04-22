@@ -82,4 +82,11 @@ initializeColors = ->
 			5:    {name: 'purple',  capitalizedName: 'Purple',  hex: '#E700D4'}
 		}
 
-
+# Calculate distance
+distance = (location1, location2) ->
+	r = 6378137
+	rad = Math.PI / 180
+	lat1 = location1.get('lat') * rad
+	lat2 = location2.get('lat') * rad
+	a = Math.sin(lat1) * Math.sin(lat2) + Math.cos(lat1) * Math.cos(lat2) * Math.cos((location2.get('lng') - location1.get('lng')) * rad);
+	return r * Math.acos(Math.min(a, 1));
