@@ -1,9 +1,11 @@
 Dom.css
 # Main element
-	'main':
-		padding: '0'
-		display: 'flex'
-		flexDirection: 'column'
+	'#main':
+		padding: '0 !important'
+		display_: 'flex'
+		_flexDirection: 'column'
+	'.container':
+		padding: '8px'
 # Main content page
 	'.bar-button':
 		height: "100%"
@@ -29,8 +31,8 @@ Dom.css
 # Map element
 	'#OpenStreetMap':
 		width: '100%'
-		flexGrow: '1'
-		flexShrink: '1'
+		_flexGrow: '1'
+		_flexShrink: '1'
 		backgroundColor: '#030303'
 # Plugin setup pages
 	'.stepbar': # The bar at the top
@@ -43,13 +45,13 @@ Dom.css
 		borderColor: "#EFEFEF"
 		fontSize: '20px'
 		boxSizing: 'border-box'
-		display: 'flex'
-		flexDirection: 'row'
-		flexGrow: '0'
-		flexShrink: '0'
+		display_: 'flex'
+		_flexDirection: 'row'
+		_flexGrow: '0'
+		_flexShrink: '0'
 	'.stepbar-middle': # The middle section
-		flexGrow: '1'
-		flexShrink: '1'
+		_flexGrow: '1'
+		_flexShrink: '1'
 		textOverflow: 'ellipsis'
 		whiteSpace: 'nowrap'
 		overflow: 'hidden'
@@ -57,8 +59,8 @@ Dom.css
 		borderColor: 'inherit'
 		fontSize: '16px'
 		color: '#EFEFEF'
-		flexGrow: '0'
-		flexShrink: '0'
+		_flexGrow: '0'
+		_flexShrink: '0'
 	'.stepbar-button:hover':
 		backgroundColor: '#7C7C7C'
 	'.stepbar-button:active':
@@ -102,7 +104,6 @@ Dom.css
 		backgroundColor: 'transparent !important'
 # Team selection elements
 	'.team-text':
-		float: 'left'
 		margin: '0 10px 5px 0'
 	'.team-button':
 		float: 'left'
@@ -114,7 +115,22 @@ Dom.css
 		textAlign: 'center'
 		backgroundColor: '#CCCCCC'
 	'.team-button-current':
-		backgroundColor: '#0077cf'
+		backgroundColor: '#0077cf !important'
+		color: '#FFFFFF'
+# Time unit selection buttons
+	'.time-text':
+		margin: '0 10px 5px 0'
+	'.time-button':
+		float: 'left'
+		height: '50px'
+		lineHeight: '50px'
+		margin: '0 2px 2px 0'
+		padding: '0 10px 0 10px'
+		fontSize: '20px'
+		textAlign: 'center'
+		backgroundColor: '#CCCCCC'
+	'.time-button-current':
+		backgroundColor: '#0077cf !important'
 		color: '#FFFFFF'
 # Scores page
 	'.teampage':

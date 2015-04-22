@@ -9,7 +9,7 @@ Ui = require 'ui'
 CSS = require 'css'
 Geoloc = require 'geoloc'
 Form = require 'form'
-Num = require 'num'
+#Num = require 'num'
 
 window.redraw = Obs.create(0)
 
@@ -22,6 +22,9 @@ exports.render = ->
 		Geoloc.subscribe()
 		# gamestate check
 	Obs.observe ->
+		mainElement = document.getElementsByTagName("main")[0]
+		mainElement.setAttribute 'id', 'main'
+
 		hey = redraw.get();
 		gameState = Db.shared.get('gameState')
 		if gameState is 0 # Setting up game by user that added plugin
@@ -109,33 +112,35 @@ mainContent = ->
 
 # Help page 
 helpContent = ->
-	Dom.h2 "King of the Hill instructions!"
-	Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.get('game','numberOfTeams') + " teams"
-	Dom.br()
-	Dom.br()
-	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
-	Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
-	Dom.text "When the bar at the bottom of your screen has been filled with your team color, you've conquered the beacon. "
-	Dom.text "A neutral beacon will take 1 minute to conquer, but an occupied beacon will take two. You first need to drain the opponents' color, before you can fill it with yours! "
-	Dom.br()
-	Dom.br()
-	Dom.h2 "Rules"
-	Dom.text "You gain 100 points for being the first team to conquer a certain beacon. "
-	Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
-	Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
-	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 100 to 80, 60, 40 and 20. "
-	Dom.text "However, when a beacon is conquered, it is safe for 1 hour (can't be captured by another team). "
-	Dom.text "The team with the highest score at the end of the game wins. "
-	Dom.br()
-	Dom.br()
-	Dom.h2 "Use of Map & Tabs"
-	Dom.text "To find locations of beacons you can navigate over the map by swiping. To obtain a more precise location you can zoom in and out by pinching. "
-	Dom.br()
-	Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
-	Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
-	Dom.br()
-	Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
-	  
+	Dom.div !->
+		Dom.cls 'container'
+		Dom.h2 "King of the Hill instructions!"
+		Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.get('game','numberOfTeams') + " teams"
+		Dom.br()
+		Dom.br()
+		Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
+		Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
+		Dom.text "When the bar at the bottom of your screen has been filled with your team color, you've conquered the beacon. "
+		Dom.text "A neutral beacon will take 1 minute to conquer, but an occupied beacon will take two. You first need to drain the opponents' color, before you can fill it with yours! "
+		Dom.br()
+		Dom.br()
+		Dom.h2 "Rules"
+		Dom.text "You gain 100 points for being the first team to conquer a certain beacon. "
+		Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
+		Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
+		Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 100 to 80, 60, 40 and 20. "
+		Dom.text "However, when a beacon is conquered, it is safe for 1 hour (can't be captured by another team). "
+		Dom.text "The team with the highest score at the end of the game wins. "
+		Dom.br()
+		Dom.br()
+		Dom.h2 "Use of Map & Tabs"
+		Dom.text "To find locations of beacons you can navigate over the map by swiping. To obtain a more precise location you can zoom in and out by pinching. "
+		Dom.br()
+		Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
+		Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
+		Dom.br()
+		Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
+
 scoresContent = ->
 	teamscore = 0
 	Dom.div ->
@@ -170,6 +175,10 @@ setupContent = ->
 		currentPage = 'setup0' if not currentPage?
 		log 'currentPage=', currentPage
 		if currentPage is 'setup0' # Setup team and round time
+			# Variables
+			numberOfTeams = Obs.create Db.shared.peek('game', 'numberOfTeams')
+			roundTimeNumber = Obs.create Db.shared.peek('game', 'roundTimeNumber')
+			roundTimeUnit = Obs.create Db.shared.peek('game', 'roundTimeUnit')
 			# Bar to indicate the setup progress
 			Dom.div !->
 				Dom.cls 'stepbar'
@@ -189,28 +198,88 @@ setupContent = ->
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
 					Dom.onTap !->
-						Server.sync 'setupBasic', 1, !-> # TODO handle form numbers correctly
-							log 'Prediction of going to next setupPhase'
+						Server.send 'setTeams', numberOfTeams.get()
+						Server.send 'setRoundTime', roundTimeNumber.get(), roundTimeUnit.get()
 						Db.local.set('currentSetupPage', 'setup1')
 			Dom.div !->
 				Dom.style padding: '8px'
-				Dom.h2 tr("Round time")
-				Dom.div !->
-					Dom.style Box: "middle", padding: '12px 40px 12px 8px'
-					Dom.div !->
-						Dom.style Flex: 'true'
-						Dom.text tr "Fill in the round time (hours), this determines how long a game lasts. Recommended: 1 week (168 hours)."
-					Num.render
-						name: 'time'
-						value: (if Db.shared then Db.shared.peek('roundTime') else 1)||24*28 # 4 weeks max
+				# Teams input
 				Dom.h2 tr("Number of teams")
 				Dom.div !->
 					Dom.text tr("Select the number of teams:")
 					Dom.cls "team-text"
 				Dom.div !->
-					Dom.style float: 'left', clear: 'both'
+					log 'numberOfTeams.get(): ', numberOfTeams.get()
+					Dom.style margin: '0 0 20px 0', height: '50px'
+					renderTeamButton = (number) ->
+						Dom.div !->
+							Dom.text number
+							Dom.cls "team-button"
+							if numberOfTeams.peek() is number
+								Dom.cls "team-button-current"
+							else
+								Dom.onTap !->
+									numberOfTeams.set number
 					for number in [2..6]
-						addTeamButton(number)
+						renderTeamButton number
+				# Duration input
+				Dom.h2 tr("Round time")
+				Dom.text tr "Select the round time, recommended: 7 days."
+				Dom.div !->
+					Dom.style Box: "middle", margin: '10px 0 10px 0', flexGrow: '0', flexShrink: '0'
+					sanitize = (value) ->
+						if value < 1
+							return 1
+						else if value > 999
+							return 999
+						else
+							return value
+					renderArrow = (direction) !->
+						Dom.div !->
+							Dom.style
+								width: 0
+								height: 0
+								borderStyle: "solid"
+								borderWidth: "#{if direction>0 then 0 else 20}px 20px #{if direction>0 then 20 else 0}px 20px"
+								borderColor: "#{if roundTimeNumber.get()<=1 then 'transparent' else '#0077cf'} transparent #{if roundTimeNumber.get()>=999 then 'transparent' else '#0077cf'} transparent"
+							if (direction>0 and roundTimeNumber.get()<999) or (direction<0 and roundTimeNumber.get()>1)
+								Dom.onTap !->
+									roundTimeNumber.set sanitize(roundTimeNumber.peek()+direction)
+					# Number input
+					Dom.div !->
+						Dom.style Box: "vertical center", margin: '0 10px 0 0'
+						renderArrow 1
+						Dom.input !->
+							inputElement = Dom.get()
+							Dom.prop
+								size: 2
+								value: roundTimeNumber.get()
+							Dom.style
+								fontFamily: 'monospace'
+								fontSize: '30px'
+								fontWeight: 'bold'
+								textAlign: 'center'
+								border: 'inherit'
+								backgroundColor: 'inherit'
+								color: 'inherit'
+							Dom.on 'input change', !-> roundTimeNumber.set sanitize(inputElement.value())
+							Dom.on 'click', !-> inputElement.select()
+						renderArrow -1
+					# Unit inputs
+					Dom.div !->
+						Dom.style float: 'left', clear: 'both'
+						renderTimeButton = (unit) ->
+							Dom.div !->
+								Dom.text unit
+								Dom.cls "time-button"
+								if roundTimeUnit.get() is unit
+									Dom.cls "time-button-current"
+								else
+									Dom.onTap !->
+										roundTimeUnit.set unit
+						renderTimeButton 'Hours'
+						renderTimeButton 'Days'
+						renderTimeButton 'Months'
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -301,17 +370,7 @@ setupContent = ->
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
 
-addTeamButton = (number) ->
-	Dom.div !->
-		Dom.text number
-		Dom.cls "team-button"
-		if Db.shared.get('game', 'numberOfTeams') is number
-			Dom.cls "team-button-current"
-		else
-			Dom.onTap !->
-				Server.send 'setTeams', number
-					# predict?
-		
+
 # ========== Map functions ==========
 # Render a map
 renderMap = ->
@@ -468,24 +527,27 @@ addMarkerListener = (event) ->
 	#Check if marker is not close to other marker
 	flags = Db.shared.peek('game', 'flags')
 	tooClose= false;
+	result = ''
 	if flags isnt {}
 		for flag, loc of flags
 			if event.latlng.distanceTo(convertLatLng(loc.location)) < beaconRadius*2 and !tooClose
 				tooClose = true;
-				log 'event is too close to other circle'
+				result = 'Beacon is placed too close to other beacon'
 	#Check if marker area is passing the game border
 	if !tooClose
 		circle = L.circle(event.latlng, beaconRadius)
-		tooClose = !(boundaryRectangle.getBounds().contains(circle.getBounds()))
-		log 'event is too close to game boundary'
+		outsideGame = !(boundaryRectangle.getBounds().contains(circle.getBounds()))
+		if outsideGame
+			result = 'Beacon is outside the game border'
 		
-	if tooClose
-		#Todo give error message flag too close to each other
+	if tooClose or outsideGame
+		Modal.show(result)
+		
 	else
 		Server.send 'addMarker', event.latlng, !->
 			# TODO fix predict function
 			log 'test prediction add marker'
-			Db.shared.set 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
+			Db.shared.set 'game', 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
 
 convertLatLng = (location) ->
 	return L.latLng(location.lat, location.lng)
@@ -516,12 +578,19 @@ renderLocation = ->
 				log 'Rendered location on the map'
 				location = location.split(',')
 				if mapReady()
-					marker = L.marker(L.latLng(location[0], location[1]))
+					latLngObj= L.latLng(location[0], location[1])
+					marker = L.marker(latLngObj)
 					marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
 					if window.flagCurrentLocation
 						map.removeLayer window.flagCurrentLocation
 					marker.addTo(map)
 					window.flagCurrentLocation = marker
+					areaBounds = boundaryRectangle.getBounds()
+					if !(areaBounds.contains(latLngObj))
+						distance = latLngObj.distanceTo(areaBounds.getCenter())
+						log 'you are too far away to play the game.'
+						log distance + 'meters from center'
+						
 			else
 				log 'Location could not be found'
 			Obs.onClean ->
