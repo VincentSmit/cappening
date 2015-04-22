@@ -132,3 +132,11 @@ Dom.css
 	'.time-button-current':
 		backgroundColor: '#0077cf !important'
 		color: '#FFFFFF'
+# Scores page
+	'.teampage':
+		fontSize: "20px"
+		display: "block"
+		borderBottom: "2px solid"
+		paddingBottom: "2px"
+		textTransform: "uppercase"
+		textShadow: "1px 1px 2px #000000"
