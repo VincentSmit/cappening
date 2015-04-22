@@ -375,18 +375,6 @@ setupContent = ->
 renderMap = ->
 	log "renderMap()"
 	# Insert map element
-	###
-	Dom.div ->
-		Dom.style
-			position: 'absolute'
-			top: '50px'
-			right: '0'
-			bottom: '0'
-			left: '0'
-			backgroundColor: '#030303'
-		Dom._get().setAttribute 'id', 'OpenStreetMap'
-	###
-	# javascript way to do it:
 	Obs.observe ->
 		if mapElement?
 			# use it again

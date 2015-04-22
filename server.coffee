@@ -57,7 +57,29 @@ exports.client_startGame = ->
 		userIds.splice(randomNumber,1)
 		team++
 		team = 0 if team >= teams
-			
+
+# Checkin location for capturing a flag		
+exports.client_checkinLocation = (client, location) ->
+	log 'checkinLocation() client: ', client, ', location: ', location 
+	flags = Db.shared.peek('game', 'flags')
+	beaconRadius = Db.shared.peek('game', 'beaconRadius')
+	for flag, loc of flags
+		current = Db.shared.get 'game', 'flags', flag.n, 'inRange', client
+		newStatus = distance(location.lat, location.lng, loc.location.lat, loc.location.lng) < beaconRadius
+		if newStatus != current
+			if newStatus
+				log 'Adding to inrange'
+				Db.shared.set 'game', 'flags', flag.n, 'inRange', client, 'true'
+
+
+
+				# Start takeover
+			else
+				log 'Removed from inrange'
+				# clean takeover
+				Db.shared.set 'game', 'flags', flag.n, 'inRange', client, 'false'
+
+
 
 # ========== Functions ==========
 # Setup an empty game
@@ -83,10 +105,10 @@ initializeColors = ->
 		}
 
 # Calculate distance
-distance = (location1, location2) ->
+distance = (inputLat1, inputLng1, inputLat2, inputLng2) ->
 	r = 6378137
 	rad = Math.PI / 180
-	lat1 = location1.get('lat') * rad
-	lat2 = location2.get('lat') * rad
-	a = Math.sin(lat1) * Math.sin(lat2) + Math.cos(lat1) * Math.cos(lat2) * Math.cos((location2.get('lng') - location1.get('lng')) * rad);
+	lat1 = inputLat1 * rad
+	lat2 = inputLat2 * rad
+	a = Math.sin(lat1) * Math.sin(lat2) + Math.cos(lat1) * Math.cos(lat2) * Math.cos((inputLng2 - inputLng1) * rad);
 	return r * Math.acos(Math.min(a, 1));
