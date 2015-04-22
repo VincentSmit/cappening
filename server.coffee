@@ -53,6 +53,7 @@ exports.client_startGame = ->
 	while(userIds.length > 0)
 		randomNumber = Math.floor(Math.random() * userIds.length)
 		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userScore', 0
+		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userName', Plugin.userName(userIds[randomNumber])
 		log 'team', team, 'has player', Plugin.userName(userIds[randomNumber]) 
 		userIds.splice(randomNumber,1)
 		team++

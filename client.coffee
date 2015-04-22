@@ -196,6 +196,9 @@ setupContent = ->
 					Dom.text tr("Next")
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
+					#if Plugin.users.count().get() == 1
+					#	Dom.cls 'stepbar-disable'
+					#else
 					Dom.onTap !->
 						Server.send 'setTeams', numberOfTeams.get()
 						Server.send 'setRoundTime', roundTimeNumber.get(), roundTimeUnit.get()
@@ -219,8 +222,14 @@ setupContent = ->
 							else
 								Dom.onTap !->
 									numberOfTeams.set number
-					for number in [2..6]
-						renderTeamButton number
+					if Plugin.users.count().get() == 1
+						Dom.userText tr "You can't play this game on your own!"
+						Modal.show tr("ERROR"), !->
+							Dom.userText tr "You can't play this game on your own!"
+					else
+						userCount = Math.min(Plugin.users.count().get(),6)
+						for number in [2..userCount]
+							renderTeamButton number
 				# Duration input
 				Dom.h2 tr("Round time")
 				Dom.text tr "Select the round time, recommended: 7 days."
@@ -506,7 +515,7 @@ renderFlags = ->
 						i++
 	, (flag) ->
 		-flag.get()
-
+		
 # Listener that checks for clicking the map
 addMarkerListener = (event) ->
 	log 'click: ', event
@@ -577,7 +586,16 @@ renderLocation = ->
 						distance = latLngObj.distanceTo(areaBounds.getCenter())
 						log 'you are too far away to play the game.'
 						log distance + 'meters from center'
-						
+					# Checking if users are capable of taking over flags
+					Dom.div ->
+						Db.shared.observeEach 'game', 'flags', (flag) !->
+							flagCoord = L.latLng(flag.get('location', 'lat'),flag.get('location', 'lng'))
+							distance = latLngObj.distanceTo(flagCoord)
+							log 'distance', distance
+							if distance - Db.shared.get('Game','BeaconRadius') <= 0
+								Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
+									log 'UserID', Plugin.userId()
+									log 'UserLoc', latLngObj
 			else
 				log 'Location could not be found'
 			Obs.onClean ->
