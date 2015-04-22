@@ -110,7 +110,7 @@ mainContent = ->
 # Help page 
 helpContent = ->
 	Dom.h2 "King of the Hill instructions!"
-	Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over X teams"
+	Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.get('game','numberOfTeams') + " teams"
 	Dom.br()
 	Dom.br()
 	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
@@ -137,16 +137,29 @@ helpContent = ->
 	Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
 	  
 scoresContent = ->
-	Dom.text "The scores of all players:"	
+	teamscore = 0
 	Dom.div ->
+		Dom.br()
 		Db.shared.observeEach 'game', 'teams', (team) !->
 			log 'team', team.n
-			Dom.h1 tr("Scores of team %1", team.n)
+			teamcolor = Db.shared.get('colors', team.n, 'hex')
+			teamname = Db.shared.get('colors', team.n, 'name')
+			log 'teamcolor', teamcolor
+			Dom.div !->
+				Dom.cls 'teampage'
+				Dom.style
+					color: teamcolor
+				Dom.text tr("Scores of team %1", teamname)
 			Db.shared.observeEach 'game', 'teams', team.n , 'users', (user) !->
 				log 'user', user.n
-				Dom.text tr("%1 has a score of: %2", user.n, user.get('userScore'))	
+				teamscore = teamscore + user.get('userScore')
+				Dom.text tr("%1 has a score of: %2", Plugin.userName(user.n), user.get('userScore'))	
 				Dom.br()
-
+			Dom.text tr("------------------------------")
+			Dom.br()
+			Dom.text tr("%Total teamscore: %1", teamscore)
+			Dom.br()
+			Dom.br()
 
 logContent = ->
 	Dom.text "The log file of all events"
