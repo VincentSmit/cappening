@@ -55,12 +55,12 @@ exports.client_setBounds = (one, two) ->
 exports.client_startGame = ->
 	Db.shared.set 'gameState', 1
 	userIds = Plugin.userIds()
-	teams = Db.shared.get('numberOfTeams')
-	teams = 3
+	teams = Db.shared.get('game','numberOfTeams')
+	log 'numberOfTeams', teams
 	team = 0
 	while(userIds.length > 0)
 		randomNumber = Math.floor(Math.random() * userIds.length)
-		Db.shared.set 'game', 'teams', team, 'users', Plugin.userName(userIds[randomNumber]), 'userScore', 0
+		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userScore', 0
 		log 'team', team, 'has player', Plugin.userName(userIds[randomNumber]) 
 		userIds.splice(randomNumber,1)
 		team++
