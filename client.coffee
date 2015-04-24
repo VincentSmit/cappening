@@ -581,11 +581,53 @@ renderLocation = ->
 						map.removeLayer window.flagCurrentLocation
 					marker.addTo(map)
 					window.flagCurrentLocation = marker
-					areaBounds = boundaryRectangle.getBounds()
-					if !(areaBounds.contains(latLngObj))
-						distance = latLngObj.distanceTo(areaBounds.getCenter())
-						log 'you are too far away to play the game.'
-						log distance + 'meters from center'
+					if boundaryRectangle?
+						areaBounds = boundaryRectangle.getBounds()
+						if !(areaBounds.contains(latLngObj)) 
+							log 'you are outside gameborder'
+							log location[0], location[1]
+							#TODO add correct icon & radius calculation
+							radius = 0
+							if latLngObj.lng<areaBounds.getWest()
+								if latLngObj.lat>areaBounds.getNorth()
+									#NW
+									text = "north west"
+								else if latLngObj.lat<areaBounds.getSouth()
+									#SW
+									text = "south west"
+								else
+									#W
+									indicationLat = latLngObj.lat
+									text = "west"
+							else if latLngObj.lng>areaBounds.getEast()
+								if latLngObj.lat>areaBounds.getNorth()
+									#NE
+									text= "north east"
+								else if latLngObj.lat<areaBounds.getSouth()
+									#SE
+									text = "south east"
+								else
+									#E
+									indicationLat = latLngObj.lat
+									text = "east"
+							else if latLngObj.lat>areaBounds.getNorth()
+								#N
+								indicationLng = latLngObj.lng
+								text = "north"
+							else
+								#S
+								indicationLng = latLngObj.lng
+								text = "south"
+							log indicationLat
+							log indicationLng
+							indicationLatLng = L.latLng(indicationLat, indicationLng)
+							popuptext = "You are " + latLngObj.distanceTo(indicationLatLng) + "m to the " + text
+							markerIdc = L.marker(indicationLatLng)
+							markerIdc.bindPopup(popuptext)
+							if window.flagCurrentLocation
+								map.removeLayer window.flagCurrentLocation
+							markerIdc.addTo(map)
+							window.flagCurrentLocation = markerIdc
 					# Checking if users are capable of taking over flags
 					Dom.div ->
 						Db.shared.observeEach 'game', 'flags', (flag) !->
@@ -603,3 +645,5 @@ renderLocation = ->
 					map.removeLayer flagCurrentLocation
 					window.flagCurrentLocation = null
 
+
+	
