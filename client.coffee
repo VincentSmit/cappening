@@ -591,31 +591,43 @@ renderLocation = ->
 							if latLngObj.lng<areaBounds.getWest()
 								if latLngObj.lat>areaBounds.getNorth()
 									#NW
+									indicationLat = areaBounds.getNorthWest().lat
+									indicationLng = areaBounds.getNorthWest().lng
 									text = "north west"
 								else if latLngObj.lat<areaBounds.getSouth()
 									#SW
+									indicationLat = areaBounds.getSouthWest().lat
+									indicationLng = areaBounds.getSouthWest().lng
 									text = "south west"
 								else
 									#W
 									indicationLat = latLngObj.lat
+									indicationLng = areaBounds.getWest()
 									text = "west"
 							else if latLngObj.lng>areaBounds.getEast()
 								if latLngObj.lat>areaBounds.getNorth()
 									#NE
+									indicationLat = areaBounds.getNorthEast().lat
+									indicationLng = areaBounds.getNorthEast().lng
 									text= "north east"
 								else if latLngObj.lat<areaBounds.getSouth()
 									#SE
+									indicationLat = areaBounds.getSouthEast().lat
+									indicationLng = areaBounds.getSouthEast().lng
 									text = "south east"
 								else
 									#E
 									indicationLat = latLngObj.lat
+									indicationLng = areaBounds.getEast()
 									text = "east"
 							else if latLngObj.lat>areaBounds.getNorth()
 								#N
+								indicationLat = areaBounds.getNorth()
 								indicationLng = latLngObj.lng
 								text = "north"
 							else
 								#S
+								indicationLat = areaBounds.getSouth()
 								indicationLng = latLngObj.lng
 								text = "south"
 							log indicationLat
