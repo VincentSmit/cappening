@@ -140,3 +140,61 @@ Dom.css
 		paddingBottom: "2px"
 		textTransform: "uppercase"
 		textShadow: "1px 1px 2px #000000"
+#Indication Arrow
+	'#indicationArrow':
+		width: '30px'
+		height: '30px'
+		backgroundColor: '#3882B6'
+		position: 'absolute'
+		borderRadius: '15px'
+		zIndex: '10'
+	'#indicationArrow:before':
+		content: '""'
+		display: 'block'
+		position: 'absolute'
+		width: '6px'
+		backgroundColor: 'white'
+		top: '15px'
+		left: '12px'
+		height: '7px'
+	'#indicationArrow:after':
+		content: '""'
+		display: 'block'
+		width: '0'
+		height: '0'
+		top: '5px'
+		left: '7px'
+		borderBottom: 'solid 10px white'
+		borderLeft: 'solid 8px transparent'
+		borderRight: 'solid 8px transparent'
+		position: 'absolute'
+	'.indicationArrowN':
+		top: '0'
+		left: '50%'
+		marginLeft: '-15px'
+	'.indicationArrowNE':
+		top: '0'
+		right: '0'
+	'.indicationArrowE':
+		top: '50%'
+		right: '0'
+		marginTop: '-15px'	
+	'.indicationArrowSE':
+		right: '0'
+		bottom: '0'
+	'.indicationArrowS':
+		bottom: '0'
+		left: '50%'
+		marginLeft: '-15px'	
+	'.indicationArrowSW':
+		bottom: '0'
+		left: '0'
+	'.indicationArrowW':
+		left: '0'
+		top: '50%'
+		marginTop: '-15px'	
+	'.indicationArrowNW':
+		top: '0'
+		left: '0'
+	
+

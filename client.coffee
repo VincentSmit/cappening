@@ -55,11 +55,7 @@ exports.renderSettings = !->
 addBar = ->
 	Dom.div !->
 		Dom.style
-			right: "0"
-			left: "0"
-			top: "0"
 			height: "50px"
-			position: "absolute"
 			zIndex: "5"
 			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
         #DIV button to help page
@@ -581,65 +577,49 @@ renderLocation = ->
 						map.removeLayer window.flagCurrentLocation
 					marker.addTo(map)
 					window.flagCurrentLocation = marker
-					if boundaryRectangle?
-						areaBounds = boundaryRectangle.getBounds()
-						if !(areaBounds.contains(latLngObj)) 
+					if Db.shared.peek('gameState') isnt 0 
+						if !(map.getBounds().contains(latLngObj))
 							log 'you are outside gameborder'
 							log location[0], location[1]
-							#TODO add correct icon & radius calculation
-							radius = 0
-							if latLngObj.lng<areaBounds.getWest()
-								if latLngObj.lat>areaBounds.getNorth()
-									#NW
-									indicationLat = areaBounds.getNorthWest().lat
-									indicationLng = areaBounds.getNorthWest().lng
-									text = "north west"
-								else if latLngObj.lat<areaBounds.getSouth()
-									#SW
-									indicationLat = areaBounds.getSouthWest().lat
-									indicationLng = areaBounds.getSouthWest().lng
-									text = "south west"
-								else
-									#W
-									indicationLat = latLngObj.lat
-									indicationLng = areaBounds.getWest()
-									text = "west"
-							else if latLngObj.lng>areaBounds.getEast()
-								if latLngObj.lat>areaBounds.getNorth()
-									#NE
-									indicationLat = areaBounds.getNorthEast().lat
-									indicationLng = areaBounds.getNorthEast().lng
-									text= "north east"
-								else if latLngObj.lat<areaBounds.getSouth()
-									#SE
-									indicationLat = areaBounds.getSouthEast().lat
-									indicationLng = areaBounds.getSouthEast().lng
-									text = "south east"
-								else
-									#E
-									indicationLat = latLngObj.lat
-									indicationLng = areaBounds.getEast()
-									text = "east"
-							else if latLngObj.lat>areaBounds.getNorth()
-								#N
-								indicationLat = areaBounds.getNorth()
-								indicationLng = latLngObj.lng
-								text = "north"
-							else
-								#S
-								indicationLat = areaBounds.getSouth()
-								indicationLng = latLngObj.lng
-								text = "south"
-							log indicationLat
-							log indicationLng
-							indicationLatLng = L.latLng(indicationLat, indicationLng)
-							popuptext = "You are " + latLngObj.distanceTo(indicationLatLng) + "m to the " + text
-							markerIdc = L.marker(indicationLatLng)
-							markerIdc.bindPopup(popuptext)
-							if window.flagCurrentLocation
-								map.removeLayer window.flagCurrentLocation
-							markerIdc.addTo(map)
-							window.flagCurrentLocation = markerIdc
+							arrowDiv = document.createElement "div"
+							arrowDiv.setAttribute 'id', 'indicationArrow'
+							mainElement = document.getElementById("OpenStreetMap")
+							if mainElement?
+								log 'indication element created'
+								mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
+								log map.getCenter()
+								center= map.getCenter()
+								
+								difLat = Math.abs(latLngObj.lat - map.getCenter().lat)
+								difLng = Math.abs(latLngObj.lng - map.getCenter().lng)
+								angle = 0
+								if latLngObj.lng > center.lng and latLngObj.lat > center.lat
+									angle = Math.atan(difLng/difLat) 
+								else if latLngObj.lng > center.lng and latLngObj.lat <= center.lat
+									angle = Math.atan(difLat/difLng)+ Math.PI/2 
+								else if latLngObj.lng <= center.lng and latLngObj.lat <= center.lat
+									angle = Math.atan(difLng/difLat)+ Math.PI
+								else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
+									angle = - Math.atan(difLng/difLat)
+								angleDeg = 	angle*180/Math.PI		
+								if angleDeg<=22.5 or angleDeg > 337.5
+									arrowDiv.className = 'indicationArrowN'
+								else if angleDeg >22.5 and angleDeg<=67.5
+									arrowDiv.className = 'indicationArrowNE'
+								else if angleDeg >67.5 and angleDeg<=112.5
+									arrowDiv.className = 'indicationArrowE'
+								else if angleDeg >122.5 and angleDeg<=157.5
+									arrowDiv.className = 'indicationArrowSE'
+								else if angleDeg >157.5 and angleDeg<=202.5
+									arrowDiv.className = 'indicationArrowS'
+								else if angleDeg >202.5 and angleDeg<=247.5
+									arrowDiv.className = 'indicationArrowSW'
+								else if angleDeg >247.5 and angleDeg<=292.5
+									arrowDiv.className = 'indicationArrowW'
+								else if angleDeg >292.5 and angleDeg<=337.5
+									arrowDiv.className = 'indicationArrowNW'
+								log angleDeg
+								arrowDiv.style.transform = "rotate(" +angle + "rad)"
 					# Checking if users are capable of taking over flags
 					Dom.div ->
 						Db.shared.observeEach 'game', 'flags', (flag) !->
@@ -656,6 +636,9 @@ renderLocation = ->
 				if mapReady() and flagCurrentLocation?
 					map.removeLayer flagCurrentLocation
 					window.flagCurrentLocation = null
+					toRemove = document.getElementById('indicationArrow');
+					if toRemove?
+						toRemove.parentNode.removeChild(toRemove);
 
 
 	
