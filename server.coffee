@@ -61,24 +61,28 @@ exports.client_startGame = ->
 
 # Checkin location for capturing a flag		
 exports.client_checkinLocation = (client, location) ->
-	log 'checkinLocation() client: ', client, ', location: ', location 
+	log 'checkinLocation() client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
 	flags = Db.shared.ref('game', 'flags')
 	beaconRadius = Db.shared.peek('game', 'beaconRadius')
 	flags.iterate (flag) ->
 		current = flag.get('inRange', client)?
 		flagDistance = distance(location.lat, location.lng, flag.peek('location', 'lat'), flag.peek('location', 'lng'))
 		newStatus = flagDistance < beaconRadius
-		log 'flagLoop: flag=', flag, ', beaconRadius=', beaconRadius, ', distance=', flagDistance, ', current=', current, ', new=', newStatus
+		#log 'flagLoop: flag=', flag, ', beaconRadius=', beaconRadius, ', distance=', flagDistance, ', current=', current, ', new=', newStatus
 		if newStatus != current
 			if newStatus
-				log 'Adding to inrange'
+				log 'Adding to inRange'
 				flag.set 'inRange', client, 'true'
+				# START debug code
+				log 'beacon ', flag.n, ' captured by team ', getTeamOfUser(client), ' by user ', client
+				flag.set 'owner', getTeamOfUser(client)
+				# END debug code
+
 				# Start takeover
 			else
-				log 'Removed from inrange'
+				log 'Removed from inRange'
 				# clean takeover
-				flag.set 'inRange', client, null # TODO confirm that this removes the line from the database instead of setting it to 'null'
-
+				flag.remove 'inRange', client
 
 
 # ========== Functions ==========
@@ -112,3 +116,16 @@ distance = (inputLat1, inputLng1, inputLat2, inputLng2) ->
 	lat2 = inputLat2 * rad
 	a = Math.sin(lat1) * Math.sin(lat2) + Math.cos(lat1) * Math.cos(lat2) * Math.cos((inputLng2 - inputLng1) * rad);
 	return r * Math.acos(Math.min(a, 1));
+
+# Get the team id the user is added to
+getTeamOfUser = (userId) ->
+	result = -1
+	Db.shared.iterate 'game', 'teams', (team) !->
+		if team.peek('users', userId, 'userName')?
+			result = team.n
+	#if result is -1
+	#	log 'Warning: Did not find team for userId=', userId
+	return result
+
+
+
