@@ -168,9 +168,6 @@ setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
 		currentPage = Db.local.get('currentSetupPage')
 		currentPage = 'setup0' if not currentPage?
-		tooLittlePlayers = Plugin.users.count().get() <= 1 and false # TODO remove (debugging purposes)
-		if tooLittlePlayers
-			currentPage = 'setup0'
 		log 'currentPage=', currentPage
 		if currentPage is 'setup0' # Setup team and round time
 			# Variables
@@ -195,97 +192,94 @@ setupContent = ->
 					Dom.text tr("Next")
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
-					if tooLittlePlayers
-						Dom.cls 'stepbar-disable'
-					else
-						Dom.onTap !->
-							Server.send 'setTeams', numberOfTeams.get()
-							Server.send 'setRoundTime', roundTimeNumber.get(), roundTimeUnit.get()
-							Db.local.set('currentSetupPage', 'setup1')
+					Dom.onTap !->
+						Server.send 'setTeams', numberOfTeams.get()
+						Server.send 'setRoundTime', roundTimeNumber.get(), roundTimeUnit.get()
+						Db.local.set('currentSetupPage', 'setup1')
 			Dom.div !->
 				Dom.style padding: '8px'
-				if tooLittlePlayers
-					Dom.h2 "Not enough players"
-					Dom.text "You cannot play this game with just 1 player, invite some friends!"
-				else
-					# Teams input
-					Dom.h2 tr("Number of teams")
+				# Not enough players warning
+				if Plugin.users.count().get() <= 1
+					Dom.h2 "Warning"
+					Dom.text "Be sure to invite some friends if you actually want to play the game, you cannot play on your own (you can test it out though)."
+				# Teams input
+				Dom.h2 tr("Number of teams")
+				Dom.div !->
+					Dom.text tr("Select the number of teams:")
+					Dom.cls "team-text"
+				Dom.div !->
+					log 'numberOfTeams.get(): ', numberOfTeams.get()
+					Dom.style margin: '0 0 20px 0', height: '50px'
+					renderTeamButton = (number) ->
+						Dom.div !->
+							Dom.text number
+							Dom.cls "team-button"
+							if numberOfTeams.peek() is number
+								Dom.cls "team-button-current"
+							else
+								Dom.onTap !->
+									numberOfTeams.set number
+					userCount = Math.min(Plugin.users.count().get(),6)
+					for number in [2..Math.max(userCount,2)]
+						renderTeamButton number
+				# Duration input
+				Dom.h2 tr("Round time")
+				Dom.text tr "Select the round time, recommended: 7 days."
+				Dom.div !->
+					Dom.style Box: "middle", margin: '10px 0 10px 0', flexGrow: '0', flexShrink: '0'
+					sanitize = (value) ->
+						if value < 1
+							return 1
+						else if value > 999
+							return 999
+						else
+							return value
+					renderArrow = (direction) !->
+						Dom.div !->
+							Dom.style
+								width: 0
+								height: 0
+								borderStyle: "solid"
+								borderWidth: "#{if direction>0 then 0 else 20}px 20px #{if direction>0 then 20 else 0}px 20px"
+								borderColor: "#{if roundTimeNumber.get()<=1 then 'transparent' else '#0077cf'} transparent #{if roundTimeNumber.get()>=999 then 'transparent' else '#0077cf'} transparent"
+							if (direction>0 and roundTimeNumber.get()<999) or (direction<0 and roundTimeNumber.get()>1)
+								Dom.onTap !->
+									roundTimeNumber.set sanitize(roundTimeNumber.peek()+direction)
+					# Number input
 					Dom.div !->
-						Dom.text tr("Select the number of teams:")
-						Dom.cls "team-text"
+						Dom.style Box: "vertical center", margin: '0 10px 0 0'
+						renderArrow 1
+						Dom.input !->
+							inputElement = Dom.get()
+							Dom.prop
+								size: 2
+								value: roundTimeNumber.get()
+							Dom.style
+								fontFamily: 'monospace'
+								fontSize: '30px'
+								fontWeight: 'bold'
+								textAlign: 'center'
+								border: 'inherit'
+								backgroundColor: 'inherit'
+								color: 'inherit'
+							Dom.on 'input change', !-> roundTimeNumber.set sanitize(inputElement.value())
+							Dom.on 'click', !-> inputElement.select()
+						renderArrow -1
+					# Unit inputs
 					Dom.div !->
-						log 'numberOfTeams.get(): ', numberOfTeams.get()
-						Dom.style margin: '0 0 20px 0', height: '50px'
-						renderTeamButton = (number) ->
+						Dom.style float: 'left', clear: 'both'
+						renderTimeButton = (unit) ->
 							Dom.div !->
-								Dom.text number
-								Dom.cls "team-button"
-								if numberOfTeams.peek() is number
-									Dom.cls "team-button-current"
+								Dom.text unit
+								Dom.cls "time-button"
+								if roundTimeUnit.get() is unit
+									Dom.cls "time-button-current"
 								else
 									Dom.onTap !->
-										numberOfTeams.set number
-						userCount = Math.min(Plugin.users.count().get(),6)
-						for number in [2..userCount]
-							renderTeamButton number
-					# Duration input
-					Dom.h2 tr("Round time")
-					Dom.text tr "Select the round time, recommended: 7 days."
-					Dom.div !->
-						Dom.style Box: "middle", margin: '10px 0 10px 0', flexGrow: '0', flexShrink: '0'
-						sanitize = (value) ->
-							if value < 1
-								return 1
-							else if value > 999
-								return 999
-							else
-								return value
-						renderArrow = (direction) !->
-							Dom.div !->
-								Dom.style
-									width: 0
-									height: 0
-									borderStyle: "solid"
-									borderWidth: "#{if direction>0 then 0 else 20}px 20px #{if direction>0 then 20 else 0}px 20px"
-									borderColor: "#{if roundTimeNumber.get()<=1 then 'transparent' else '#0077cf'} transparent #{if roundTimeNumber.get()>=999 then 'transparent' else '#0077cf'} transparent"
-								if (direction>0 and roundTimeNumber.get()<999) or (direction<0 and roundTimeNumber.get()>1)
-									Dom.onTap !->
-										roundTimeNumber.set sanitize(roundTimeNumber.peek()+direction)
-						# Number input
-						Dom.div !->
-							Dom.style Box: "vertical center", margin: '0 10px 0 0'
-							renderArrow 1
-							Dom.input !->
-								inputElement = Dom.get()
-								Dom.prop
-									size: 2
-									value: roundTimeNumber.get()
-								Dom.style
-									fontFamily: 'monospace'
-									fontSize: '30px'
-									fontWeight: 'bold'
-									textAlign: 'center'
-									border: 'inherit'
-									backgroundColor: 'inherit'
-									color: 'inherit'
-								Dom.on 'input change', !-> roundTimeNumber.set sanitize(inputElement.value())
-								Dom.on 'click', !-> inputElement.select()
-							renderArrow -1
-						# Unit inputs
-						Dom.div !->
-							Dom.style float: 'left', clear: 'both'
-							renderTimeButton = (unit) ->
-								Dom.div !->
-									Dom.text unit
-									Dom.cls "time-button"
-									if roundTimeUnit.get() is unit
-										Dom.cls "time-button-current"
-									else
-										Dom.onTap !->
-											roundTimeUnit.set unit
-							renderTimeButton 'Hours'
-							renderTimeButton 'Days'
-							renderTimeButton 'Months'
+										roundTimeUnit.set unit
+						renderTimeButton 'Hours'
+						renderTimeButton 'Days'
+						renderTimeButton 'Months'
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -444,7 +438,7 @@ setupMap = ->
 		else
 			# Tile version
 			L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
-			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {zoomControl:false, updateWhenIdle:false, detectRetina:true})
+			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "  Initialized MapBox map"
 
@@ -579,7 +573,7 @@ renderLocation = ->
 						map.removeLayer window.flagCurrentLocation
 					marker.addTo(map)
 					window.flagCurrentLocation = marker
-					if Db.shared.peek('gameState') isnt 0 
+					if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
 						if !(map.getBounds().contains(latLngObj))
 							log 'you are outside gameborder'
 							log location[0], location[1]
@@ -623,15 +617,22 @@ renderLocation = ->
 								log angleDeg
 								arrowDiv.style.transform = "rotate(" +angle + "rad)"
 					# Checking if users are capable of taking over flags
-					Dom.div ->
+					Obs.observe ->
+						log 'Checking flag takeover'
 						Db.shared.observeEach 'game', 'flags', (flag) !->
-							flagCoord = L.latLng(flag.get('location', 'lat'),flag.get('location', 'lng'))
+							flagCoord = L.latLng(flag.peek('location', 'lat'), flag.peek('location', 'lng'))
 							distance = latLngObj.distanceTo(flagCoord)
-							log 'distance', distance
-							if distance - Db.shared.get('Game','BeaconRadius') <= 0
+							log '  distance=', distance, 'flag=', flag
+							within = distance - Db.shared.peek('game','beaconRadius') <= 0
+							inRange = flag.peek('inRange', Plugin.userId())?
+							if (within and not inRange) or (not within and inRange)
 								Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
 									log 'UserID', Plugin.userId()
 									log 'UserLoc', latLngObj
+								if inRange
+									log 'Taking over flag: userId=', Plugin.userId(), ', location=', latLngObj
+								else
+									log 'Stopping takeover of flag: userId=', Plugin.userId(), ', location=', latLngObj
 			else
 				log 'Location could not be found'
 			Obs.onClean ->

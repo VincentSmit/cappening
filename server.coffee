@@ -62,23 +62,22 @@ exports.client_startGame = ->
 # Checkin location for capturing a flag		
 exports.client_checkinLocation = (client, location) ->
 	log 'checkinLocation() client: ', client, ', location: ', location 
-	flags = Db.shared.peek('game', 'flags')
+	flags = Db.shared.ref('game', 'flags')
 	beaconRadius = Db.shared.peek('game', 'beaconRadius')
-	for flag, loc of flags
-		current = Db.shared.get 'game', 'flags', flag.n, 'inRange', client
-		newStatus = distance(location.lat, location.lng, loc.location.lat, loc.location.lng) < beaconRadius
+	flags.iterate (flag) ->
+		current = flag.get('inRange', client)?
+		flagDistance = distance(location.lat, location.lng, flag.peek('location', 'lat'), flag.peek('location', 'lng'))
+		newStatus = flagDistance < beaconRadius
+		log 'flagLoop: flag=', flag, ', beaconRadius=', beaconRadius, ', distance=', flagDistance, ', current=', current, ', new=', newStatus
 		if newStatus != current
 			if newStatus
 				log 'Adding to inrange'
-				Db.shared.set 'game', 'flags', flag.n, 'inRange', client, 'true'
-
-
-
+				flag.set 'inRange', client, 'true'
 				# Start takeover
 			else
 				log 'Removed from inrange'
 				# clean takeover
-				Db.shared.set 'game', 'flags', flag.n, 'inRange', client, 'false'
+				flag.set 'inRange', client, null # TODO confirm that this removes the line from the database instead of setting it to 'null'
 
 
 
