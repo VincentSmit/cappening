@@ -23,11 +23,11 @@ exports.onConfig = (config) !->
 	
 
 #========== Client calls ==========
-# Add a flag (during setup phase)
+# Add a beacon (during setup phase)
 exports.client_addMarker = (location) ->
 	log 'Adding marker: lat=', location.lat, ', lng=', location.lng
-	Db.shared.set 'game', 'flags', location.lat.toString()+'_'+location.lng.toString(), {location: location}
-	Db.shared.set 'game', 'flags', location.lat.toString()+'_'+location.lng.toString(), 'owner', -1 
+	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), {location: location}
+	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'owner', -1 
 
 # Set the round time unit and number
 exports.client_setRoundTime = (roundTimeNumber, roundTimeUnit) ->
@@ -59,30 +59,30 @@ exports.client_startGame = ->
 		team++
 		team = 0 if team >= teams
 
-# Checkin location for capturing a flag		
+# Checkin location for capturing a beacon		
 exports.client_checkinLocation = (client, location) ->
 	log 'checkinLocation() client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
-	flags = Db.shared.ref('game', 'flags')
+	beacons = Db.shared.ref('game', 'beacons')
 	beaconRadius = Db.shared.peek('game', 'beaconRadius')
-	flags.iterate (flag) ->
-		current = flag.get('inRange', client)?
-		flagDistance = distance(location.lat, location.lng, flag.peek('location', 'lat'), flag.peek('location', 'lng'))
-		newStatus = flagDistance < beaconRadius
-		#log 'flagLoop: flag=', flag, ', beaconRadius=', beaconRadius, ', distance=', flagDistance, ', current=', current, ', new=', newStatus
+	beacons.iterate (beacon) ->
+		current = beacon.get('inRange', client)?
+		beaconDistance = distance(location.lat, location.lng, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+		newStatus = beaconDistance < beaconRadius
+		#log 'beaconLoop: beacon=', beacon, ', beaconRadius=', beaconRadius, ', distance=', beaconDistance, ', current=', current, ', new=', newStatus
 		if newStatus != current
 			if newStatus
 				log 'Adding to inRange'
-				flag.set 'inRange', client, 'true'
+				beacon.set 'inRange', client, 'true'
 				# START debug code
-				log 'beacon ', flag.n, ' captured by team ', getTeamOfUser(client), ' by user ', client
-				flag.set 'owner', getTeamOfUser(client)
+				log 'beacon ', beacon.n, ' captured by team ', getTeamOfUser(client), ' by user ', client
+				beacon.set 'owner', getTeamOfUser(client)
 				# END debug code
 
 				# Start takeover
 			else
 				log 'Removed from inRange'
 				# clean takeover
-				flag.remove 'inRange', client
+				beacon.remove 'inRange', client
 
 
 # ========== Functions ==========

@@ -88,7 +88,7 @@ mainContent = ->
 	log "mainContent()"
 	addBar()
 	renderMap()
-	renderFlags()
+	renderBeacons()
 	Obs.observe ->
 		log "  Map bounds and minzoom set"
 		if mapReady()
@@ -303,7 +303,7 @@ setupContent = ->
 					Dom.onTap !->
 						Db.local.set('currentSetupPage', 'setup2')
 			renderMap()
-			renderFlags()
+			renderBeacons()
 			Obs.observe ->
 				if mapReady()
 					# Corner 1
@@ -328,7 +328,7 @@ setupContent = ->
 						map.removeLayer locationOne if locationOne?
 						map.removeLayer locationTwo if locationTwo?
 						map.removeLayer boundaryRectangle if boundaryRectangle?
-		else if currentPage is 'setup2' # Setup flags
+		else if currentPage is 'setup2' # Setup beacons
 			# Bar to indicate the setup progress
 			Dom.div !->
 				Dom.cls 'stepbar'
@@ -341,7 +341,7 @@ setupContent = ->
 						Db.local.set('currentSetupPage', 'setup1')
 				# Middle block
 				Dom.div !->
-					Dom.text tr("Flag setup")
+					Dom.text tr("Beacon setup")
 					Dom.cls 'stepbar-middle'
 				# Right button
 				Dom.div !->
@@ -353,7 +353,7 @@ setupContent = ->
 						Server.send 'startGame', !->
 							log 'Predict function gameStart?'
 			renderMap()
-			renderFlags()
+			renderBeacons()
 			Obs.observe ->
 				if mapReady()
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
@@ -442,16 +442,16 @@ setupMap = ->
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "  Initialized MapBox map"
 
-# Add flags to the map
-renderFlags = ->
-	log "rendering flags"
-	Db.shared.observeEach 'game', 'flags', (flag) !->
+# Add beacons to the map
+renderBeacons = ->
+	log "rendering beacons"
+	Db.shared.observeEach 'game', 'beacons', (beacon) !->
 		if mapReady() and map?
 			# Add the marker to the map
-			if not window.flagMarkers?
-				log "flagMarkers list reset"
-				window.flagMarkers = [];
-			teamNumber = flag.get('owner')
+			if not window.beaconMarkers?
+				log "beaconMarkers list reset"
+				window.beaconMarkers = [];
+			teamNumber = beacon.get('owner')
 			teamColor=  Db.shared.get('colors', teamNumber, 'hex')
 			
 			areaIcon = L.icon({
@@ -464,17 +464,17 @@ renderFlags = ->
 				shadowAnchor: [12, 39]
 			});
 			
-			location = L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng'))
+			location = L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng'))
 			marker = L.marker(location, {icon: areaIcon})
 			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
 			marker.addTo(map)
-			flagMarkers.push marker
-			#log 'Added marker, marker list: ', flagMarkers
+			beaconMarkers.push marker
+			#log 'Added marker, marker list: ', beaconMarkers
 			
 			# Add the area circle to the map 
-			if not window.flagCircles?
-				log "flagCircles list reset"
-				window.flagCircles = [];
+			if not window.beaconCircles?
+				log "beaconCircles list reset"
+				window.beaconCircles = [];
 
 			
 			circle = L.circle(location, Db.shared.get('game', 'beaconRadius'), {
@@ -484,40 +484,40 @@ renderFlags = ->
 				weight: 2
 			});
 			circle.addTo(map)
-			flagCircles.push circle
-			log "Added flag and circle"
+			beaconCircles.push circle
+			log "Added beacon and circle"
 		else 
 			log "  map not ready yet"
 		Obs.onClean ->
-			if flagMarkers? and map?
-				log 'onClean() flag+circle'
+			if beaconMarkers? and map?
+				log 'onClean() beacon+circle'
 				i = 0;
-				while i<flagMarkers.length
-					if sameLocation L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng')), flagMarkers[i].getLatLng()
-						map.removeLayer flagMarkers[i]
-						flagMarkers.splice(flagMarkers.indexOf(flagMarkers[i]), 1)
+				while i<beaconMarkers.length
+					if sameLocation L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng')), beaconMarkers[i].getLatLng()
+						map.removeLayer beaconMarkers[i]
+						beaconMarkers.splice(beaconMarkers.indexOf(beaconMarkers[i]), 1)
 					else
 						i++
 				i = 0;
-				while i<flagCircles.length
-					if sameLocation L.latLng(flag.get('location', 'lat'), flag.get('location', 'lng')), flagCircles[i].getLatLng()
-						map.removeLayer flagCircles[i]
-						flagCircles.splice(flagCircles.indexOf(flagCircles[i]), 1)
+				while i<beaconCircles.length
+					if sameLocation L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng')), beaconCircles[i].getLatLng()
+						map.removeLayer beaconCircles[i]
+						beaconCircles.splice(beaconCircles.indexOf(beaconCircles[i]), 1)
 					else
 						i++
-	, (flag) ->
-		-flag.get()
+	, (beacon) ->
+		-beacon.get()
 		
 # Listener that checks for clicking the map
 addMarkerListener = (event) ->
 	log 'click: ', event
 	beaconRadius = Db.shared.get('game', 'beaconRadius')
 	#Check if marker is not close to other marker
-	flags = Db.shared.peek('game', 'flags')
+	beacons = Db.shared.peek('game', 'beacons')
 	tooClose= false;
 	result = ''
-	if flags isnt {}
-		for flag, loc of flags
+	if beacons isnt {}
+		for beacon, loc of beacons
 			if event.latlng.distanceTo(convertLatLng(loc.location)) < beaconRadius*2 and !tooClose
 				tooClose = true;
 				result = 'Beacon is placed too close to other beacon'
@@ -535,7 +535,7 @@ addMarkerListener = (event) ->
 		Server.send 'addMarker', event.latlng, !->
 			# TODO fix predict function
 			log 'test prediction add marker'
-			Db.shared.set 'game', 'flags', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
+			Db.shared.set 'game', 'beacons', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
 
 convertLatLng = (location) ->
 	return L.latLng(location.lat, location.lng)
@@ -569,10 +569,10 @@ renderLocation = ->
 					latLngObj= L.latLng(location[0], location[1])
 					marker = L.marker(latLngObj)
 					marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
-					if window.flagCurrentLocation
-						map.removeLayer window.flagCurrentLocation
+					if window.beaconCurrentLocation
+						map.removeLayer window.beaconCurrentLocation
 					marker.addTo(map)
-					window.flagCurrentLocation = marker
+					window.beaconCurrentLocation = marker
 					if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
 						if !(map.getBounds().contains(latLngObj))
 							log 'you are outside gameborder'
@@ -616,32 +616,41 @@ renderLocation = ->
 									arrowDiv.className = 'indicationArrowNW'
 								log angleDeg
 								arrowDiv.style.transform = "rotate(" +angle + "rad)"
-					# Checking if users are capable of taking over flags
+					# Checking if users are capable of taking over beacons
 					Obs.observe ->
-						log 'Checking flag takeover'
-						Db.shared.observeEach 'game', 'flags', (flag) !->
-							flagCoord = L.latLng(flag.peek('location', 'lat'), flag.peek('location', 'lng'))
-							distance = latLngObj.distanceTo(flagCoord)
-							log '  distance=', distance, 'flag=', flag
+						log 'Checking beacon takeover'
+						Db.shared.observeEach 'game', 'beacons', (beacon) !->
+							beaconCoord = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+							distance = latLngObj.distanceTo(beaconCoord)
+							#log '  distance=', distance, 'beacon=', beacon
 							within = distance - Db.shared.peek('game','beaconRadius') <= 0
-							inRange = flag.peek('inRange', Plugin.userId())?
+							inRange = beacon.peek('inRange', Plugin.userId())?
 							if (within and not inRange) or (not within and inRange)
 								Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
 									log 'UserID', Plugin.userId()
 									log 'UserLoc', latLngObj
 								if inRange
-									log 'Taking over flag: userId=', Plugin.userId(), ', location=', latLngObj
+									log '  Taking over beacon: userId=', Plugin.userId(), ', location=', latLngObj
 								else
-									log 'Stopping takeover of flag: userId=', Plugin.userId(), ', location=', latLngObj
+									log '  Stopping takeover of beacon: userId=', Plugin.userId(), ', location=', latLngObj
 			else
 				log 'Location could not be found'
 			Obs.onClean ->
-				if mapReady() and flagCurrentLocation?
-					map.removeLayer flagCurrentLocation
-					window.flagCurrentLocation = null
+				if mapReady() and beaconCurrentLocation?
+					map.removeLayer beaconCurrentLocation
+					window.beaconCurrentLocation = null
 					toRemove = document.getElementById('indicationArrow');
 					if toRemove?
 						toRemove.parentNode.removeChild(toRemove);
 
 
-	
+# ========== Functions ==========
+# Get the team id the user is added to
+getTeamOfUser = (userId) ->
+	result = -1
+	Db.shared.iterate 'game', 'teams', (team) !->
+		if team.peek('users', userId, 'userName')?
+			result = team.n
+	#if result is -1
+	#	log 'Warning: Did not find team for userId=', userId
+	return result
