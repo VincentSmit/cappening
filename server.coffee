@@ -8,10 +8,7 @@ exports.onInstall = ->
 	initializeGame()
 
 # Game update 
-exports.onUpgrade = !->
-	# Reset values for debugging. TODO: remove
-	Db.shared.set {}
-	
+exports.onUpgrade = !->	
 	initializeColors()
 	initializeGame()
 
@@ -46,7 +43,6 @@ exports.client_setBounds = (one, two) ->
 
 # Start the game
 exports.client_startGame = ->
-	Db.shared.set 'gameState', 1
 	userIds = Plugin.userIds()
 	teams = Db.shared.get('game','numberOfTeams')
 	team = 0
@@ -58,37 +54,58 @@ exports.client_startGame = ->
 		userIds.splice(randomNumber,1)
 		team++
 		team = 0 if team >= teams
+	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
 
 # Checkin location for capturing a beacon		
 exports.client_checkinLocation = (client, location) ->
-	log 'checkinLocation() client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
-	beacons = Db.shared.ref('game', 'beacons')
-	beaconRadius = Db.shared.peek('game', 'beaconRadius')
-	beacons.iterate (beacon) ->
-		current = beacon.get('inRange', client)?
-		beaconDistance = distance(location.lat, location.lng, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
-		newStatus = beaconDistance < beaconRadius
-		#log 'beaconLoop: beacon=', beacon, ', beaconRadius=', beaconRadius, ', distance=', beaconDistance, ', current=', current, ', new=', newStatus
-		if newStatus != current
-			if newStatus
-				log 'Adding to inRange'
-				beacon.set 'inRange', client, 'true'
-				# START debug code
-				log 'beacon ', beacon.n, ' captured by team ', getTeamOfUser(client), ' by user ', client
-				beacon.set 'owner', getTeamOfUser(client)
-				# END debug code
+	if Db.shared.get 'gameState' is not 1
+		log 'Client ', client, ' (', Plugin.userName(client), ') tried to capture beacon while game is not running!'
+	else
+		log 'checkinLocation() client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
+		beacons = Db.shared.ref('game', 'beacons')
+		beaconRadius = Db.shared.peek('game', 'beaconRadius')
+		beacons.iterate (beacon) ->
+			current = beacon.get('inRange', client)?
+			beaconDistance = distance(location.lat, location.lng, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+			newStatus = beaconDistance < beaconRadius
+			#log 'beaconLoop: beacon=', beacon, ', beaconRadius=', beaconRadius, ', distance=', beaconDistance, ', current=', current, ', new=', newStatus
+			if newStatus != current
+				if newStatus
+					log 'Adding to inRange: id=', client, ', name=', Plugin.userName(client)
+					beacon.set 'inRange', client, 'true'
 
-				# Start takeover
-			else
-				log 'Removed from inRange'
-				# clean takeover
-				beacon.remove 'inRange', client
+					# TODO
+					# 1: Determine how much players of each team are in range
+					# 2: Determine if there is progress and which team
+					# 3: Determine if it is 'neutralizing' or 'capturing'
+					# 4: Determine the speed of the capture
+					# 5: Set the current percentage of the flag to the correct state by doing 1-4 for the previous team state
+
+					teamMembers = (0 for num in [0..6])
+					Db.shared.iterate 'game', 'beacons', beacon.n, 'inRange', (player) !->
+						team = getTeamOfUser(player.n)
+						teamMembers[team] = teamMembers[team]+1
+					log 'teamMembers count: ', teamMembers	
+
+
+
+					# START debug code
+					log 'beacon ', beacon.n, ' captured by team ', getTeamOfUser(client), ' by user ', client
+					beacon.set 'owner', getTeamOfUser(client)
+					# END debug code
+
+					# Start takeover
+				else
+					log 'Removed from inRange: ', client, ', name=', Plugin.userName(client)
+					# clean takeover
+					beacon.remove 'inRange', client
 
 
 # ========== Functions ==========
 # Setup an empty game
 initializeGame = ->
 	Db.shared.set 'gameState', 0
+	Db.shared.modify 'gameNumber', (v) -> (0||v)+1
 	Db.shared.set 'game', {}
 	Db.shared.set 'game', 'bounds', {one: {lat: 52.249822176849, lng: 6.8396973609924}, two: {lat: 52.236578295702, lng: 6.8598246574402}}
 	Db.shared.set 'game', 'numberOfTeams', 2

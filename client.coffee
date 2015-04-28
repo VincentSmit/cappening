@@ -16,6 +16,18 @@ window.redraw = Obs.create(0)
 exports.render = ->
 	log 'FULL RENDER'
 	loadOpenStreetMap()
+
+	Obs.observe ->
+		# Check if cleanup from last game is required
+		local = Db.local.get 'gameNumber'
+		remote = Db.shared.get 'gameNumber'
+		log 'Game cleanup checked, local=', local, ', remote=', remote
+		if !(local?) || local != remote
+			log '  Cleanup performed'
+			Db.local.set 'gameNumber', remote
+			# Do cleanup stuff
+			Db.local.remove 'currentSetupPage'
+
 	# Ask for location
 	if !Geoloc.isSubscribed()
 		Geoloc.subscribe()
@@ -618,21 +630,22 @@ renderLocation = ->
 								arrowDiv.style.transform = "rotate(" +angle + "rad)"
 					# Checking if users are capable of taking over beacons
 					Obs.observe ->
-						log 'Checking beacon takeover'
-						Db.shared.observeEach 'game', 'beacons', (beacon) !->
-							beaconCoord = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
-							distance = latLngObj.distanceTo(beaconCoord)
-							#log '  distance=', distance, 'beacon=', beacon
-							within = distance - Db.shared.peek('game','beaconRadius') <= 0
-							inRange = beacon.peek('inRange', Plugin.userId())?
-							if (within and not inRange) or (not within and inRange)
-								Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
-									log 'UserID', Plugin.userId()
-									log 'UserLoc', latLngObj
-								if inRange
-									log '  Taking over beacon: userId=', Plugin.userId(), ', location=', latLngObj
-								else
-									log '  Stopping takeover of beacon: userId=', Plugin.userId(), ', location=', latLngObj
+						if Db.shared.peek('gameState') is 1 # Only when the game is running, do something
+							log 'Checking beacon takeover'
+							Db.shared.observeEach 'game', 'beacons', (beacon) !->
+								beaconCoord = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+								distance = latLngObj.distanceTo(beaconCoord)
+								#log '  distance=', distance, 'beacon=', beacon
+								within = distance - Db.shared.peek('game','beaconRadius') <= 0
+								inRange = beacon.peek('inRange', Plugin.userId())?
+								if (within and not inRange) or (not within and inRange)
+									Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
+										log 'UserID', Plugin.userId()
+										log 'UserLoc', latLngObj
+									if inRange
+										log '  Taking over beacon: userId=', Plugin.userId(), ', location=', latLngObj
+									else
+										log '  Stopping takeover of beacon: userId=', Plugin.userId(), ', location=', latLngObj
 			else
 				log 'Location could not be found'
 			Obs.onClean ->
