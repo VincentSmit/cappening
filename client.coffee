@@ -1,4 +1,5 @@
 Db = require 'db'
+Time = require 'time'
 Dom = require 'dom'
 Modal = require 'modal'
 Obs = require 'obs'
@@ -95,27 +96,33 @@ addBar = ->
 			Dom.style ->
 				backgroundColor: "#000"
 
+addProgressBar = ->
+	Db.shared.observeEach 'game', 'beacons', (beacon) !->
+		if beacon.get('inRange', Plugin.userId())?
+			nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+			Dom.div !->
+				Dom.style
+					height: "20px"
+					width: "100%"
+					zIndex: "5"
+					backgroundColor: "#f3f3f3"
+					border: 0
+					boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
+				Dom.div !->
+					Dom.style
+						height: "20px"
+						width: "20%"
+						backgroundColor: nextColor
+						zIndex: "10"
+
+
 # Home page with map
 mainContent = ->
 	log "mainContent()"
 	addBar()
+	addProgressBar()
 	renderMap()
 	renderBeacons()
-	Obs.observe ->
-		log "  Map bounds and minzoom set"
-		if mapReady()
-			# Limit scrolling to the bounds and also limit the zoom level
-			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
-			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
-			bounds = L.latLngBounds(loc1, loc2)
-			map.setMaxBounds(bounds)
-			map.fitBounds(bounds);
-			map._layersMinZoom = map.getBoundsZoom(bounds)
-		Obs.onClean ->
-			if map?
-				log "  Map bounds and minzoom reset"
-				map.setMaxBounds()
-				map._layersMinZoom = 0
 
 # Help page 
 helpContent = ->
@@ -195,10 +202,9 @@ logContent = ->
 					Dom.div !->
 						Dom.style Flex: 1, fontSize: '100%'
 						Dom.text capture.get('type')
-						
-
-
-			
+	end = Db.shared.get('game', 'endTime')
+	Dom.text "The game ends "
+	Time.deltaText end
 
 	
 setupContent = ->
@@ -478,6 +484,21 @@ setupMap = ->
 			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "  Initialized MapBox map"
+			Obs.observe ->
+				log "  Map bounds and minzoom set"
+				if mapReady()
+					# Limit scrolling to the bounds and also limit the zoom level
+					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
+					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
+					bounds = L.latLngBounds(loc1, loc2)
+					map.setMaxBounds(bounds)
+					map.fitBounds(bounds);
+					map._layersMinZoom = map.getBoundsZoom(bounds)
+				Obs.onClean ->
+					if map?
+						log "  Map bounds and minzoom reset"
+						map.setMaxBounds()
+						map._layersMinZoom = 0
 
 # Add beacons to the map
 renderBeacons = ->
