@@ -94,6 +94,12 @@ exports.client_checkinLocation = (client, location) ->
 					beacon.set 'owner', getTeamOfUser(client)
 					# END debug code
 
+					# capture event
+					maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
+					Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
+					Db.shared.set 'game', 'eventlist', maxId, 'type', "capture"
+					Db.shared.set 'game', 'eventlist', maxId, 'beacon', beacon.n
+
 					# Start takeover
 				else
 					log 'Removed from inRange: ', client, ', name=', Plugin.userName(client)
@@ -112,6 +118,7 @@ initializeGame = ->
 	Db.shared.set 'game', 'beaconRadius', 200
 	Db.shared.set 'game', 'roundTimeUnit', 'Days'
 	Db.shared.set 'game', 'roundTimeNumber', 7
+	Db.shared.set 'game', 'eventlist', 'maxId', 0
 
 initializeColors = ->
 	Db.shared.set 'colors', 

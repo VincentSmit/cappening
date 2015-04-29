@@ -174,7 +174,32 @@ scoresContent = ->
 			Dom.br()
 
 logContent = ->
-	Dom.text "The log file of all events"
+	Ui.list !->
+		Db.shared.observeEach 'game', 'eventlist', (capture) !->
+			if capture.n != "maxId"
+				log 'capture', 
+				Dom.style marginTop: '4px'
+				Ui.item !->
+					if capture.get('type') is "capture" and mapReady()
+						Dom.onTap !->
+							beaconId = capture.get('beacon')
+							Page.nav 'main'
+							map.setView(L.latLng(Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
+					Dom.div !->
+						Dom.style
+							width: '70px'
+							height: '70px'
+							marginRight: '10px'
+							# background: "url(#{Photo.url key, 200}) 50% 50% no-repeat"
+							backgroundSize: 'cover'
+					Dom.div !->
+						Dom.style Flex: 1, fontSize: '100%'
+						Dom.text capture.get('type')
+						
+
+
+			
+
 	
 setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
