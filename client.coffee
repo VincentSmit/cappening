@@ -95,10 +95,31 @@ addBar = ->
 			Dom.style ->
 				backgroundColor: "#000"
 
+addProgressBar = ->
+	Db.shared.observeEach 'game', 'beacons', (beacon) !->
+		if beacon.get('inRange', Plugin.userId())?
+			nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+			Dom.div !->
+				Dom.style
+					height: "20px"
+					width: "100%"
+					zIndex: "5"
+					backgroundColor: "#f3f3f3"
+					border: 0
+					boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
+				Dom.div !->
+					Dom.style
+						height: "20px"
+						width: "20%"
+						backgroundColor: nextColor
+						zIndex: "10"
+
+
 # Home page with map
 mainContent = ->
 	log "mainContent()"
 	addBar()
+	addProgressBar()
 	renderMap()
 	renderBeacons()
 
