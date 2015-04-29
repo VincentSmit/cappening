@@ -108,7 +108,7 @@ exports.client_checkinLocation = (client, location) ->
 					# To Do: personalize for team members or dubed players
 					Event.create
     					unit: 'capture'
-    					text: "Team " + Db.shared.get('colors', getTeamOfUser(client) , 'name') + " captured a flag"
+    					text: "Team " + Db.shared.get('colors', getTeamOfUser(client) , 'name') + " captured a beacon"
 					# calculate change in scores
 					# TO DO
 
