@@ -188,20 +188,26 @@ logContent = ->
 				Dom.style marginTop: '4px'
 				Ui.item !->
 					if capture.get('type') is "capture" and mapReady()
+						beaconId = capture.get('beacon')
+						teamId = Db.shared.get('game', 'beacons', beaconId, 'owner')
 						Dom.onTap !->
-							beaconId = capture.get('beacon')
 							Page.nav 'main'
 							map.setView(L.latLng(Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
-					Dom.div !->
-						Dom.style
-							width: '70px'
-							height: '70px'
-							marginRight: '10px'
-							# background: "url(#{Photo.url key, 200}) 50% 50% no-repeat"
-							backgroundSize: 'cover'
-					Dom.div !->
-						Dom.style Flex: 1, fontSize: '100%'
-						Dom.text capture.get('type')
+						Dom.div !->
+							Dom.style
+								width: '70px'
+								height: '70px'
+								marginRight: '10px'
+								# background: "url(#{Photo.url key, 200}) 50% 50% no-repeat"
+								backgroundSize: 'cover'
+						Dom.div !->
+							Dom.style Flex: 1, fontSize: '100%'
+							Dom.text "Team " + Db.shared.get('colors', teamId, 'name') + " captured a beacon"
+							Dom.div !->
+								Dom.style fontSize: '75%', marginTop: '6px'
+								Dom.text "Captured "
+								Time.deltaText capture.get('timestamp')
+
 	end = Db.shared.get('game', 'endTime')
 	Dom.text "The game ends "
 	Time.deltaText end
