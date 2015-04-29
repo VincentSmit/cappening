@@ -208,6 +208,8 @@ logContent = ->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
 								Time.deltaText capture.get('timestamp')
+					else if capture.get('typ') is "score"
+						page.nav 'scores'
 
 	end = Db.shared.get('game', 'endTime')
 	Dom.text "The game ends "

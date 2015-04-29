@@ -1,6 +1,7 @@
 Db = require 'db'
 Plugin = require 'plugin'
 Timer = require 'timer'
+Event = require 'event'
 
 # ========== Events ==========
 # Game install
@@ -97,11 +98,22 @@ exports.client_checkinLocation = (client, location) ->
 					beacon.set 'owner', getTeamOfUser(client)
 					# END debug code
 
-					# capture event
+					#  list capture
 					maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
 					Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
 					Db.shared.set 'game', 'eventlist', maxId, 'type', "capture"
 					Db.shared.set 'game', 'eventlist', maxId, 'beacon', beacon.n
+
+					# create capture event
+					# To Do: personalize for team members or dubed players
+					Event.create
+    					unit: 'capture'
+    					text: "Team " + Db.shared.get('colors', getTeamOfUser(client) , 'name') + " captured a flag"
+					# calculate change in scores
+					# TO DO
+
+
+
 					Db.shared.modify 'game', 'teams', getTeamOfUser(client), 'users', client, "userScore", (v) -> v+beacon.get("captureValue")
 					beacon.modify "captureValue", (v) -> 
 						if v > 1 
@@ -175,6 +187,7 @@ getTeamOfUser = (userId) ->
 	#if result is -1
 	#	log 'Warning: Did not find team for userId=', userId
 	return result
+
 
 
 
