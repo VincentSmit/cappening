@@ -26,6 +26,7 @@ exports.client_addMarker = (location) ->
 	log 'Adding marker: lat=', location.lat, ', lng=', location.lng
 	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), {location: location}
 	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'owner', -1 
+	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'captureValue', 10
 
 # Set the round time unit and number
 exports.client_setRoundTime = (roundTimeNumber, roundTimeUnit) ->
@@ -101,6 +102,12 @@ exports.client_checkinLocation = (client, location) ->
 					Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
 					Db.shared.set 'game', 'eventlist', maxId, 'type', "capture"
 					Db.shared.set 'game', 'eventlist', maxId, 'beacon', beacon.n
+					Db.shared.modify 'game', 'teams', getTeamOfUser(client), 'users', client, "userScore", (v) -> v+beacon.get("captureValue")
+					beacon.modify "captureValue", (v) -> 
+						if v > 1 
+							return v-1
+						else 
+							return v
 
 					# Start takeover
 				else

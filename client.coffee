@@ -33,6 +33,7 @@ exports.render = ->
 	if !Geoloc.isSubscribed()
 		Geoloc.subscribe()
 		# gamestate check
+	limitToBounds()
 	Obs.observe ->
 		mainElement = document.getElementsByTagName("main")[0]
 		mainElement.setAttribute 'id', 'main'
@@ -156,10 +157,10 @@ helpContent = ->
 		Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
 
 scoresContent = ->
-	teamscore = 0
 	Dom.div ->
 		Dom.br()
 		Db.shared.observeEach 'game', 'teams', (team) !->
+			teamscore = 0
 			log 'team', team.n
 			teamcolor = Db.shared.get('colors', team.n, 'hex')
 			teamname = Db.shared.get('colors', team.n, 'name')
@@ -490,21 +491,33 @@ setupMap = ->
 			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "  Initialized MapBox map"
-			Obs.observe ->
-				log "  Map bounds and minzoom set"
-				if mapReady()
-					# Limit scrolling to the bounds and also limit the zoom level
-					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
-					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
-					bounds = L.latLngBounds(loc1, loc2)
-					map.setMaxBounds(bounds)
-					map.fitBounds(bounds);
-					map._layersMinZoom = map.getBoundsZoom(bounds)
-				Obs.onClean ->
-					if map?
-						log "  Map bounds and minzoom reset"
-						map.setMaxBounds()
-						map._layersMinZoom = 0
+
+
+limitToBounds = ->
+	Obs.observe ->
+		log "  Map bounds and minzoom set"
+		if mapReady() and Db.shared.get('gameState') is 1
+			# Limit scrolling to the bounds and also limit the zoom level
+			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
+			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
+			bounds = L.latLngBounds(loc1, loc2)
+			map.setMaxBounds(bounds)
+			#map.fitBounds(bounds); # Causes problems, because it zooms to max all the time
+			map._layersMinZoom = map.getBoundsZoom(bounds)
+			Obs.onClean ->
+				if map?
+					log "  Map bounds and minzoom reset"
+					map.setMaxBounds()
+					map._layersMinZoom = 0
+zoomToBounds = ->
+	Obs.observe ->
+		log "  Zoomed to bounds"
+		if mapReady()
+			# Limit scrolling to the bounds and also limit the zoom level
+			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
+			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
+			bounds = L.latLngBounds(loc1, loc2)
+			map.fitBounds(bounds);
 
 # Add beacons to the map
 renderBeacons = ->
