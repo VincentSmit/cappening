@@ -157,10 +157,10 @@ helpContent = ->
 		Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
 
 scoresContent = ->
-	teamscore = 0
 	Dom.div ->
 		Dom.br()
 		Db.shared.observeEach 'game', 'teams', (team) !->
+			teamscore = 0
 			log 'team', team.n
 			teamcolor = Db.shared.get('colors', team.n, 'hex')
 			teamname = Db.shared.get('colors', team.n, 'name')
