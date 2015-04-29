@@ -1,5 +1,6 @@
 Db = require 'db'
 Plugin = require 'plugin'
+Timer = require 'timer'
 
 # ========== Events ==========
 # Game install
@@ -43,6 +44,7 @@ exports.client_setBounds = (one, two) ->
 
 # Start the game
 exports.client_startGame = ->
+	setTimer()
 	userIds = Plugin.userIds()
 	teams = Db.shared.get('game','numberOfTeams')
 	team = 0
@@ -100,6 +102,9 @@ exports.client_checkinLocation = (client, location) ->
 					# clean takeover
 					beacon.remove 'inRange', client
 
+#Function called when the game ends
+exports.endGame = !->
+	log "The game ended!"
 
 # ========== Functions ==========
 # Setup an empty game
@@ -125,6 +130,19 @@ initializeColors = ->
 			5:    {name: 'purple',  capitalizedName: 'Purple',  hex: '#E700D4'}
 		}
 
+#game timer
+setTimer = !->
+	if Db.shared.get('game', 'roundTimeUnit') is 'Months'
+		seconds = Db.shared.get('game', 'roundTimeNumber')*2592000
+	else if Db.shared.get('game', 'roundTimeUnit') is 'Days'
+		seconds = Db.shared.get('game', 'roundTimeNumber')*86400
+	else if Db.shared.get('game', 'roundTimeUnit') is 'Hours'
+		seconds = Db.shared.get('game', 'roundTimeNumber')*3600
+	end = Plugin.time()+seconds #in seconds
+	Db.shared.set 'game', 'endTime', end
+	Timer.cancel
+	Timer.set seconds*1000, #'endGame' endGame is the function called when the timer ends
+		
 # Calculate distance
 distance = (inputLat1, inputLng1, inputLat2, inputLng2) ->
 	r = 6378137

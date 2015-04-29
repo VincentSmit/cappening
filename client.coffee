@@ -1,4 +1,5 @@
 Db = require 'db'
+Time = require 'time'
 Dom = require 'dom'
 Modal = require 'modal'
 Obs = require 'obs'
@@ -181,6 +182,11 @@ scoresContent = ->
 
 logContent = ->
 	Dom.text "The log file of all events"
+	Dom.br()
+	Dom.br()
+	end = Db.shared.get('game', 'endTime')
+	Dom.text "The game ends "
+	Time.deltaText end
 	
 setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
