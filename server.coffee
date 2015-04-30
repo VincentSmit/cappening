@@ -76,6 +76,7 @@ exports.client_checkinLocation = (client, location) ->
 			#log 'beaconLoop: beacon=', beacon, ', beaconRadius=', beaconRadius, ', distance=', beaconDistance, ', current=', current, ', new=', newStatus
 			if newStatus != current
 				if newStatus
+					# TODO: move lower, after updating other data
 					log 'Adding to inRange: id=', client, ', name=', Plugin.userName(client)
 					beacon.set 'inRange', client, 'true'
 
@@ -86,11 +87,38 @@ exports.client_checkinLocation = (client, location) ->
 					# 4: Determine the speed of the capture
 					# 5: Set the current percentage of the flag to the correct state by doing 1-4 for the previous team state
 
-					teamMembers = (0 for num in [0..6])
+					# Determine members per team
+					teamMembers = (0 for team in [0..5])
 					Db.shared.iterate 'game', 'beacons', beacon.n, 'inRange', (player) !->
 						team = getTeamOfUser(player.n)
 						teamMembers[team] = teamMembers[team]+1
+					# TODO: remove
+					teamMembers = [0, 2, 1, 0, 3, 3]
+
 					log 'teamMembers count: ', teamMembers	
+
+					# Determine who is competing
+					max = 0
+					competing = []
+					for team in [0..5]
+						if teamMembers[team] > max
+							max = teamMembers[team]
+							competing = []
+							competing.push team
+						else if teamMembers[team] == max
+							competing.push team
+					# Check if there should be progress
+					if competing.length == 1
+						# Team will capture the flag
+						log 'Team ', competing[0], ' is capturing beacon ', beacon.n
+
+
+
+
+					else if competing.length > 1
+						# No progess, stand-off
+						log 'Capture of beacon ', beacon.n, ' on hold, competing teams: ', competing
+
 
 
 

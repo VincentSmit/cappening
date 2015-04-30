@@ -458,7 +458,7 @@ loadOpenStreetMap = ->
 		css.setAttribute "rel", "stylesheet"
 		css.setAttribute "type", "text/css"
 		css.setAttribute "id", "mapboxCSS"
-		css.setAttribute "href", "https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.css"
+		css.setAttribute "href", "https://api.tiles.mapbox.com/mapbox.js/v2.1.9/mapbox.css"
 		document.getElementsByTagName("head")[0].appendChild css
 		
 		# Insert javascript
@@ -475,7 +475,7 @@ loadOpenStreetMap = ->
 			javascript.onload = ->
 				log "OpenStreetMap files loaded"
 				redraw.incr()
-		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.js'
+		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.9/mapbox.js'
 		document.getElementsByTagName('head')[0].appendChild javascript
 	else 
 		log "  OpenStreetMap files already loaded"
@@ -699,8 +699,12 @@ renderLocation = ->
 										arrowDiv.className = 'indicationArrowW'
 									else if angleDeg >292.5 and angleDeg<=337.5
 										arrowDiv.className = 'indicationArrowNW'
-									log 'angleDeg=', angleDeg
+									#log 'angleDeg=', angleDeg
 									arrowDiv.style.transform = "rotate(" +angle + "rad)"
+									arrowDiv.style.webkitTransform = "rotate(" +angle + "rad)"
+									arrowDiv.style.mozTransform = "rotate(" +angle + "rad)"
+									arrowDiv.style.msTransform = "rotate(" +angle + "rad)"
+									arrowDiv.style.oTransform = "rotate(" +angle + "rad)"
 						Obs.onClean ->
 							# Deregister move/zoom listeners to update indication arrow
 							if mapReady()
