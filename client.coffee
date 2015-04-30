@@ -25,7 +25,7 @@ exports.render = ->
 		remote = Db.shared.get 'gameNumber'
 		log 'Game cleanup checked, local=', local, ', remote=', remote
 		if !(local?) || local != remote
-			log '[ClientLog]  Cleanup performed'
+			log ' Cleanup performed'
 			Db.local.set 'gameNumber', remote
 			# Do cleanup stuff
 			Db.local.remove 'currentSetupPage'
@@ -122,7 +122,7 @@ addProgressBar = ->
 
 # Home page with map
 mainContent = ->
-	log "[ClientLog] mainContent()"
+	log "mainContent()"
 	addBar()
 	addProgressBar()
 	renderMap()
@@ -223,7 +223,7 @@ logContent = ->
 	Ui.list !->
 		Db.shared.observeEach 'game', 'eventlist', (capture) !->
 			if capture.n != "maxId"
-				log '[ClientLog] capture' 
+				log 'capture' 
 				Dom.style marginTop: '4px'
 				Ui.item !->
 					if capture.get('type') is "capture" and mapReady()
@@ -272,7 +272,7 @@ setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
 		currentPage = Db.local.get('currentSetupPage')
 		currentPage = 'setup0' if not currentPage?
-		log '[ClientLog]  currentPage =', currentPage
+		log ' currentPage =', currentPage
 		if currentPage is 'setup0' # Setup team and round time
 			# Variables
 			numberOfTeams = Obs.create Db.shared.peek('game', 'numberOfTeams')
@@ -312,7 +312,7 @@ setupContent = ->
 					Dom.text tr("Select the number of teams:")
 					Dom.cls "team-text"
 				Dom.div !->
-					log '[ClientLog] numberOfTeams.get(): ', numberOfTeams.get()
+					log 'numberOfTeams.get(): ', numberOfTeams.get()
 					Dom.style margin: '0 0 20px 0', height: '50px'
 					renderTeamButton = (number) ->
 						Dom.div !->
@@ -414,20 +414,20 @@ setupContent = ->
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 					window.locationOne = L.marker(loc1, {draggable: true})
 					locationOne.on 'dragend', ->
-						log '[ClientLog] marker drag 1'
+						log 'marker drag 1'
 						markerDragged()
 					locationOne.addTo(map)
 					# Corner 2
 					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 					window.locationTwo = L.marker(loc2, {draggable: true})
 					locationTwo.on 'dragend', ->
-						log '[ClientLog] marker drag 2'
+						log 'marker drag 2'
 						markerDragged()
 					locationTwo.addTo(map)
 					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 5, clickable: false})
 					boundaryRectangle.addTo(map)
 				Obs.onClean ->
-					log '[ClientLog] onClean() rectangle + corners'
+					log 'onClean() rectangle + corners'
 					if mapReady()
 						map.removeLayer locationOne if locationOne?
 						map.removeLayer locationTwo if locationTwo?
@@ -452,10 +452,10 @@ setupContent = ->
 					Dom.text tr("Start")
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
-					log '[ClientLog] setup2 new'
+					log 'setup2 new'
 					Dom.onTap !->
 						Server.send 'startGame', !->
-							log '[ClientLog] Predict function gameStart?'
+							log 'Predict function gameStart?'
 			renderMap()
 			renderBeacons()
 			Obs.observe ->
@@ -466,7 +466,7 @@ setupContent = ->
 					boundaryRectangle.addTo(map)
 					map.on('contextmenu', addMarkerListener)
 				Obs.onClean ->
-					log '[ClientLog] onClean() rectangle'
+					log 'onClean() rectangle'
 					if mapReady()
 						map.removeLayer boundaryRectangle if boundaryRectangle?
 						map.off('contextmenu', addMarkerListener)
@@ -478,32 +478,32 @@ setupContent = ->
 # ========== Map functions ==========
 # Render a map
 renderMap = ->
-	log "[ClientLog]  renderMap()"
+	log " renderMap()"
 	# Insert map element
 	Obs.observe ->
 		if mapElement?
 			# use it again
 			mainElement = document.getElementsByTagName("main")[0]
 			mainElement.insertBefore(mapElement, null)  # Inserts the element at the end
-			log "[ClientLog] Reused html element for map"
+			log "Reused html element for map"
 		else
 			window.mapElement = document.createElement "div"
 			mapElement.setAttribute 'id', 'OpenStreetMap'
 			mainElement = document.getElementsByTagName("main")[0]
 			mainElement.insertBefore(mapElement, null)  # Inserts the element at the end
-			log "[ClientLog] Created html element for map"
+			log "Created html element for map"
 		Obs.onClean ->
-			log "[ClientLog] Removed html element for map (stored for later)"
+			log "Removed html element for map (stored for later)"
 			toRemove = document.getElementById('OpenStreetMap');
 			toRemove.parentNode.removeChild(toRemove);
 	setupMap()
 	renderLocation();
 	
 loadOpenStreetMap = ->
-	log "[ClientLog] loadOpenStreetMap()"
+	log "loadOpenStreetMap()"
 	# Only insert these the first time
 	if(not document.getElementById("mapboxJavascript")?)
-		log "[ClientLog] Started loading OpenStreetMap files"
+		log "Started loading OpenStreetMap files"
 		# Insert CSS
 		css = document.createElement "link"
 		css.setAttribute "rel", "stylesheet"
@@ -529,27 +529,27 @@ loadOpenStreetMap = ->
 		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.9/mapbox.js'
 		document.getElementsByTagName('head')[0].appendChild javascript
 	else 
-		log "[ClientLog] OpenStreetMap files already loaded"
+		log "OpenStreetMap files already loaded"
 
 # Initialize the map with tiles
 setupMap = ->
 	Obs.observe ->
-		log "[ClientLog] setupMap()"
+		log "setupMap()"
 		if map?
-			log "[ClientLog] map already initialized"
+			log "map already initialized"
 		else if not L?
-			log "[ClientLog] javascript not yet loaded"
+			log "javascript not yet loaded"
 		else
 			# Tile version
 			L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
 			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
-			log "[ClientLog] Initialized MapBox map"
+			log "Initialized MapBox map"
 
 
 limitToBounds = ->
 	Obs.observe ->
-		log "[ClientLog] Map bounds and minzoom set"
+		log "Map bounds and minzoom set"
 		if mapReady() and Db.shared.get('gameState') is 1
 			# Limit scrolling to the bounds and also limit the zoom level
 			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
@@ -565,7 +565,7 @@ limitToBounds = ->
 					map._layersMinZoom = 0
 zoomToBounds = ->
 	Obs.observe ->
-		log "[ClientLog] Zoomed to bounds"
+		log "Zoomed to bounds"
 		if mapReady()
 			# Limit scrolling to the bounds and also limit the zoom level
 			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
@@ -575,7 +575,7 @@ zoomToBounds = ->
 
 # Add beacons to the map
 renderBeacons = ->
-	log "[ClientLog] rendering beacons"
+	log "rendering beacons"
 	Db.shared.observeEach 'game', 'beacons', (beacon) !->
 		if mapReady() and map?
 			# Add the marker to the map
@@ -600,11 +600,11 @@ renderBeacons = ->
 			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
 			marker.addTo(map)
 			beaconMarkers.push marker
-			#log '[ClientLog] Added marker, marker list: ', beaconMarkers
+			#log 'Added marker, marker list: ', beaconMarkers
 			
 			# Add the area circle to the map 
 			if not window.beaconCircles?
-				log "[ClientLog] beaconCircles list reset"
+				log "beaconCircles list reset"
 				window.beaconCircles = [];
 
 			
@@ -616,12 +616,12 @@ renderBeacons = ->
 			});
 			circle.addTo(map)
 			beaconCircles.push circle
-			log "[ClientLog] Added beacon and circle"
+			log "Added beacon and circle"
 		else 
-			log "[ClientLog] map not ready yet"
+			log "map not ready yet"
 		Obs.onClean ->
 			if beaconMarkers? and map?
-				log '[ClientLog] onClean() beacon+circle'
+				log 'onClean() beacon+circle'
 				i = 0;
 				while i<beaconMarkers.length
 					if sameLocation L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng')), beaconMarkers[i].getLatLng()
@@ -641,7 +641,7 @@ renderBeacons = ->
 		
 # Listener that checks for clicking the map
 addMarkerListener = (event) ->
-	log '[ClientLog] click: ', event
+	log 'click: ', event
 	beaconRadius = Db.shared.get('game', 'beaconRadius')
 	#Check if marker is not close to other marker
 	beacons = Db.shared.peek('game', 'beacons')
@@ -665,7 +665,7 @@ addMarkerListener = (event) ->
 	else
 		Server.send 'addMarker', event.latlng, !->
 			# TODO fix predict function
-			log '[ClientLog] test prediction add marker'
+			log 'test prediction add marker'
 			Db.shared.set 'game', 'beacons', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
 
 indicationArrowListener = (event) ->
@@ -679,11 +679,11 @@ convertLatLng = (location) ->
 markerDragged = ->
 	if mapReady()
 		Server.send 'setBounds', window.locationOne.getLatLng(), window.locationTwo.getLatLng(), !->
-			log '[ClientLog] Predict function setbounds?'
+			log 'Predict function setbounds?'
 	
 # Compare 2 locations to see if they are the same
 sameLocation = (location1, location2) ->
-	#log "[ClientLog] sameLocation(), location1: ", location1, ", location2: ", location2
+	#log "sameLocation(), location1: ", location1, ", location2: ", location2
 	return location1? and location2? and location1.lat is location2.lat and location1.lng is location2.lng
 	
 # Check if the map can be used	
@@ -697,7 +697,7 @@ renderLocation = ->
 		Obs.observe ->
 			location = state.get('latlong');
 			if location?
-				log '[ClientLog] Rendered location on the map'
+				log 'Rendered location on the map'
 				location = location.split(',')
 				if mapReady()
 					# Show the player's location on the map
@@ -714,7 +714,7 @@ renderLocation = ->
 							map.on('moveend', indicationArrowListener)
 							# Render an arrow that points to your location if you do not have it on your screen already
 							if !(map.getBounds().contains(latLngObj))
-								#log '[ClientLog] Your location is outside your viewport, rendering indication arrow'
+								#log 'Your location is outside your viewport, rendering indication arrow'
 								# The arrow has to be inside the map element to get it rendered in the proper place, therefore plain javascript is required
 								arrowDiv = document.createElement "div"
 								arrowDiv.setAttribute 'id', 'indicationArrow'
@@ -751,7 +751,7 @@ renderLocation = ->
 										arrowDiv.className = 'indicationArrowW'
 									else if angleDeg >292.5 and angleDeg<=337.5
 										arrowDiv.className = 'indicationArrowNW'
-									#log '[ClientLog] angleDeg=', angleDeg
+									#log 'angleDeg=', angleDeg
 									arrowDiv.style.transform = "rotate(" +angle + "rad)"
 									arrowDiv.style.webkitTransform = "rotate(" +angle + "rad)"
 									arrowDiv.style.mozTransform = "rotate(" +angle + "rad)"
@@ -768,23 +768,23 @@ renderLocation = ->
 					# Checking if users are capable of taking over beacons
 					Obs.observe ->
 						if Db.shared.peek('gameState') is 1 # Only when the game is running, do something
-							log '[ClientLog] Checking beacon takeover'
+							log 'Checking beacon takeover'
 							Db.shared.observeEach 'game', 'beacons', (beacon) !->
 								beaconCoord = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
 								distance = latLngObj.distanceTo(beaconCoord)
-								#log '[ClientLog] distance=', distance, 'beacon=', beacon
+								#log 'distance=', distance, 'beacon=', beacon
 								within = distance - Db.shared.peek('game','beaconRadius') <= 0
 								inRange = beacon.peek('inRange', Plugin.userId())?
 								if (within and not inRange) or (not within and inRange)
 									Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
-										log '[ClientLog] UserID', Plugin.userId()
-										log '[ClientLog] UserLoc', latLngObj
+										log 'UserID', Plugin.userId()
+										log 'UserLoc', latLngObj
 									if inRange
-										log '[ClientLog] Taking over beacon: userId=', Plugin.userId(), ', location=', latLngObj
+										log 'Taking over beacon: userId=', Plugin.userId(), ', location=', latLngObj
 									else
-										log '[ClientLog] Stopping takeover of beacon: userId=', Plugin.userId(), ', location=', latLngObj
+										log 'Stopping takeover of beacon: userId=', Plugin.userId(), ', location=', latLngObj
 			else
-				log '[ClientLog] Location could not be found'
+				log 'Location could not be found'
 			Obs.onClean ->
 				if mapReady() and beaconCurrentLocation?
 					# Remove the location marker
@@ -799,5 +799,5 @@ getTeamOfUser = (userId) ->
 		if team.peek('users', userId, 'userName')?
 			result = team.n
 	#if result is -1
-	#	log '[ClientLog] Warning: Did not find team for userId=', userId
+	#	log 'Warning: Did not find team for userId=', userId
 	return result
