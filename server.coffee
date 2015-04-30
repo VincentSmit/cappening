@@ -11,8 +11,9 @@ exports.onInstall = ->
 
 # Game update 
 exports.onUpgrade = !->	
-	initializeColors()
-	initializeGame()
+	# Normally nothing to do here
+	#initializeColors()
+	#initializeGame()
 
 # Config changes (by admin or plugin adder)
 exports.onConfig = (config) !->

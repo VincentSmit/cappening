@@ -12,6 +12,7 @@ Geoloc = require 'geoloc'
 Form = require 'form'
 
 window.redraw = Obs.create(0)
+window.indicationArrowRedraw = Obs.create(0);
 
 # ========== Events ==========
 exports.render = ->
@@ -33,12 +34,12 @@ exports.render = ->
 	if !Geoloc.isSubscribed()
 		Geoloc.subscribe()
 		# gamestate check
-	limitToBounds()
 	Obs.observe ->
 		mainElement = document.getElementsByTagName("main")[0]
 		mainElement.setAttribute 'id', 'main'
 
-		hey = redraw.get();
+		redraw.get();
+		limitToBounds()
 		gameState = Db.shared.get('gameState')
 		if gameState is 0 # Setting up game by user that added plugin
 			setupContent()
@@ -514,11 +515,11 @@ loadOpenStreetMap = ->
 				if javascript.readyState == "loaded" || javascript.readyState == "complete"
 					log "OpenStreetMap files loaded"
 					javascript.onreadystatechange = 'null'
-					redraw.modify (v) -> v+1
+					redraw.incr()
 		else  # Other browsers
 			javascript.onload = ->
 				log "OpenStreetMap files loaded"
-				redraw.modify (v) -> v+1
+				redraw.incr()
 		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.6/mapbox.js'
 		document.getElementsByTagName('head')[0].appendChild javascript
 	else 
@@ -661,6 +662,9 @@ addMarkerListener = (event) ->
 			log '[ClientLog] test prediction add marker'
 			Db.shared.set 'game', 'beacons', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
 
+indicationArrowListener = (event) ->
+	indicationArrowRedraw.incr()
+
 convertLatLng = (location) ->
 	return L.latLng(location.lat, location.lng)
 	
@@ -690,6 +694,7 @@ renderLocation = ->
 				log '[ClientLog] Rendered location on the map'
 				location = location.split(',')
 				if mapReady()
+					# Show the player's location on the map
 					latLngObj= L.latLng(location[0], location[1])
 					marker = L.marker(latLngObj)
 					marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
@@ -697,49 +702,59 @@ renderLocation = ->
 						map.removeLayer window.beaconCurrentLocation
 					marker.addTo(map)
 					window.beaconCurrentLocation = marker
-					if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
-						if !(map.getBounds().contains(latLngObj))
-							log '[ClientLog] you are outside gameborder'
-							log "[ClientLog] " + location[0] + location[1]
-							arrowDiv = document.createElement "div"
-							arrowDiv.setAttribute 'id', 'indicationArrow'
-							mainElement = document.getElementById("OpenStreetMap")
-							if mainElement?
-								log '[ClientLog] indication element created'
-								mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
-								log "[ClientLog] " + map.getCenter()
-								center= map.getCenter()
-								
-								difLat = Math.abs(latLngObj.lat - map.getCenter().lat)
-								difLng = Math.abs(latLngObj.lng - map.getCenter().lng)
-								angle = 0
-								if latLngObj.lng > center.lng and latLngObj.lat > center.lat
-									angle = Math.atan(difLng/difLat) 
-								else if latLngObj.lng > center.lng and latLngObj.lat <= center.lat
-									angle = Math.atan(difLat/difLng)+ Math.PI/2 
-								else if latLngObj.lng <= center.lng and latLngObj.lat <= center.lat
-									angle = Math.atan(difLng/difLat)+ Math.PI
-								else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
-									angle = - Math.atan(difLng/difLat)
-								angleDeg = 	angle*180/Math.PI		
-								if angleDeg<=22.5 or angleDeg > 337.5
-									arrowDiv.className = 'indicationArrowN'
-								else if angleDeg >22.5 and angleDeg<=67.5
-									arrowDiv.className = 'indicationArrowNE'
-								else if angleDeg >67.5 and angleDeg<=112.5
-									arrowDiv.className = 'indicationArrowE'
-								else if angleDeg >122.5 and angleDeg<=157.5
-									arrowDiv.className = 'indicationArrowSE'
-								else if angleDeg >157.5 and angleDeg<=202.5
-									arrowDiv.className = 'indicationArrowS'
-								else if angleDeg >202.5 and angleDeg<=247.5
-									arrowDiv.className = 'indicationArrowSW'
-								else if angleDeg >247.5 and angleDeg<=292.5
-									arrowDiv.className = 'indicationArrowW'
-								else if angleDeg >292.5 and angleDeg<=337.5
-									arrowDiv.className = 'indicationArrowNW'
-								log "[ClientLog] " + angleDeg
-								arrowDiv.style.transform = "rotate(" +angle + "rad)"
+					Obs.observe ->
+						indicationArrowRedraw.get()
+						if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
+							map.on('moveend', indicationArrowListener)
+							# Render an arrow that points to your location if you do not have it on your screen already
+							if !(map.getBounds().contains(latLngObj))
+								#log '[ClientLog] Your location is outside your viewport, rendering indication arrow'
+								# The arrow has to be inside the map element to get it rendered in the proper place, therefore plain javascript is required
+								arrowDiv = document.createElement "div"
+								arrowDiv.setAttribute 'id', 'indicationArrow'
+								mainElement = document.getElementById("OpenStreetMap")
+								if mainElement?
+									mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
+									center= map.getCenter()
+									
+									difLat = Math.abs(latLngObj.lat - map.getCenter().lat)
+									difLng = Math.abs(latLngObj.lng - map.getCenter().lng)
+									angle = 0
+									if latLngObj.lng > center.lng and latLngObj.lat > center.lat
+										angle = Math.atan(difLng/difLat) 
+									else if latLngObj.lng > center.lng and latLngObj.lat <= center.lat
+										angle = Math.atan(difLat/difLng)+ Math.PI/2 
+									else if latLngObj.lng <= center.lng and latLngObj.lat <= center.lat
+										angle = Math.atan(difLng/difLat)+ Math.PI
+									else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
+										angle = (Math.PI-Math.atan(difLng/difLat)) + Math.PI
+									angleDeg = 	angle*180/Math.PI		
+									if angleDeg<=22.5 or angleDeg > 337.5
+										arrowDiv.className = 'indicationArrowN'
+									else if angleDeg >22.5 and angleDeg<=67.5
+										arrowDiv.className = 'indicationArrowNE'
+									else if angleDeg >67.5 and angleDeg<=112.5
+										arrowDiv.className = 'indicationArrowE'
+									else if angleDeg >112.5 and angleDeg<=157.5
+										arrowDiv.className = 'indicationArrowSE'
+									else if angleDeg >157.5 and angleDeg<=202.5
+										arrowDiv.className = 'indicationArrowS'
+									else if angleDeg >202.5 and angleDeg<=247.5
+										arrowDiv.className = 'indicationArrowSW'
+									else if angleDeg >247.5 and angleDeg<=292.5
+										arrowDiv.className = 'indicationArrowW'
+									else if angleDeg >292.5 and angleDeg<=337.5
+										arrowDiv.className = 'indicationArrowNW'
+									log '[ClientLog] angleDeg=', angleDeg
+									arrowDiv.style.transform = "rotate(" +angle + "rad)"
+						Obs.onClean ->
+							# Deregister move/zoom listeners to update indication arrow
+							if mapReady()
+								map.off('moveend', indicationArrowListener)
+							# Remove the indication arrow
+							toRemove = document.getElementById('indicationArrow');
+							if toRemove?
+								toRemove.parentNode.removeChild(toRemove);
 					# Checking if users are capable of taking over beacons
 					Obs.observe ->
 						if Db.shared.peek('gameState') is 1 # Only when the game is running, do something
@@ -762,12 +777,9 @@ renderLocation = ->
 				log '[ClientLog] Location could not be found'
 			Obs.onClean ->
 				if mapReady() and beaconCurrentLocation?
+					# Remove the location marker
 					map.removeLayer beaconCurrentLocation
 					window.beaconCurrentLocation = null
-					toRemove = document.getElementById('indicationArrow');
-					if toRemove?
-						toRemove.parentNode.removeChild(toRemove);
-
 
 # ========== Functions ==========
 # Get the team id the user is added to
