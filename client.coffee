@@ -166,6 +166,7 @@ scoresContent = ->
 			teamName = Db.shared.get('colors', team.n, 'name')
 			teamScore = Db.shared.get('game', 'teams', team.n, 'teamScore')
 			# list of teams and their scores
+			expanded = Obs.create(false)
 			Ui.item !->
 				Dom.div !->
 					Dom.style
@@ -178,15 +179,18 @@ scoresContent = ->
 					Dom.style Flex: 1, fontSize: '100%'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
 					# To Do expand voor scores
-					if 1
+					if expanded.get()
 						Db.shared.observeEach 'game', 'teams', team.n , 'users', (user) !->
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text  Plugin.userName(user.n) + " has a score of " + user.get('userScore') + " points"
+						, (user) -> (-user.get('userScore'))
 					else
 						Dom.div !->
 							Dom.style fontSize: '75%', marginTop: '6px'
 							Dom.text "Tap for details"
+				Dom.onTap !->
+					expanded.set(!expanded.get())
 		, (team) -> [(-team.get('teamScore')), team.get('name')]
 
 
