@@ -28,7 +28,9 @@ exports.client_addMarker = (location) ->
 	log 'Adding marker: lat=', location.lat, ', lng=', location.lng
 	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), {location: location}
 	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'owner', -1 
+	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'nextOwner', -1
 	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'captureValue', 10
+
 
 # Set the round time unit and number
 exports.client_setRoundTime = (roundTimeNumber, roundTimeUnit) ->
@@ -82,6 +84,8 @@ exports.client_checkinLocation = (client, location) ->
 			#log 'beaconLoop: beacon=', beacon, ', beaconRadius=', beaconRadius, ', distance=', beaconDistance, ', current=', current, ', new=', newStatus
 			if newStatus != current
 				if newStatus
+					owner = beacon.get 'owner'
+
 					# TODO: move lower, after updating other data
 					log 'Adding to inRange: id=', client, ', name=', Plugin.userName(client)
 					beacon.set 'inRange', client, 'true'
@@ -99,7 +103,7 @@ exports.client_checkinLocation = (client, location) ->
 						team = getTeamOfUser(player.n)
 						teamMembers[team] = teamMembers[team]+1
 					# TODO: remove
-					teamMembers = [0, 2, 1, 0, 3, 3]
+					#teamMembers = [0, 2, 1, 0, 3, 3]
 
 					log 'teamMembers count: ', teamMembers	
 
@@ -116,10 +120,16 @@ exports.client_checkinLocation = (client, location) ->
 					# Check if there should be progress
 					if competing.length == 1
 						# Team will capture the flag
-						log 'Team ', competing[0], ' is capturing beacon ', beacon.n
+						activeTeam = competing[0]
+						beacon.set 'nextOwner', activeTeam
+						if owner == -1
+							# Capturing
+							log 'Team ', activeTeam, ' is capturing beacon ', beacon.n
 
 
-
+						else
+							# Neutralizing
+							log 'Team ', activeTeam, ' is neutralizing beacon ', beacon.n
 
 					else if competing.length > 1
 						# No progess, stand-off
