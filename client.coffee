@@ -187,6 +187,7 @@ scoresContent = ->
 						Dom.div !->
 							Dom.style fontSize: '75%', marginTop: '6px'
 							Dom.text "Tap for details"
+		, (team) -> [(-team.get('teamScore')), team.get('name')]
 
 
 	# Old UI
@@ -245,6 +246,7 @@ logContent = ->
 								Time.deltaText capture.get('timestamp')
 					else if capture.get('typ') is "score"
 						page.nav 'scores'
+		, (capture) -> (-capture.get('timestamp'))
 		Ui.item !->
 			Dom.div !->
 				Dom.style
