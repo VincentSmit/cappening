@@ -45,6 +45,10 @@ exports.client_setTeams = (teams) ->
 exports.client_setBounds = (one, two) ->
 	Db.shared.set 'game', 'bounds', {one: one, two: two}
 
+# Get clients ingame user ID
+# exports.client_getIngameUserId = (client) ->
+# 	client.reply 
+
 # Start the game
 exports.client_startGame = ->
 	setTimer()
@@ -59,6 +63,8 @@ exports.client_startGame = ->
 		userIds.splice(randomNumber,1)
 		team++
 		team = 0 if team >= teams
+	Db.shared.iterate 'game', 'teams', (team) !->
+		Db.shared.set 'game', 'teams', team.n, 'teamScore', 0
 	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
 
 # Checkin location for capturing a beacon		
@@ -132,6 +138,8 @@ exports.client_checkinLocation = (client, location) ->
 					Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
 					Db.shared.set 'game', 'eventlist', maxId, 'type', "capture"
 					Db.shared.set 'game', 'eventlist', maxId, 'beacon', beacon.n
+					Db.shared.set 'game', 'eventlist', maxId, 'conqueror', getTeamOfUser(client)
+
 
 					# create capture event
 					# To Do: personalize for team members or dubed players
@@ -144,6 +152,7 @@ exports.client_checkinLocation = (client, location) ->
 
 
 					Db.shared.modify 'game', 'teams', getTeamOfUser(client), 'users', client, "userScore", (v) -> v+beacon.get("captureValue")
+					Db.shared.modify 'game', 'teams', getTeamOfUser(client), 'teamScore', (v) -> v+beacon.get("captureValue")
 					beacon.modify "captureValue", (v) -> 
 						if v > 1 
 							return v-1
@@ -216,7 +225,5 @@ getTeamOfUser = (userId) ->
 	#if result is -1
 	#	log 'Warning: Did not find team for userId=', userId
 	return result
-
-
 
 
