@@ -30,6 +30,15 @@ exports.client_addMarker = (location) ->
 	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'owner', -1 
 	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'captureValue', 10
 
+exports.client_deleteMarker = (location) ->	
+	#Finding the right beacon
+	log 'Deleting marker: lat=', location.lat, ', lng=', location.lng
+	locationString = location.lat.toString() + '_'+location.lng.toString()
+	Db.shared.iterate 'game', 'beacons', (beacon) !->
+		if locationString == beacon.n
+			Db.shared.remove 'game', 'beacons', beacon.n
+	
+	
 # Set the round time unit and number
 exports.client_setRoundTime = (roundTimeNumber, roundTimeUnit) ->
 	log 'RoundTime set to: ' + roundTimeNumber + ' ' + roundTimeUnit
