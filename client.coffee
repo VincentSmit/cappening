@@ -709,10 +709,16 @@ renderLocation = ->
 			if location?
 				log 'Rendered location on the map'
 				location = location.split(',')
+				locationIcon = L.icon({
+					iconUrl: Plugin.resourceUri('location.png'),
+					iconSize:     [40, 40], 
+					iconAnchor:   [12, 39], 
+					popupAnchor:  [-3, -75]
+				});
 				if mapReady()
 					# Show the player's location on the map
 					latLngObj= L.latLng(location[0], location[1])
-					marker = L.marker(latLngObj)
+					marker = L.marker(latLngObj, {icon: locationIcon})
 					marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
 					if window.beaconCurrentLocation
 						map.removeLayer window.beaconCurrentLocation
