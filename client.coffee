@@ -161,6 +161,8 @@ helpContent = ->
 
 scoresContent = ->
 	Ui.list !->
+		Dom.style
+			padding: '0'
 		Db.shared.observeEach 'game', 'teams', (team) !->
 			teamColor = Db.shared.get('colors', team.n, 'hex')
 			teamName = Db.shared.get('colors', team.n, 'name')
@@ -168,15 +170,18 @@ scoresContent = ->
 			# list of teams and their scores
 			expanded = Obs.create(false)
 			Ui.item !->
+				Dom.style
+					padding: '14px'
+					minHeight: '71px'
 				Dom.div !->
 					Dom.style
 						width: '70px'
 						height: '70px'
-						marginRight: '10px'
 						background: teamColor
 						backgroundSize: 'cover'
+						position: 'absolute'
 				Dom.div !->
-					Dom.style Flex: 1, fontSize: '100%'
+					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '80px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
 					# To Do expand voor scores
 					if expanded.get()
