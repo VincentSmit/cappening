@@ -226,11 +226,14 @@ scoresContent = ->
 
 logContent = ->
 	Ui.list !->
+		Dom.style
+			padding: '0'
 		Db.shared.observeEach 'game', 'eventlist', (capture) !->
 			if capture.n != "maxId"
 				log 'capture' 
-				Dom.style marginTop: '4px'
 				Ui.item !->
+					Dom.style
+						padding: '14px'
 					if capture.get('type') is "capture" and mapReady()
 						beaconId = capture.get('beacon')
 						teamId = capture.get('conqueror')
@@ -257,12 +260,14 @@ logContent = ->
 						page.nav 'scores'
 		, (capture) -> (-capture.get('timestamp'))
 		Ui.item !->
+			Dom.style
+				padding: '14px'
 			Dom.div !->
 				Dom.style
 					width: '70px'
 					height: '70px'
 					marginRight: '10px'
-					# background: Db.shared.get('colors', teamId, 'hex')
+					background: '#DDDDDD'
 					backgroundSize: 'cover'
 			Dom.div !->
 				Dom.style Flex: 1, fontSize: '120%'
