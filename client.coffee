@@ -593,40 +593,41 @@ renderBeacons = ->
 				log "beaconMarkers list reset"
 				window.beaconMarkers = [];
 			teamNumber = beacon.get('owner')
-			teamColor=  Db.shared.get('colors', teamNumber, 'hex')
-			
-			areaIcon = L.icon({
-				iconUrl: Plugin.resourceUri(teamColor.substring(1) + '.png'),
-				iconSize:     [24, 40], 
-				iconAnchor:   [12, 39], 
-				popupAnchor:  [-3, -75]
-				shadowUrl: Plugin.resourceUri('markerShadow.png'),
-				shadowSize: [41, 41],
-				shadowAnchor: [12, 39]
-			});
-			
-			location = L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng'))
-			marker = L.marker(location, {icon: areaIcon})
-			marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
-			marker.addTo(map)
-			beaconMarkers.push marker
-			#log 'Added marker, marker list: ', beaconMarkers
-			
-			# Add the area circle to the map 
-			if not window.beaconCircles?
-				log "beaconCircles list reset"
-				window.beaconCircles = [];
+			if teamNumber isnt undefined
+				teamColor=  Db.shared.get('colors', teamNumber, 'hex')
+				
+				areaIcon = L.icon({
+					iconUrl: Plugin.resourceUri(teamColor.substring(1) + '.png'),
+					iconSize:     [24, 40], 
+					iconAnchor:   [12, 39], 
+					popupAnchor:  [-3, -75]
+					shadowUrl: Plugin.resourceUri('markerShadow.png'),
+					shadowSize: [41, 41],
+					shadowAnchor: [12, 39]
+				});
+				
+				location = L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng'))
+				marker = L.marker(location, {icon: areaIcon})
+				marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
+				marker.addTo(map)
+				beaconMarkers.push marker
+				#log 'Added marker, marker list: ', beaconMarkers
+				
+				# Add the area circle to the map 
+				if not window.beaconCircles?
+					log "beaconCircles list reset"
+					window.beaconCircles = [];
 
-			
-			circle = L.circle(location, Db.shared.get('game', 'beaconRadius'), {
-				color: teamColor,
-				fillColor: teamColor,
-				fillOpacity: 0.3
-				weight: 2
-			});
-			circle.addTo(map)
-			beaconCircles.push circle
-			log "Added beacon and circle"
+				
+				circle = L.circle(location, Db.shared.get('game', 'beaconRadius'), {
+					color: teamColor,
+					fillColor: teamColor,
+					fillOpacity: 0.3
+					weight: 2
+				});
+				circle.addTo(map)
+				beaconCircles.push circle
+				log "Added beacon and circle"
 		else 
 			log "map not ready yet"
 		Obs.onClean ->
@@ -690,6 +691,7 @@ markerDragged = ->
 	if mapReady()
 		Server.send 'setBounds', window.locationOne.getLatLng(), window.locationTwo.getLatLng(), !->
 			log 'Predict function setbounds?'
+		checkAllBeacons()
 	
 # Compare 2 locations to see if they are the same
 sameLocation = (location1, location2) ->
@@ -699,7 +701,28 @@ sameLocation = (location1, location2) ->
 # Check if the map can be used	
 mapReady = ->
 	return L? and map?
-
+	
+#Loop through all beacons see if they are still within boundaryRectangle
+checkAllBeacons = ->
+	if beaconCircles? and beaconMarkers? and locationOne? and locationTwo? and mapReady()
+		bounds = L.latLngBounds(locationOne.getLatLng(), locationTwo.getLatLng())
+		i = 0;
+		while i<beaconCircles.length
+			if !bounds.contains(beaconCircles[i].getBounds())
+				map.removeLayer beaconCircles[i]
+				invalidMarker =  beaconCircles[i].getLatLng()
+				Server.sync 'deleteMarker', invalidMarker
+				j=0;
+				while j<beaconMarkers.length
+					if sameLocation(beaconMarkers[j].getLatLng(), invalidMarker)
+						map.removeLayer beaconMarkers[j]
+						beaconMarkers.splice(beaconMarkers.indexOf(beaconMarkers[j]), 1)
+					else
+						j++
+				beaconCircles.splice(beaconCircles.indexOf(beaconCircles[i]), 1)
+			else
+				i++
+	
 # Render the location of the user on the map (currently broken)
 renderLocation = -> 
 	if Geoloc.isSubscribed()
