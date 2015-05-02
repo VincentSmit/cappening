@@ -188,7 +188,7 @@ exports.onCapture = (args) !->
 	# Handle points and statistics
 	# Modify user and team scores 
 	beaconValue = beacon.get('captureValue')
-    modifyScore client, beaconValue
+	modifyScore client, beaconValue
 	Db.shared.modify 'game', 'teams', nextOwner, 'captured', (v) -> v+1
     # Modify beacon value
 	beacon.modify 'captureValue', (v) -> v - 1 if beaconValue > 1
