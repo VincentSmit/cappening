@@ -26,18 +26,21 @@ exports.onConfig = (config) !->
 # Add a beacon (during setup phase)
 exports.client_addMarker = (location) ->
 	log 'Adding marker: lat=', location.lat, ', lng=', location.lng
-	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), {location: location}
-	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'owner', -1 
-	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'nextOwner', -1
-	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'percentage', 0
-	Db.shared.set 'game', 'beacons', location.lat.toString()+'_'+location.lng.toString(), 'captureValue', 10
+	nextNumber = 0
+	while Db.shared.get('game', 'beacons', nextNumber)?
+		nextNumber++
+
+	Db.shared.set 'game', 'beacons', nextNumber, {location: location}
+	Db.shared.set 'game', 'beacons', nextNumber, 'owner', -1 
+	Db.shared.set 'game', 'beacons', nextNumber, 'nextOwner', -1
+	Db.shared.set 'game', 'beacons', nextNumber, 'percentage', 0
+	Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', 10
 
 exports.client_deleteMarker = (location) ->	
 	#Finding the right beacon
 	log 'Deleting marker: lat=', location.lat, ', lng=', location.lng
-	locationString = location.lat.toString() + '_'+location.lng.toString()
 	Db.shared.iterate 'game', 'beacons', (beacon) !->
-		if locationString == beacon.n
+		if beacon.get('location', 'lat') == location.lat and beacon.get('location', 'lng') == location.lng
 			Db.shared.remove 'game', 'beacons', beacon.n
 	
 # Set the round time unit and number
