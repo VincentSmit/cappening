@@ -81,6 +81,9 @@ exports.client_startGame = ->
 		Db.shared.set 'game', 'teams', team.n, 'captured', 0
 		Db.shared.set 'game', 'teams', team.n, 'neutralized', 0
 	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
+	Event.create
+    	unit: 'startGame'
+    	text: "The game has started!"
 
 # Checkin location for capturing a beacon		
 exports.client_checkinLocation = (client, location) ->
@@ -178,22 +181,17 @@ exports.onCapture = (args) !->
 
 	# Handle push notifications
 	# TODO: Personalize for team members or dubed players
-	# TODO: Handle changes in ranking
 	Event.create
 		unit: 'capture'
 		text: "Team " + Db.shared.get('colors', nextOwner , 'name') + " captured a beacon"
 
 	# Handle points and statistics
-	# TODO: Split points evenly instead of giving to all players inRange
-	for player in args.players.split(', ')
-		Db.shared.modify 'game', 'teams', nextOwner, 'users', player, "userScore", (v) -> v+beacon.get("captureValue")
-	Db.shared.modify 'game', 'teams', nextOwner, 'teamScore', (v) -> v+beacon.get("captureValue")
+	# Modify user and team scores 
+	beaconValue = beacon.get('captureValue')
+    modifyScore client, beaconValue
 	Db.shared.modify 'game', 'teams', nextOwner, 'captured', (v) -> v+1
-	beacon.modify "captureValue", (v) -> 
-		if v > 1 
-			return v-1
-		else 
-			return v
+    # Modify beacon value
+	beacon.modify 'captureValue', (v) -> v - 1 if beaconValue > 1
 
 exports.onNeutralize = (args) !->
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
@@ -205,13 +203,12 @@ exports.onNeutralize = (args) !->
 	# Handle points and statistics
 	Db.shared.modify 'game', 'teams', args.neutralizer, 'neutralized', (v) -> v+1
 
-
-
 	# Handle capturing
 	percentage = beacon.get 'percentage'
 	log 'Team ', neutralizer, ' is capturing beacon ', beacon.n, ' (after neutralize)'
 	# Set timer for capturing
 	Timer.set (100-percentage)*10*30, 'onCapture', args
+
 
 #Function called when the game ends
 exports.endGame = !->
@@ -284,5 +281,31 @@ getTeamOfUser = (userId) ->
 	#if result is -1
 	#	log 'Warning: Did not find team for userId=', userId
 	return result
+
+# Modify user and team scores by adding "points" to the current value
+modifyScore = (client, points) !->
+	log "[modifyScore()] client: " + client + " team: " + getTeamOfUser(client) + " points: " + points
+	# calculate old number one
+	teamMax = -1
+	# modify user and team scores
+	Db.shared.modify 'game', 'teams', getTeamOfUser(client), 'users', client, 'userScore', (v) -> v + points
+	Db.shared.modify 'game', 'teams', getTeamOfUser(client), 'teamScore', (v) -> v + points
+
+	# calculate new number one
+	teamMaxNew = -1
+
+	log "First team old: " + teamMax + " new: " + teamMaxNew
+
+	# create score event
+	# To Do: personalize for team members or dubed players
+	if teamMax isnt teamMaxNew
+		maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
+		Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
+		Db.shared.set 'game', 'eventlist', maxId, 'type', "score"
+		Db.shared.set 'game', 'eventlist', maxId, 'leading', team.n
+
+		Event.create
+			unit: 'score'
+			text: "Team " + Db.shared.get('colors', teamMaxNew.get('name')) + " took the lead!"
 
 

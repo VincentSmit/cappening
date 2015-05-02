@@ -198,32 +198,6 @@ scoresContent = ->
 					expanded.set(!expanded.get())
 		, (team) -> [(-team.get('teamScore')), team.get('name')]
 
-
-	# Old UI
-	# Dom.div ->
-	# 	Dom.br()
-	# 	Db.shared.observeEach 'game', 'teams', (team) !->
-	# 		teamscore = 0
-	# 		log 'team', team.n
-	# 		teamcolor = Db.shared.get('colors', team.n, 'hex')
-	# 		teamname = Db.shared.get('colors', team.n, 'name')
-	# 		log 'teamcolor', teamcolor
-	# 		Dom.div !->
-	# 			Dom.cls 'teampage'
-	# 			Dom.style
-	# 				color: teamcolor
-	# 			Dom.text tr("Scores of team %1", teamname)
-	# 		Db.shared.observeEach 'game', 'teams', team.n , 'users', (user) !->
-	# 			log 'user', user.n
-	# 			teamscore = teamscore + user.get('userScore')
-	# 			Dom.text tr("%1 has a score of: %2", Plugin.userName(user.n), user.get('userScore'))	
-	# 			Dom.br()
-	# 		Dom.text tr("------------------------------")
-	# 		Dom.br()
-	# 		Dom.text tr("%Total teamscore: %1", teamscore)
-	# 		Dom.br()
-	# 		Dom.br()
-
 logContent = ->
 	Ui.list !->
 		Dom.style
@@ -257,7 +231,25 @@ logContent = ->
 								Dom.text "Captured "
 								Time.deltaText capture.get('timestamp')
 					else if capture.get('typ') is "score"
-						page.nav 'scores'
+						teamId = capture.get('leading')
+						teamColor = Db.shared.get('colors', teamId, 'hex')
+						teamName = Db.shared.get('colors', teamId, 'name')
+						Dom.onTap !->
+							page.nav 'scores'							
+						Dom.div !->
+							Dom.style
+								width: '70px'
+								height: '70px'
+								marginRight: '10px'
+								background: teamColor
+								backgroundSize: 'cover'
+						Dom.div !->
+							Dom.style Flex: 1, fontSize: '100%'
+							Dom.text "Team " + teamName + " took the lead"
+							Dom.div !->
+								Dom.style fontSize: '75%', marginTop: '6px'
+								Dom.text "Captured "
+								Time.deltaText capture.get('timestamp')
 		, (capture) -> (-capture.get('timestamp'))
 		Ui.item !->
 			Dom.style
