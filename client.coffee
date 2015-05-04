@@ -592,7 +592,7 @@ renderBeacons = ->
 					iconUrl: Plugin.resourceUri(teamColor.substring(1) + '.png'),
 					iconSize:     [24, 40], 
 					iconAnchor:   [12, 39], 
-					popupAnchor:  [-3, -75]
+					popupAnchor:  [0, -40]
 					shadowUrl: Plugin.resourceUri('markerShadow.png'),
 					shadowSize: [41, 41],
 					shadowAnchor: [12, 39]
@@ -600,7 +600,11 @@ renderBeacons = ->
 				
 				location = L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng'))
 				marker = L.marker(location, {icon: areaIcon})
-				marker.bindPopup("lat: " + location.lat + "<br>long: " + location.lng)
+				popup = L.popup()
+					.setLatLng(location)
+					.setContent("Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "." + 
+						"<br><br>lat: " + location.lat + "<br>long: " + location.lng)
+				marker.bindPopup(popup)
 				marker.addTo(map)
 				beaconMarkers.push marker
 				#log 'Added marker, marker list: ', beaconMarkers
@@ -610,13 +614,20 @@ renderBeacons = ->
 					log "beaconCircles list reset"
 					window.beaconCircles = [];
 
-				
 				circle = L.circle(location, Db.shared.get('game', 'beaconRadius'), {
 					color: teamColor,
 					fillColor: teamColor,
 					fillOpacity: 0.3
 					weight: 2
 				});
+				# Open the popup of the marker
+				circleClick = (e) -> 
+					i = 0;
+					while i<beaconMarkers.length
+						if sameLocation circle.getLatLng(), beaconMarkers[i].getLatLng()
+							beaconMarkers[i].togglePopup()
+						i++				
+				circle.on('click', circleClick)
 				circle.addTo(map)
 				beaconCircles.push circle
 				log "Added beacon and circle"
@@ -730,11 +741,11 @@ renderLocation = ->
 					locationIcon = L.icon({
 						iconUrl: Plugin.resourceUri('location.png'),
 						iconSize:     [40, 40], 
-						iconAnchor:   [12, 39], 
-						popupAnchor:  [-3, -75]
+						iconAnchor:   [20, 40], 
+						popupAnchor:  [0, -40]
 					});
 					marker = L.marker(latLngObj, {icon: locationIcon})
-					marker.bindPopup("Hier ben ik nu!" + "<br> accuracy: " + state.get('accuracy'))
+					marker.bindPopup("This is your current location." + "<br>Accuracy: " + state.get('accuracy') + 'm')
 					if window.beaconCurrentLocation
 						map.removeLayer window.beaconCurrentLocation
 					marker.addTo(map)
