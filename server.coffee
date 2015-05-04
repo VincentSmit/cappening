@@ -35,6 +35,7 @@ exports.client_addMarker = (location) ->
 	Db.shared.set 'game', 'beacons', nextNumber, 'nextOwner', -1
 	Db.shared.set 'game', 'beacons', nextNumber, 'percentage', 0
 	Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', 10
+	Db.shared.set 'game', 'beacons', nextNumber, 'action', "none"
 
 exports.client_deleteMarker = (location) ->	
 	#Finding the right beacon
@@ -91,86 +92,110 @@ exports.client_checkinLocation = (client, location) ->
 		log 'Client ', client, ' (', Plugin.userName(client), ') tried to capture beacon while game is not running!'
 	else
 		log 'checkinLocation() client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
+
 		beacons = Db.shared.ref('game', 'beacons')
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
 		beacons.iterate (beacon) ->
 			current = beacon.get('inRange', client)?
 			beaconDistance = distance(location.lat, location.lng, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
 			newStatus = beaconDistance < beaconRadius
-			#log 'beaconLoop: beacon=', beacon, ', beaconRadius=', beaconRadius, ', distance=', beaconDistance, ', current=', current, ', new=', newStatus
 			if newStatus != current
+				# Cancel timers of ongoing caputes/neutralizes (new ones will be set below if required)
+				Timer.cancel 'onCapture', {beacon: beacon.n, players: getInrangePlayers(beacon.n)}
+				Timer.cancel 'onNeutralize', {beacon: beacon.n, players: getInrangePlayers(beacon.n)}
 				if newStatus
 					owner = beacon.get 'owner'
-
-					# TODO: move lower, after updating other data
 					log 'Adding to inRange: id=', client, ', name=', Plugin.userName(client)
 					beacon.set 'inRange', client, 'true'
-
-					# TODO
-					# 1: Determine how much players of each team are in range
-					# 2: Determine if there is progress and which team
-					# 3: Determine if it is 'neutralizing' or 'capturing'
-					# 4: Determine the speed of the capture
-					# 5: Set the current percentage of the flag to the correct state by doing 1-4 for the previous team state
-
-					# Determine members per team
-					teamMembers = (0 for team in [0..5])
-					Db.shared.iterate 'game', 'beacons', beacon.n, 'inRange', (player) !->
-						team = getTeamOfUser(player.n)
-						teamMembers[team] = teamMembers[team]+1
-					# TODO: remove
-					#teamMembers = [0, 2, 1, 0, 3, 3]
-
-					log 'teamMembers count: ', teamMembers	
-
-					# Determine who is competing
-					max = 0
-					competing = []
-					for team in [0..5]
-						if teamMembers[team] > max
-							max = teamMembers[team]
-							competing = []
-							competing.push team
-						else if teamMembers[team] == max
-							competing.push team
-					# Check if there should be progress
-					if competing.length == 1
-						# Team will capture the flag
-						activeTeam = competing[0]
-						if activeTeam != owner
-							beacon.set 'nextOwner', activeTeam
-							percentage = beacon.get 'percentage'
-							if owner == -1
-								# Capturing
-								log 'Team ', activeTeam, ' is capturing beacon ', beacon.n
-								# Set timer for capturing
-								playersStr = getInrangePlayers(beacon.n)
-								Timer.set (100-percentage)*10*30, 'onCapture', {beacon: beacon.n, players: playersStr}
-							else
-								# Neutralizing
-								log 'Team ', activeTeam, ' is neutralizing beacon ', beacon.n
-
-								playersStr = getInrangePlayers(beacon.n)
-								Timer.set percentage*10*30, 'onNeutralize', {beacon: beacon.n, players: playersStr}
-						else
-							log 'activeteam already has the beacon, ', activeTeam, '=', owner
-
-					else if competing.length > 1
-						# No progess, stand-off
-						log 'Capture of beacon ', beacon.n, ' on hold, competing teams: ', competing
 					# Start takeover
 				else
 					log 'Removed from inRange: ', client, ', name=', Plugin.userName(client)
 					# clean takeover
 					beacon.remove 'inRange', client
 
+				# ========== Handle changes for inRange players ==========
+				# Determine members per team
+				teamMembers = (0 for team in [0..5])
+				Db.shared.iterate 'game', 'beacons', beacon.n, 'inRange', (player) !->
+					team = getTeamOfUser(player.n)
+					teamMembers[team] = teamMembers[team]+1
+				log 'teamMembers count: ', teamMembers	
+
+				# Determine who is competing
+				max = 0
+				competing = []
+				for team in [0..5]
+					if teamMembers[team] > max
+						max = teamMembers[team]
+						competing = []
+						competing.push team
+					else if teamMembers[team] == max
+						competing.push team
+				# Update percentage taken for current time
+				updateBeaconPercentage(beacon)
+
+				# Check if there should be progress
+				if competing.length == 1
+					# Team will capture the flag
+					activeTeam = competing[0]
+					if activeTeam != owner
+						beacon.set 'nextOwner', activeTeam
+						percentage = beacon.get 'percentage'
+						if owner == -1
+							# Capturing
+							log 'Team ', activeTeam, ' is capturing beacon ', beacon.n
+							beacon.set 'action', 'capture'
+							beacon.set 'actionStarted', new Date()/1000
+							# Set timer for capturing
+							playersStr = getInrangePlayers(beacon.n)
+							Timer.set (100-percentage)*10*30, 'onCapture', {beacon: beacon.n, players: playersStr}
+						else
+							# Neutralizing
+							log 'Team ', activeTeam, ' is neutralizing beacon ', beacon.n
+							beacon.set 'action', 'neutralize'
+							beacon.set 'actionStarted', new Date()/1000
+
+							playersStr = getInrangePlayers(beacon.n)
+							Timer.set percentage*10*30, 'onNeutralize', {beacon: beacon.n, players: playersStr}
+					else
+						log 'activeteam already has the beacon, ', activeTeam, '=', owner
+
+				else if competing.length > 1 or competing.length is 0
+					# No progess, stand-off
+					beacon.set 'action', 'none'
+					beacon.set 'actionStarted', new Date()
+					if competing.length > 1
+						log 'Capture of beacon ', beacon.n, ' on hold, competing teams: ', competing
+					else
+						log 'Capture of beacon ', beacon.n, ' stopped, left the area'
+
+# Update the takeover percentage of a beacon depening on current action and the passed time
+updateBeaconPercentage = (beacon) !->
+	currentPercentage = beacon.get 'percentage'
+	action = beacon.get 'action'
+	actionStarted = beacon.get 'actionStarted'
+	if action is 'capture'
+		time = (new Date()/1000)-actionStarted
+		newPercentage = currentPercentage+(time/30*100)
+		newPercentage = 100 if newPercentage>100
+		beacon.set 'percentage', newPercentage
+	else if action is 'neutralize'
+		time = (new Date()/1000)-actionStarted
+		newPercentage = currentPercentage-(time/30*100)
+		newPercentage = 0 if newPercentage<0
+		beacon.set 'percentage', newPercentage
+
+
 # Called by the beacon capture timer
 exports.onCapture = (args) !->
+	log 'args=', args
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
 	nextOwner = beacon.get('nextOwner')
 	log 'Team ', nextOwner, ' has captured beacon ', beacon.n, ', players: ', args.players
 	beacon.set 'percentage', 100
 	beacon.set 'owner', nextOwner
+	beacon.set 'action', 'none'
+	beacon.set 'actionStarted', new Date()
 
 	# Add event log entrie(s)
 	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
@@ -186,16 +211,19 @@ exports.onCapture = (args) !->
 		text: "Team " + Db.shared.get('colors', nextOwner , 'name') + " captured a beacon"
 
 	# Handle points and statistics
-	# Modify user and team scores 
 	client = args.players.split(', ')[0]
 	log "[onCapture()] " + client
 	beaconValue = beacon.get('captureValue')
 	modifyScore client, beaconValue
+	for player in args.players.split(', ')
+		Db.shared.modify 'game', 'teams', getTeamOfUser(player), 'users', player, 'captured', (v) -> v+1
 	Db.shared.modify 'game', 'teams', nextOwner, 'captured', (v) -> v+1
     # Modify beacon value
 	beacon.modify 'captureValue', (v) -> v - 1 if beaconValue > 1
 
+# Called by the beacon neutralize timer
 exports.onNeutralize = (args) !->
+	log 'args=', args
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
 	neutralizer = beacon.get('nextOwner')
 	log 'Team ', neutralizer, ' has neutralized beacon ', beacon.n, ', players: ', args.players
@@ -203,14 +231,19 @@ exports.onNeutralize = (args) !->
 	beacon.set 'owner', -1
 
 	# Handle points and statistics
-	Db.shared.modify 'game', 'teams', args.neutralizer, 'neutralized', (v) -> v+1
+	for player in args.players.split(', ')
+		Db.shared.modify 'game', 'teams', getTeamOfUser(player), 'users', player, 'neutralized', (v) -> v+1
+	Db.shared.modify 'game', 'teams', neutralizer, 'neutralized', (v) -> v+1
 
 	# Handle capturing
+	updateBeaconPercentage(beacon)
 	percentage = beacon.get 'percentage'
 	log 'Team ', neutralizer, ' is capturing beacon ', beacon.n, ' (after neutralize)'
+
+	beacon.set 'action', 'capture'
+	beacon.set 'actionStarted', new Date()
 	# Set timer for capturing
 	Timer.set (100-percentage)*10*30, 'onCapture', args
-
 
 #Function called when the game ends
 exports.endGame = !->
