@@ -195,7 +195,7 @@ exports.onCapture = (args) !->
 	beacon.set 'percentage', 100
 	beacon.set 'owner', nextOwner
 	beacon.set 'action', 'none'
-	beacon.set 'actionStarted', new Date()
+	beacon.set 'actionStarted', new Date()/1000
 
 	# Add event log entrie(s)
 	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
@@ -241,7 +241,7 @@ exports.onNeutralize = (args) !->
 	log 'Team ', neutralizer, ' is capturing beacon ', beacon.n, ' (after neutralize)'
 
 	beacon.set 'action', 'capture'
-	beacon.set 'actionStarted', new Date()
+	beacon.set 'actionStarted', new Date()/1000
 	# Set timer for capturing
 	Timer.set (100-percentage)*10*30, 'onCapture', args
 
