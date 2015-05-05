@@ -434,6 +434,10 @@ setupContent = ->
 						map.removeLayer locationOne if locationOne?
 						map.removeLayer locationTwo if locationTwo?
 						map.removeLayer boundaryRectangle if boundaryRectangle?
+			# Info bar
+			Dom.div !->
+				Dom.cls 'infobar'
+				Dom.text "Drag the corners of the rectangle to define the game area, during the game the map view will be limited to the selected area."
 		else if currentPage is 'setup2' # Setup beacons
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -472,6 +476,10 @@ setupContent = ->
 					if mapReady()
 						map.removeLayer boundaryRectangle if boundaryRectangle?
 						map.off('contextmenu', addMarkerListener)
+			# Info bar
+			Dom.div !->
+				Dom.cls 'infobar'
+				Dom.text "Place beacons on the map with rightclick or tap-and-hold, the circle around the beacon indicates the area from which you can capture it."
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings

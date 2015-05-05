@@ -27,6 +27,7 @@ Dom.css
 		width: '100%'
 		_flexGrow: '1'
 		_flexShrink: '1'
+		order: '50'
 		backgroundColor: '#030303'
 # Plugin setup pages
 	'.stepbar': # The bar at the top
@@ -126,6 +127,15 @@ Dom.css
 	'.time-button-current':
 		backgroundColor: '#0077cf !important'
 		color: '#FFFFFF'
+# Infobar at the bottom of the screen
+	'.infobar':
+		width: '100%'
+		order: '100'
+		padding: '11px'
+		fontSize: '16px'
+		boxSizing: 'border-box'
+		backgroundColor: '#888888'
+		color: 'white'
 # Scores page
 	'.teampage':
 		fontSize: "20px"
