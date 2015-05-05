@@ -10,6 +10,7 @@ Ui = require 'ui'
 CSS = require 'css'
 Geoloc = require 'geoloc'
 Form = require 'form'
+Icon = require 'icon'
 
 window.redraw = Obs.create(0)
 window.indicationArrowRedraw = Obs.create(0);
@@ -270,6 +271,9 @@ logContent = ->
 	Time.deltaText end
 
 	
+
+placedBeacons= false
+
 setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
 		currentPage = Db.local.get('currentSetupPage')
@@ -307,11 +311,11 @@ setupContent = ->
 				# Not enough players warning
 				if Plugin.users.count().get() <= 1
 					Dom.h2 "Warning"
-					Dom.text "Be sure to invite some friends if you actually want to play the game, you cannot play on your own (you can test it out though)."
+					Dom.text "Be sure to invite some friends if you actually want to play the game. One cannot play alone!"
+					Dom.text "(You can test it out though)."
 				# Teams input
-				Dom.h2 tr("Number of teams")
+				Dom.h2 tr("Select the number of teams")
 				Dom.div !->
-					Dom.text tr("Select the number of teams:")
 					Dom.cls "team-text"
 				Dom.div !->
 					log 'numberOfTeams.get(): ', numberOfTeams.get()
@@ -326,7 +330,7 @@ setupContent = ->
 								Dom.onTap !->
 									numberOfTeams.set number
 					userCount = Math.min(Plugin.users.count().get(),6)
-					for number in [2..Math.max(userCount,2)]
+					for number in [2..Math.max(userCount,4)]
 						renderTeamButton number
 				# Duration input
 				Dom.h2 tr("Round time")
@@ -399,7 +403,7 @@ setupContent = ->
 						Db.local.set('currentSetupPage', 'setup0')
 				# Middle block
 				Dom.div !->
-					Dom.text tr("Boundary setup")
+					Dom.text tr("Select playingfield")
 					Dom.cls 'stepbar-middle'
 				# Right button
 				Dom.div !->
@@ -409,9 +413,15 @@ setupContent = ->
 					Dom.onTap !->
 						Db.local.set('currentSetupPage', 'setup2')
 			renderMap()
+			if !placedBeacons
+				location = window.beaconCurrentLocation.getLatLng()
+				one = L.latLng(location.lat+0.01,location.lng-0.02)
+				two = L.latLng(location.lat-0.01,location.lng+0.02)
+				Server.send 'setBounds', one, two
 			renderBeacons()
 			Obs.observe ->
 				if mapReady()
+					# Setup map corners
 					# Corner 1
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 					window.locationOne = L.marker(loc1, {draggable: true})
@@ -437,7 +447,9 @@ setupContent = ->
 			# Info bar
 			Dom.div !->
 				Dom.cls 'infobar'
-				Dom.text "Drag the corners of the rectangle to define the game area, during the game the map view will be limited to the selected area."
+				Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 15
+				Dom.text "Drag the corners of the rectangle to define the game area."
+
 		else if currentPage is 'setup2' # Setup beacons
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -449,9 +461,10 @@ setupContent = ->
 					Dom.cls 'stepbar-left'
 					Dom.onTap !->
 						Db.local.set('currentSetupPage', 'setup1')
+						placedBeacons = true
 				# Middle block
 				Dom.div !->
-					Dom.text tr("Beacon setup")
+					Dom.text tr("Place beacons")
 					Dom.cls 'stepbar-middle'
 				# Right button
 				Dom.div !->
@@ -468,6 +481,7 @@ setupContent = ->
 				if mapReady()
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
+					log loc1 + " " + loc2
 					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 5, fillOpacity: 0.05, clickable: false})
 					boundaryRectangle.addTo(map)
 					map.on('contextmenu', addMarkerListener)
@@ -479,7 +493,8 @@ setupContent = ->
 			# Info bar
 			Dom.div !->
 				Dom.cls 'infobar'
-				Dom.text "Place beacons on the map with rightclick or tap-and-hold, the circle around the beacon indicates the area from which you can capture it."
+				Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 15
+				Dom.text "Right-click or hold to place beacon on the map. The circle indicates the area of effect for this beacon."
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
