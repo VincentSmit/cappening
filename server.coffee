@@ -321,7 +321,6 @@ getTeamOfUser = (userId) ->
 modifyScore = (client, points) !->
 	log "[modifyScore()] client: " + client + " team: " + getTeamOfUser(client) + " points: " + points
 	# calculate old number one
-	teamClient = getTeamOfUser(client)
 	teamMax = -1
 	maxScore = -1
 	newLead = false
@@ -332,6 +331,8 @@ modifyScore = (client, points) !->
 	
 	log "TeamMax: " + teamMax + " maxScore: " + maxScore + " (1)"
 	# modify user and team scores
+
+	teamClient = getTeamOfUser(client)
 	Db.shared.modify 'game', 'teams', teamClient, 'users', client, 'userScore', (v) -> v + points
 	Db.shared.modify 'game', 'teams', teamClient, 'teamScore', (v) -> v + points
 
@@ -347,9 +348,9 @@ modifyScore = (client, points) !->
 	# To Do: personalize for team members or dubed players
 	if newLead
 		maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
-		Db.shared.set 'game', 'eventlist', teamMax, 'timestamp', new Date()/1000
-		Db.shared.set 'game', 'eventlist', teamMax, 'type', "score"
-		Db.shared.set 'game', 'eventlist', teamMax, 'leading', teamClient
+		Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
+		Db.shared.set 'game', 'eventlist', maxId, 'type', "score"
+		Db.shared.set 'game', 'eventlist', maxId, 'leading', teamClient
 		log "Team " + Db.shared.get('colors', teamMax, 'name') + " took the lead!"
 		Event.create
 			unit: 'score'

@@ -214,6 +214,7 @@ logContent = ->
 						teamId = capture.get('conqueror')
 						teamColor = Db.shared.get('colors', teamId, 'hex')
 						teamName = Db.shared.get('colors', teamId, 'name')
+						log "print capture: teamId; " + teamId
 						Dom.onTap !->
 							Page.nav 'main'
 							map.setView(L.latLng(Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
@@ -231,10 +232,11 @@ logContent = ->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
 								Time.deltaText capture.get('timestamp')
-					else if capture.get('typ') is "score"
+					else if capture.get('type') is "score"
 						teamId = capture.get('leading')
 						teamColor = Db.shared.get('colors', teamId, 'hex')
 						teamName = Db.shared.get('colors', teamId, 'name')
+						log "print score: teamId; " + teamId
 						Dom.onTap !->
 							page.nav 'scores'							
 						Dom.div !->
