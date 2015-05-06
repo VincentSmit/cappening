@@ -24,25 +24,31 @@ exports.onConfig = (config) !->
 
 #========== Client calls ==========
 # Add a beacon (during setup phase)
-exports.client_addMarker = (location) ->
-	log 'Adding marker: lat=', location.lat, ', lng=', location.lng
-	nextNumber = 0
-	while Db.shared.get('game', 'beacons', nextNumber)?
-		nextNumber++
+exports.client_addMarker = (client, location) ->
+	if Db.shared.get('gameState') isnt 0
+		log Plugin.userName(client), ' (id=', client, ') tried to add a marker while game is not in setup phase!'
+	else
+		log 'Adding marker: lat=', location.lat, ', lng=', location.lng
+		nextNumber = 0
+		while Db.shared.get('game', 'beacons', nextNumber)?
+			nextNumber++
 
-	Db.shared.set 'game', 'beacons', nextNumber, {location: location}
-	Db.shared.set 'game', 'beacons', nextNumber, 'owner', -1 
-	Db.shared.set 'game', 'beacons', nextNumber, 'nextOwner', -1
-	Db.shared.set 'game', 'beacons', nextNumber, 'percentage', 0
-	Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', 10
-	Db.shared.set 'game', 'beacons', nextNumber, 'action', "none"
+		Db.shared.set 'game', 'beacons', nextNumber, {location: location}
+		Db.shared.set 'game', 'beacons', nextNumber, 'owner', -1 
+		Db.shared.set 'game', 'beacons', nextNumber, 'nextOwner', -1
+		Db.shared.set 'game', 'beacons', nextNumber, 'percentage', 0
+		Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', 10
+		Db.shared.set 'game', 'beacons', nextNumber, 'action', "none"
 
-exports.client_deleteMarker = (location) ->	
+exports.client_deleteMarker = (client, location) ->	
 	#Finding the right beacon
-	log 'Deleting marker: lat=', location.lat, ', lng=', location.lng
-	Db.shared.iterate 'game', 'beacons', (beacon) !->
-		if beacon.get('location', 'lat') == location.lat and beacon.get('location', 'lng') == location.lng
-			Db.shared.remove 'game', 'beacons', beacon.n
+	if Db.shared.get('gameState') isnt 0
+		log Plugin.userName(client), ' (id=', client, ') tried to delete a marker while game is not in setup phase!'
+	else
+		log 'Deleting marker: lat=', location.lat, ', lng=', location.lng
+		Db.shared.iterate 'game', 'beacons', (beacon) !->
+			if beacon.get('location', 'lat') == location.lat and beacon.get('location', 'lng') == location.lng
+				Db.shared.remove 'game', 'beacons', beacon.n
 	
 # Set the round time unit and number
 exports.client_setRoundTime = (roundTimeNumber, roundTimeUnit) ->
@@ -105,11 +111,11 @@ exports.client_checkinLocation = (client, location) ->
 				Timer.cancel 'onNeutralize', {beacon: beacon.n, players: getInrangePlayers(beacon.n)}
 				if newStatus
 					owner = beacon.get 'owner'
-					log 'Adding to inRange: id=', client, ', name=', Plugin.userName(client)
+					log 'Added to inRange: id=', client, ', name=', Plugin.userName(client)
 					beacon.set 'inRange', client, 'true'
 					# Start takeover
 				else
-					log 'Removed from inRange: ', client, ', name=', Plugin.userName(client)
+					log 'Removed from inRange: id=', client, ', name=', Plugin.userName(client)
 					# clean takeover
 					beacon.remove 'inRange', client
 
@@ -119,7 +125,7 @@ exports.client_checkinLocation = (client, location) ->
 				Db.shared.iterate 'game', 'beacons', beacon.n, 'inRange', (player) !->
 					team = getTeamOfUser(player.n)
 					teamMembers[team] = teamMembers[team]+1
-				log 'teamMembers count: ', teamMembers	
+				#log 'teamMembers count: ', teamMembers	
 
 				# Determine who is competing
 				max = 0
@@ -144,16 +150,16 @@ exports.client_checkinLocation = (client, location) ->
 						if owner == -1
 							# Capturing
 							log 'Team ', activeTeam, ' is capturing beacon ', beacon.n
-							beacon.set 'action', 'capture'
 							beacon.set 'actionStarted', new Date()/1000
+							beacon.set 'action', 'capture'
 							# Set timer for capturing
 							playersStr = getInrangePlayers(beacon.n)
 							Timer.set (100-percentage)*10*30, 'onCapture', {beacon: beacon.n, players: playersStr}
 						else
 							# Neutralizing
 							log 'Team ', activeTeam, ' is neutralizing beacon ', beacon.n
-							beacon.set 'action', 'neutralize'
 							beacon.set 'actionStarted', new Date()/1000
+							beacon.set 'action', 'neutralize'
 
 							playersStr = getInrangePlayers(beacon.n)
 							Timer.set percentage*10*30, 'onNeutralize', {beacon: beacon.n, players: playersStr}
@@ -162,8 +168,8 @@ exports.client_checkinLocation = (client, location) ->
 
 				else if competing.length > 1 or competing.length is 0
 					# No progess, stand-off
-					beacon.set 'action', 'none'
 					beacon.set 'actionStarted', new Date()
+					beacon.set 'action', 'none'
 					if competing.length > 1
 						log 'Capture of beacon ', beacon.n, ' on hold, competing teams: ', competing
 					else
@@ -188,14 +194,13 @@ updateBeaconPercentage = (beacon) !->
 
 # Called by the beacon capture timer
 exports.onCapture = (args) !->
-	log 'args=', args
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
 	nextOwner = beacon.get('nextOwner')
 	log 'Team ', nextOwner, ' has captured beacon ', beacon.n, ', players: ', args.players
 	beacon.set 'percentage', 100
 	beacon.set 'owner', nextOwner
-	beacon.set 'action', 'none'
 	beacon.set 'actionStarted', new Date()/1000
+	beacon.set 'action', 'none'
 
 	# Add event log entrie(s)
 	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
@@ -208,7 +213,7 @@ exports.onCapture = (args) !->
 	# TODO: Personalize for team members or dubed players
 	Event.create
 		unit: 'capture'
-		text: "Team " + Db.shared.get('colors', nextOwner , 'name') + " captured a beacon"
+		text: "Team " + Db.shared.peek('colors', nextOwner , 'name') + " captured a beacon"
 
 	# Handle points and statistics
 	client = args.players.split(', ')[0]
@@ -223,7 +228,6 @@ exports.onCapture = (args) !->
 
 # Called by the beacon neutralize timer
 exports.onNeutralize = (args) !->
-	log 'args=', args
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
 	neutralizer = beacon.get('nextOwner')
 	log 'Team ', neutralizer, ' has neutralized beacon ', beacon.n, ', players: ', args.players
@@ -351,9 +355,9 @@ modifyScore = (client, points) !->
 		Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
 		Db.shared.set 'game', 'eventlist', maxId, 'type', "score"
 		Db.shared.set 'game', 'eventlist', maxId, 'leading', teamClient
-		log "Team " + Db.shared.get('colors', teamMax, 'name') + " took the lead!"
+		log "Team " + Db.shared.peek('colors', teamMax, 'name') + " took the lead!"
 		Event.create
 			unit: 'score'
-			text: "Team " + Db.shared.get('colors', teamMax, 'name') + " took the lead!"
+			text: "Team " + Db.shared.peek('colors', teamMax, 'name') + " took the lead!"
 
 
