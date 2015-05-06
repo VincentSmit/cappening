@@ -152,12 +152,20 @@ addProgressBar = ->
 					height: "25px"
 					width: "100%"
 					zIndex: "5"
-					backgroundColor: "#f3f3f3"
+					backgroundColor: "rgba(243,243,243,0.5)"
 					border: 0
 					boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
+					marginBottom: '-25px'
 				Dom.div !->
 					Dom.style
 						height: "25px"
+						background: '-moz-linear-gradient(top,  rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%)'
+						background: '-webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0,0,0,0)), color-stop(100%,rgba(0,0,0,0.3)))'
+						background: '-webkit-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+						background: '-o-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+						background: '-ms-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+						background: 'linear-gradient(to bottom,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+						filter: "progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#4d000000',GradientType=0 )"
 						backgroundColor: nextColor
 						zIndex: "10"
 						_borderRadius: '12.5px'
