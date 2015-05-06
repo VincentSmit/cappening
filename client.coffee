@@ -103,8 +103,36 @@ addBar = ->
 
 addProgressBar = ->
 	Db.shared.observeEach 'game', 'beacons', (beacon) !->
-		if beacon.get('inRange', Plugin.userId())?
-			nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+		if beacon.get('inRange', Plugin.userId())?	
+			dbPercentage = beacon.get("percentage")
+			nextPercentage = -1
+			nextColor = ""
+			action = beacon.get('action')	
+			if action == "capture"
+				nextPercentage=100
+				dbPercentage += (new Date() /1000 -beacon.get("actionStarted"))/30 * 100
+				log "actionStarted = " + beacon.get("actionStarted")
+				if dbPercentage > 100
+					dbPercentage = 100
+				nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'nextOwner'), 'hex')
+			else if action == "neutralize"
+				nextPercentage=0
+				dbPercentage -= (new Date() /1000 -beacon.get("actionStarted"))/30 * 100
+				if dbPercentage < 0
+					dbPercentage = 0
+				nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+			else
+				nextPercentage = dbPercentage
+				if beacon.get("owner")==-1
+					nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'nextOwner'), 'hex')
+				else
+					nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+			time = 0
+
+
+			if nextPercentage != dbPercentage
+				time = Math.abs(dbPercentage-nextPercentage) * 300
+			log "nextPercentage = ", nextPercentage, ", dbPercentage = ", dbPercentage, ", time = ", time, ", action = ", action
 			Dom.div !->
 				Dom.style
 					height: "20px"
@@ -116,9 +144,15 @@ addProgressBar = ->
 				Dom.div !->
 					Dom.style
 						height: "20px"
-						width: "20%"
 						backgroundColor: nextColor
 						zIndex: "10"
+					Dom._get().style.width = dbPercentage + "%"
+					Dom._get().style.transition = "width " + time + "ms linear"
+					window.progressElement = Dom._get()
+					blabla = () -> window.progressElement.style.width = nextPercentage + "%"
+					window.setTimeout(blabla, 1)
+					
+
 
 
 # Home page with map
