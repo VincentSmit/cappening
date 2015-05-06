@@ -367,7 +367,7 @@ setupContent = ->
 								Dom.onTap !->
 									numberOfTeams.set number
 					userCount = Math.min(Plugin.users.count().get(),6)
-					for number in [2..Math.max(userCount,4)]
+					for number in [2..Math.max(userCount,2)]
 						renderTeamButton number
 				# Duration input
 				Dom.h2 tr("Round time")
