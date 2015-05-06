@@ -111,6 +111,7 @@ addProgressBar = ->
 			if action == "capture"
 				nextPercentage=100
 				dbPercentage += (new Date() /1000 -beacon.get("actionStarted"))/30 * 100
+				dbPercentage -= 9.8
 				log "actionStarted = " + beacon.get("actionStarted")
 				if dbPercentage > 100
 					dbPercentage = 100
@@ -129,7 +130,6 @@ addProgressBar = ->
 					nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
 			time = 0
 
-
 			if nextPercentage != dbPercentage
 				time = Math.abs(dbPercentage-nextPercentage) * 300
 			log "nextPercentage = ", nextPercentage, ", dbPercentage = ", dbPercentage, ", time = ", time, ", action = ", action
@@ -147,10 +147,11 @@ addProgressBar = ->
 						backgroundColor: nextColor
 						zIndex: "10"
 					Dom._get().style.width = dbPercentage + "%"
+					log "dbPercentage after balancing = ", dbPercentage
 					Dom._get().style.transition = "width " + time + "ms linear"
 					window.progressElement = Dom._get()
 					blabla = () -> window.progressElement.style.width = nextPercentage + "%"
-					window.setTimeout(blabla, 1)
+					window.setTimeout(blabla, 10)
 					
 
 
