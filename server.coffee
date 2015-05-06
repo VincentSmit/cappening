@@ -337,7 +337,7 @@ modifyScore = (client, points) !->
 	Db.shared.modify 'game', 'teams', teamClient, 'teamScore', (v) -> v + points
 
 	Db.shared.iterate 'game', 'teams', (team) !->
-		if maxScore < team.get('teamScore')
+		if maxScore < team.get('teamScore') and teamMax isnt team.n
 			teamMax = team.n
 			maxScore = team.get('teamScore')
 			newLead = true
