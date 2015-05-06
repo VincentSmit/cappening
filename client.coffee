@@ -580,7 +580,10 @@ limitToBounds = ->
 			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 			bounds = L.latLngBounds(loc1, loc2)
-			map.setMaxBounds(bounds)
+			if bounds? and loc1? and loc2?
+				map.setMaxBounds(bounds)
+			else
+				log "Bounds not existing"
 			#map.fitBounds(bounds); # Causes problems, because it zooms to max all the time
 			map._layersMinZoom = map.getBoundsZoom(bounds)
 			Obs.onClean ->
