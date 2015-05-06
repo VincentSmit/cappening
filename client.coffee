@@ -99,35 +99,49 @@ addBar = ->
 				Dom.text Db.shared.get( 'game', 'teams', teamId, 'teamScore') + " points"
 			Dom.cls 'bar-button'
 			Dom.style ->
-				backgroundColor: Db.shared.get('colors', teamId, 'hex')
+				backgroundColor: Db.shared.peek('colors', teamId, 'hex')
 
 addProgressBar = ->
+	log 'Render progress bar outer'
 	Db.shared.observeEach 'game', 'beacons', (beacon) !->
+		log 'Render progress bar 1 beacon'
 		if beacon.get('inRange', Plugin.userId())?	
 			dbPercentage = beacon.get("percentage")
 			nextPercentage = -1
 			nextColor = ""
-			action = beacon.get('action')	
+			actionStarted = beacon.get("actionStarted")
+			log 'Action started ', new Date()/1000-actionStarted, ' seconds ago'
+			action = beacon.get('action')
+			barText = ""
 			if action == "capture"
 				nextPercentage=100
-				dbPercentage += (new Date() /1000 -beacon.get("actionStarted"))/30 * 100
-				dbPercentage -= 9.8
-				log "actionStarted = " + beacon.get("actionStarted")
+				dbPercentage += (new Date() /1000 -actionStarted)/30 * 100
+				#dbPercentage -= 9.8
+				log "actionStarted = " + actionStarted
 				if dbPercentage > 100
 					dbPercentage = 100
-				nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'nextOwner'), 'hex')
-			else if action == "neutralize"
-				nextPercentage=0
-				dbPercentage -= (new Date() /1000 -beacon.get("actionStarted"))/30 * 100
 				if dbPercentage < 0
 					dbPercentage = 0
-				nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+				nextColor = Db.shared.peek('colors', Db.shared.get('game', 'beacons', beacon.n, 'nextOwner'), 'hex')
+				barText = "Capturing..."
+			else if action == "neutralize"
+				nextPercentage=0
+				dbPercentage -= (new Date() /1000 -actionStarted)/30 * 100
+				if dbPercentage < 0
+					dbPercentage = 0
+				if dbPercentage > 100
+					dbPercentage = 100
+				nextColor = Db.shared.peek('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+				barText = "Neutralizing..."
 			else
 				nextPercentage = dbPercentage
 				if beacon.get("owner")==-1
-					nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'nextOwner'), 'hex')
+					nextColor = Db.shared.peek('colors', Db.shared.get('game', 'beacons', beacon.n, 'nextOwner'), 'hex')
 				else
-					nextColor = Db.shared.get('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+					nextColor = Db.shared.peek('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+				barText = "Competing with others..."
+			if dbPercentage == 100
+				barText = "Captured"
 			time = 0
 
 			if nextPercentage != dbPercentage
@@ -135,7 +149,7 @@ addProgressBar = ->
 			log "nextPercentage = ", nextPercentage, ", dbPercentage = ", dbPercentage, ", time = ", time, ", action = ", action
 			Dom.div !->
 				Dom.style
-					height: "20px"
+					height: "25px"
 					width: "100%"
 					zIndex: "5"
 					backgroundColor: "#f3f3f3"
@@ -143,18 +157,27 @@ addProgressBar = ->
 					boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
 				Dom.div !->
 					Dom.style
-						height: "20px"
+						height: "25px"
 						backgroundColor: nextColor
 						zIndex: "10"
+						_borderRadius: '12.5px'
+						padding: '0 13px 0 13px'
+						marginLeft: '-13px'
 					Dom._get().style.width = dbPercentage + "%"
 					log "dbPercentage after balancing = ", dbPercentage
 					Dom._get().style.transition = "width " + time + "ms linear"
 					window.progressElement = Dom._get()
-					blabla = () -> window.progressElement.style.width = nextPercentage + "%"
-					window.setTimeout(blabla, 10)
-					
-
-
+					timer = () -> window.progressElement.style.width = nextPercentage + "%"
+					window.setTimeout(timer, 10)
+				Dom.div !->
+					Dom.text barText
+					Dom.style
+						width: '100%'
+						color: 'white'
+						marginTop: '-22px'
+						textAlign: 'center'
+						fontSize: '15px'
+						_textShadow: '0 0 5px #000000, 0 0 5px #000000' # Double for extra visibility
 
 # Home page with map
 mainContent = ->
@@ -200,8 +223,8 @@ scoresContent = ->
 		Dom.style
 			padding: '0'
 		Db.shared.observeEach 'game', 'teams', (team) !->
-			teamColor = Db.shared.get('colors', team.n, 'hex')
-			teamName = Db.shared.get('colors', team.n, 'name')
+			teamColor = Db.shared.peek('colors', team.n, 'hex')
+			teamName = Db.shared.peek('colors', team.n, 'name')
 			teamScore = Db.shared.get('game', 'teams', team.n, 'teamScore')
 			# list of teams and their scores
 			expanded = Obs.create(false)
@@ -247,8 +270,8 @@ logContent = ->
 					if capture.get('type') is "capture" and mapReady()
 						beaconId = capture.get('beacon')
 						teamId = capture.get('conqueror')
-						teamColor = Db.shared.get('colors', teamId, 'hex')
-						teamName = Db.shared.get('colors', teamId, 'name')
+						teamColor = Db.shared.peek('colors', teamId, 'hex')
+						teamName = Db.shared.peek('colors', teamId, 'name')
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
 							Page.nav 'main'
@@ -269,8 +292,8 @@ logContent = ->
 								Time.deltaText capture.get('timestamp')
 					else if capture.get('type') is "score"
 						teamId = capture.get('leading')
-						teamColor = Db.shared.get('colors', teamId, 'hex')
-						teamName = Db.shared.get('colors', teamId, 'name')
+						teamColor = Db.shared.peek('colors', teamId, 'hex')
+						teamName = Db.shared.peek('colors', teamId, 'name')
 						log "print score: teamId; " + teamId
 						Dom.onTap !->
 							page.nav 'scores'							
@@ -450,7 +473,7 @@ setupContent = ->
 					Dom.onTap !->
 						Db.local.set('currentSetupPage', 'setup2')
 			renderMap()
-			if !placedBeacons
+			if !placedBeacons and mapReady()
 				location = window.beaconCurrentLocation.getLatLng()
 				one = L.latLng(location.lat+0.01,location.lng-0.02)
 				two = L.latLng(location.lat-0.01,location.lng+0.02)
@@ -671,7 +694,7 @@ renderBeacons = ->
 				window.beaconMarkers = [];
 			teamNumber = beacon.get('owner')
 			if teamNumber isnt undefined
-				teamColor=  Db.shared.get('colors', teamNumber, 'hex')
+				teamColor=  Db.shared.peek('colors', teamNumber, 'hex')
 				
 				areaIcon = L.icon({
 					iconUrl: Plugin.resourceUri(teamColor.substring(1) + '.png'),
@@ -694,7 +717,7 @@ renderBeacons = ->
 								beaconCircles.splice(beaconCircles.indexOf(beaconCircles[i]), 1)
 							i++
 						map.removeLayer marker
-						Server.send 'deleteMarker', marker.getLatLng()
+						Server.send 'deleteMarker', Plugin.userId(), marker.getLatLng()
 					marker.on('dblclick', markerDelClick)	
 				else
 					popup = L.popup()
@@ -727,7 +750,7 @@ renderBeacons = ->
 								beaconMarkers.splice(beaconMarkers.indexOf(beaconMarkers[i]), 1)
 							i++
 						map.removeLayer circle
-						Server.send 'deleteMarker', circle.getLatLng()
+						Server.send 'deleteMarker', Plugin.userId(), circle.getLatLng()
 					circle.on('dblclick', circleDelClick)
 				else
 					circleClick = (e) -> 
@@ -783,20 +806,24 @@ addMarkerListener = (event) ->
 			result = 'Beacon is outside the game border'
 		
 	if tooClose or outsideGame
-		Modal.show(result)
-		
+		Modal.show(result)		
 	else
-		Server.send 'addMarker', event.latlng, !->
-			# TODO fix predict function
-			log 'test prediction add marker'
-			Db.shared.set 'game', 'beacons', event.latlng.lat.toString()+'_'+event.latlng.lng.toString(), {location: event.latlng}
+		Server.sync 'addMarker', Plugin.userId(), event.latlng, !->
+			# TODO: fix, creates duplicates because prediction is not cleaned up correctly, onClean not called
+			###
+			Obs.observe ->
+				log 'Prediction add marker'
+				number = Math.floor((Math.random() * 10000) + 200)
+				Db.shared.set 'game', 'beacons', number, {location: {lat: event.latlng.lat, lng: event.latlng.lng}, owner: -1}
+				Obs.onClean ->
+					log 'clean'
+			###
 
 indicationArrowListener = (event) ->
 	indicationArrowRedraw.incr()
 
 convertLatLng = (location) ->
-	return L.latLng(location.lat, location.lng)
-	
+	return L.latLng(location.lat, location.lng)	
 			
 # Update the play area square thing
 markerDragged = ->
@@ -823,7 +850,7 @@ checkAllBeacons = ->
 			if !bounds.contains(beaconCircles[i].getBounds())
 				map.removeLayer beaconCircles[i]
 				invalidMarker =  beaconCircles[i].getLatLng()
-				Server.sync 'deleteMarker', invalidMarker
+				Server.sync 'deleteMarker', Plugin.userId(), invalidMarker
 				j=0;
 				while j<beaconMarkers.length
 					if sameLocation(beaconMarkers[j].getLatLng(), invalidMarker)
