@@ -105,10 +105,14 @@ addProgressBar = ->
 	log 'Render progress bar outer'
 	Db.shared.observeEach 'game', 'beacons', (beacon) !->
 		log 'Render progress bar 1 beacon'
+		Obs.onClean ->
+			log 'Cleaning progress bar...'
 		if beacon.get('inRange', Plugin.userId())?	
 			dbPercentage = beacon.get("percentage")
 			nextPercentage = -1
 			nextColor = ""
+			owner = beacon.get('owner')
+			nextOwner = beacon.get('nextOwner')
 			actionStarted = beacon.get("actionStarted")
 			log 'Action started ', new Date()/1000-actionStarted, ' seconds ago'
 			action = beacon.get('action')
@@ -122,7 +126,7 @@ addProgressBar = ->
 					dbPercentage = 100
 				if dbPercentage < 0
 					dbPercentage = 0
-				nextColor = Db.shared.peek('colors', Db.shared.get('game', 'beacons', beacon.n, 'nextOwner'), 'hex')
+				nextColor = Db.shared.peek('colors', nextOwner, 'hex')
 				barText = "Capturing..."
 			else if action == "neutralize"
 				nextPercentage=0
@@ -131,16 +135,16 @@ addProgressBar = ->
 					dbPercentage = 0
 				if dbPercentage > 100
 					dbPercentage = 100
-				nextColor = Db.shared.peek('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+				nextColor = Db.shared.peek('colors', owner, 'hex')
 				barText = "Neutralizing..."
 			else
 				nextPercentage = dbPercentage
 				if beacon.get("owner")==-1
-					nextColor = Db.shared.peek('colors', Db.shared.get('game', 'beacons', beacon.n, 'nextOwner'), 'hex')
+					nextColor = Db.shared.peek('colors', nextOwner, 'hex')
 				else
-					nextColor = Db.shared.peek('colors', Db.shared.get('game', 'beacons', beacon.n, 'owner'), 'hex')
+					nextColor = Db.shared.peek('colors', owner, 'hex')
 				barText = "Competing with others..."
-			if dbPercentage == 100
+			if dbPercentage == 100 and owner == nextOwner
 				barText = "Captured"
 			time = 0
 
@@ -152,18 +156,18 @@ addProgressBar = ->
 					height: "25px"
 					width: "100%"
 					zIndex: "5"
-					backgroundColor: "rgba(243,243,243,0.5)"
+					backgroundColor: "rgba(243,243,243,0.3)"
 					border: 0
 					boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
 					marginBottom: '-25px'
 				Dom.div !->
 					Dom.style
 						height: "25px"
-						background: '-moz-linear-gradient(top,  rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%)'
-						background: '-webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0,0,0,0)), color-stop(100%,rgba(0,0,0,0.3)))'
-						background: '-webkit-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
-						background: '-o-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
-						background: '-ms-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+						#background: '-moz-linear-gradient(top,  rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%)'
+						#background: '-webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0,0,0,0)), color-stop(100%,rgba(0,0,0,0.3)))'
+						#background: '-webkit-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+						#background: '-o-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+						#background: '-ms-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
 						background: 'linear-gradient(to bottom,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
 						filter: "progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#4d000000',GradientType=0 )"
 						backgroundColor: nextColor

@@ -267,6 +267,11 @@ getInrangePlayers = (beacon) ->
 
 # Setup an empty game
 initializeGame = ->
+	# Stop all timers from the previous game
+	Db.shared.iterate 'game', 'beacons', (beacon) ->
+		Timer.cancel 'onCapture', {beacon: beacon.n, players: getInrangePlayers(beacon.n)}
+		Timer.cancel 'onNeutralize', {beacon: beacon.n, players: getInrangePlayers(beacon.n)}
+	# Reset database to defaults
 	Db.shared.set 'gameState', 0
 	Db.shared.modify 'gameNumber', (v) -> (0||v)+1
 	Db.shared.set 'game', {}
