@@ -248,6 +248,7 @@ logContent = ->
 						teamId = capture.get('conqueror')
 						teamColor = Db.shared.get('colors', teamId, 'hex')
 						teamName = Db.shared.get('colors', teamId, 'name')
+						log "print capture: teamId; " + teamId
 						Dom.onTap !->
 							Page.nav 'main'
 							map.setView(L.latLng(Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
@@ -265,10 +266,11 @@ logContent = ->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
 								Time.deltaText capture.get('timestamp')
-					else if capture.get('typ') is "score"
+					else if capture.get('type') is "score"
 						teamId = capture.get('leading')
 						teamColor = Db.shared.get('colors', teamId, 'hex')
 						teamName = Db.shared.get('colors', teamId, 'name')
+						log "print score: teamId; " + teamId
 						Dom.onTap !->
 							page.nav 'scores'							
 						Dom.div !->
@@ -614,7 +616,10 @@ limitToBounds = ->
 			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 			bounds = L.latLngBounds(loc1, loc2)
-			map.setMaxBounds(bounds)
+			if bounds? and loc1? and loc2?
+				map.setMaxBounds(bounds)
+			else
+				log "Bounds not existing"
 			#map.fitBounds(bounds); # Causes problems, because it zooms to max all the time
 			map._layersMinZoom = map.getBoundsZoom(bounds)
 			Obs.onClean ->
@@ -657,11 +662,23 @@ renderBeacons = ->
 				
 				location = L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng'))
 				marker = L.marker(location, {icon: areaIcon})
-				popup = L.popup()
-					.setLatLng(location)
-					.setContent("Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "." + 
-						"<br><br>lat: " + location.lat + "<br>long: " + location.lng)
-				marker.bindPopup(popup)
+				if Db.shared.peek('gameState')==0
+					markerDelClick = (e) ->
+						i = 0;
+						while i<beaconCircles.length
+							if sameLocation marker.getLatLng(), beaconCircles[i].getLatLng()
+								map.removeLayer beaconCircles[i]
+								beaconCircles.splice(beaconCircles.indexOf(beaconCircles[i]), 1)
+							i++
+						map.removeLayer marker
+						Server.send 'deleteMarker', marker.getLatLng()
+					marker.on('dblclick', markerDelClick)	
+				else
+					popup = L.popup()
+						.setLatLng(location)
+						.setContent("Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "." + 
+							"<br><br>lat: " + location.lat + "<br>long: " + location.lng)
+					marker.bindPopup(popup)
 				marker.addTo(map)
 				beaconMarkers.push marker
 				#log 'Added marker, marker list: ', beaconMarkers
@@ -678,13 +695,25 @@ renderBeacons = ->
 					weight: 2
 				});
 				# Open the popup of the marker
-				circleClick = (e) -> 
-					i = 0;
-					while i<beaconMarkers.length
-						if sameLocation circle.getLatLng(), beaconMarkers[i].getLatLng()
-							beaconMarkers[i].togglePopup()
-						i++				
-				circle.on('click', circleClick)
+				if Db.shared.peek('gameState')==0
+					circleDelClick = (e) ->
+						i = 0;
+						while i<beaconMarkers.length
+							if sameLocation circle.getLatLng(), beaconMarkers[i].getLatLng()
+								map.removeLayer beaconMarkers[i]
+								beaconMarkers.splice(beaconMarkers.indexOf(beaconMarkers[i]), 1)
+							i++
+						map.removeLayer circle
+						Server.send 'deleteMarker', circle.getLatLng()
+					circle.on('dblclick', circleDelClick)
+				else
+					circleClick = (e) -> 
+						i = 0;
+						while i<beaconMarkers.length
+							if sameLocation circle.getLatLng(), beaconMarkers[i].getLatLng()
+								beaconMarkers[i].togglePopup()
+							i++				
+					circle.on('click', circleClick)
 				circle.addTo(map)
 				beaconCircles.push circle
 				log "Added beacon and circle"
