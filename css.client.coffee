@@ -2,7 +2,7 @@ Dom.css
 # Main element
 	'#main':
 		padding: '0 !important'
-		display_: 'flex'
+		_display: 'flex'
 		_flexDirection: 'column'
 	'.container':
 		padding: '8px'
@@ -136,6 +136,8 @@ Dom.css
 		boxSizing: 'border-box'
 		backgroundColor: '#888888'
 		color: 'white'
+		_display: 'flex'
+		_alignItems: 'center'
 # Scores page
 	'.teampage':
 		fontSize: "20px"

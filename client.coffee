@@ -484,8 +484,19 @@ setupContent = ->
 			# Info bar
 			Dom.div !->
 				Dom.cls 'infobar'
-				Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 15
-				Dom.text "Drag the corners of the rectangle to define the game area."
+				Dom.div !->
+					Dom.style
+						float: 'left'
+						marginRight: '10px'
+						width: '30px'
+						_flexGrow: '0'
+						_flexShrink: '0'
+					Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 30
+				Dom.div !->
+					Dom.style
+						_flexGrow: '1'
+						_flexShrink: '1'
+					Dom.text "Drag the corners of the rectangle to define the game area."
 
 		else if currentPage is 'setup2' # Setup beacons
 			# Bar to indicate the setup progress
@@ -530,8 +541,19 @@ setupContent = ->
 			# Info bar
 			Dom.div !->
 				Dom.cls 'infobar'
-				Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 15
-				Dom.text "Right-click or hold to place beacon on the map. The circle indicates the area of effect for this beacon."
+				Dom.div !->
+					Dom.style
+						float: 'left'
+						marginRight: '10px'
+						width: '30px'
+						_flexGrow: '0'
+						_flexShrink: '0'
+					Icon.render data: 'info', color: '#fff', size: 30
+				Dom.div !->
+					Dom.style
+						_flexGrow: '1'
+						_flexShrink: '1'
+					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the area of effect for this beacon."
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
