@@ -262,7 +262,6 @@ getInrangePlayers = (beacon) ->
 			playersStr = playersStr + ', ' + player.n
 		else
 			playersStr = player.n
-	log 'players string: ', playersStr
 	return playersStr
 
 # Setup an empty game
