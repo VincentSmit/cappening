@@ -160,7 +160,6 @@ addProgressBar = ->
 					border: 0
 					boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
 					marginBottom: '-25px'
-					overflowX: "hidden"
 				Dom.div !->
 					Dom.style
 						height: "25px"
@@ -181,7 +180,7 @@ addProgressBar = ->
 					Dom._get().style.transition = "width " + time + "ms linear"
 					window.progressElement = Dom._get()
 					timer = () -> window.progressElement.style.width = nextPercentage + "%"
-					window.setTimeout(timer, 100)
+					window.setTimeout(timer, 10)
 				Dom.div !->
 					Dom.text barText
 					Dom.style
