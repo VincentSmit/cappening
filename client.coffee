@@ -102,95 +102,98 @@ addBar = ->
 				backgroundColor: Db.shared.peek('colors', teamId, 'hex')
 
 addProgressBar = ->
-	log 'Render progress bar outer'
-	Db.shared.observeEach 'game', 'beacons', (beacon) !->
-		log 'Render progress bar 1 beacon'
-		Obs.onClean ->
-			log 'Cleaning progress bar...'
-		if beacon.get('inRange', Plugin.userId())?	
-			dbPercentage = beacon.get("percentage")
-			nextPercentage = -1
-			nextColor = ""
-			owner = beacon.get('owner')
-			nextOwner = beacon.get('nextOwner')
-			actionStarted = beacon.get("actionStarted")
-			log 'Action started ', new Date()/1000-actionStarted, ' seconds ago'
-			action = beacon.get('action')
-			barText = ""
-			if action == "capture"
-				nextPercentage=100
-				dbPercentage += (new Date() /1000 -actionStarted)/30 * 100
-				#dbPercentage -= 9.8
-				log "actionStarted = " + actionStarted
-				if dbPercentage > 100
-					dbPercentage = 100
-				if dbPercentage < 0
-					dbPercentage = 0
-				nextColor = Db.shared.peek('colors', nextOwner, 'hex')
-				barText = "Capturing..."
-			else if action == "neutralize"
-				nextPercentage=0
-				dbPercentage -= (new Date() /1000 -actionStarted)/30 * 100
-				if dbPercentage < 0
-					dbPercentage = 0
-				if dbPercentage > 100
-					dbPercentage = 100
-				nextColor = Db.shared.peek('colors', owner, 'hex')
-				barText = "Neutralizing..."
-			else
-				nextPercentage = dbPercentage
-				if beacon.get("owner")==-1
+	Obs.observe ->
+		log 'Render progress bar outer'
+		Db.shared.iterate 'game', 'beacons', (beacon) !->
+			action = beacon.get('action') # Subscribe to changes in action, only thing that matters
+			log 'action=', action
+			if beacon.peek('inRange', Plugin.userId())?
+				log 'Rendering progress bar'
+				Obs.onClean ->
+					log 'Cleaned progress bar...'
+				dbPercentage = beacon.peek("percentage")
+				nextPercentage = -1
+				nextColor = ""
+				owner = beacon.peek('owner')
+				nextOwner = beacon.peek('nextOwner')
+				actionStarted = beacon.peek("actionStarted")
+				log 'Action started ', new Date()/1000-actionStarted, ' seconds ago'
+				barText = ""
+				if action == "capture"
+					nextPercentage=100
+					dbPercentage += (new Date() /1000 -actionStarted)/30 * 100
+					#dbPercentage -= 9.8
+					log "actionStarted = " + actionStarted
+					if dbPercentage > 100
+						dbPercentage = 100
+					if dbPercentage < 0
+						dbPercentage = 0
 					nextColor = Db.shared.peek('colors', nextOwner, 'hex')
-				else
+					barText = "Capturing..."
+				else if action == "neutralize"
+					nextPercentage=0
+					dbPercentage -= (new Date() /1000 -actionStarted)/30 * 100
+					if dbPercentage < 0
+						dbPercentage = 0
+					if dbPercentage > 100
+						dbPercentage = 100
 					nextColor = Db.shared.peek('colors', owner, 'hex')
-				barText = "Competing with others..."
-			if dbPercentage == 100 and owner == nextOwner
-				barText = "Captured"
-			time = 0
+					barText = "Neutralizing..."
+				else
+					nextPercentage = dbPercentage
+					if owner == -1
+						nextColor = Db.shared.peek('colors', nextOwner, 'hex')
+					else
+						nextColor = Db.shared.peek('colors', owner, 'hex')
+					barText = "Competing with others..."
+				if dbPercentage == 100 and owner == nextOwner
+					barText = "Captured"
+				time = 0
 
-			if nextPercentage != dbPercentage
-				time = Math.abs(dbPercentage-nextPercentage) * 300
-			log "nextPercentage = ", nextPercentage, ", dbPercentage = ", dbPercentage, ", time = ", time, ", action = ", action
-			Dom.div !->
-				Dom.style
-					height: "25px"
-					width: "100%"
-					zIndex: "5"
-					backgroundColor: "rgba(243,243,243,0.3)"
-					border: 0
-					boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
-					marginBottom: '-25px'
-					overflowX: "hidden"
+				if nextPercentage != dbPercentage
+					time = Math.abs(dbPercentage-nextPercentage) * 300
+				log "nextPercentage = ", nextPercentage, ", dbPercentage = ", dbPercentage, ", time = ", time, ", action = ", action
 				Dom.div !->
 					Dom.style
 						height: "25px"
-						#background: '-moz-linear-gradient(top,  rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%)'
-						#background: '-webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0,0,0,0)), color-stop(100%,rgba(0,0,0,0.3)))'
-						#background: '-webkit-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
-						#background: '-o-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
-						#background: '-ms-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
-						background: 'linear-gradient(to bottom,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
-						filter: "progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#4d000000',GradientType=0 )"
-						backgroundColor: nextColor
-						zIndex: "10"
-						_borderRadius: '2px'
-						padding: '0 13px 0 2px'
-						marginLeft: '-2px'
-					Dom._get().style.width = dbPercentage + "%"
-					log "dbPercentage after balancing = ", dbPercentage
-					Dom._get().style.transition = "width " + time + "ms linear"
-					window.progressElement = Dom._get()
-					timer = () -> window.progressElement.style.width = nextPercentage + "%"
-					window.setTimeout(timer, 100)
-				Dom.div !->
-					Dom.text barText
-					Dom.style
-						width: '100%'
-						color: 'white'
-						marginTop: '-22px'
-						textAlign: 'center'
-						fontSize: '15px'
-						_textShadow: '0 0 5px #000000, 0 0 5px #000000' # Double for extra visibility
+						width: "100%"
+						zIndex: "5"
+						backgroundColor: "rgba(243,243,243,0.3)"
+						border: 0
+						boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
+						marginBottom: '-25px'
+						#overflowX: 'hidden'
+					Dom.div !->
+						Dom.style
+							height: "25px"
+							#background: '-moz-linear-gradient(top,  rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%)'
+							#background: '-webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0,0,0,0)), color-stop(100%,rgba(0,0,0,0.3)))'
+							#background: '-webkit-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+							#background: '-o-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+							#background: '-ms-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+							background: 'linear-gradient(to bottom,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+							filter: "progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#4d000000',GradientType=0 )"
+							backgroundColor: nextColor
+							zIndex: "10"
+							_borderRadius: '12.5px'
+							padding: '0 13px 0 13px'
+							marginLeft: '-13px'
+						Dom._get().style.width = dbPercentage + "%"
+						log "dbPercentage after balancing = ", dbPercentage
+						Dom._get().style.transition = "width " + time + "ms linear"
+						window.progressElement = Dom._get()
+						timer = () -> window.progressElement.style.width = nextPercentage + "%"
+						window.setTimeout(timer, 100)
+					Dom.div !->
+						Dom.text barText
+						Dom.style
+							width: '100%'
+							color: 'white'
+							marginTop: '-22px'
+							textAlign: 'center'
+							fontSize: '15px'
+							_textShadow: '0 0 5px #000000, 0 0 5px #000000' # Double for extra visibility
+
 
 # Home page with map
 mainContent = ->
@@ -960,7 +963,7 @@ renderLocation = ->
 					Obs.observe ->
 						if Db.shared.peek('gameState') is 1 # Only when the game is running, do something
 							log 'Checking beacon takeover'
-							Db.shared.observeEach 'game', 'beacons', (beacon) !->
+							Db.shared.iterate 'game', 'beacons', (beacon) !->
 								beaconCoord = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
 								distance = latLngObj.distanceTo(beaconCoord)
 								#log 'distance=', distance, 'beacon=', beacon
@@ -971,9 +974,9 @@ renderLocation = ->
 										log 'UserID', Plugin.userId()
 										log 'UserLoc', latLngObj
 									if inRange
-										log 'Taking over beacon: userId=', Plugin.userId(), ', location=', latLngObj
+										log 'Trying beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
 									else
-										log 'Stopping takeover of beacon: userId=', Plugin.userId(), ', location=', latLngObj
+										log 'Trying stop of beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
 			else
 				log 'Location could not be found'
 			Obs.onClean ->
