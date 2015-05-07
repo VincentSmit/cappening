@@ -173,9 +173,9 @@ addProgressBar = ->
 						filter: "progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#4d000000',GradientType=0 )"
 						backgroundColor: nextColor
 						zIndex: "10"
-						_borderRadius: '12.5px'
-						padding: '0 13px 0 13px'
-						marginLeft: '-13px'
+						_borderRadius: '2px'
+						padding: '0 13px 0 2px'
+						marginLeft: '-2px'
 					Dom._get().style.width = dbPercentage + "%"
 					log "dbPercentage after balancing = ", dbPercentage
 					Dom._get().style.transition = "width " + time + "ms linear"
