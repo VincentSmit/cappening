@@ -965,18 +965,21 @@ renderLocation = ->
 							log 'Checking beacon takeover'
 							Db.shared.iterate 'game', 'beacons', (beacon) !->
 								beaconCoord = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
-								distance = latLngObj.distanceTo(beaconCoord)
-								#log 'distance=', distance, 'beacon=', beacon
-								within = distance - Db.shared.peek('game','beaconRadius') <= 0
-								inRange = beacon.peek('inRange', Plugin.userId())?
-								if (within and not inRange) or (not within and inRange)
-									Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
-										log 'UserID', Plugin.userId()
-										log 'UserLoc', latLngObj
-									if inRange
-										log 'Trying beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
-									else
-										log 'Trying stop of beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
+								if not beaconCoord?
+									log 'beacon coordinate not found'
+								else
+									distance = latLngObj.distanceTo(beaconCoord)
+									#log 'distance=', distance, 'beacon=', beacon
+									within = distance - Db.shared.peek('game','beaconRadius') <= 0
+									inRange = beacon.peek('inRange', Plugin.userId())?
+									if (within and not inRange) or (not within and inRange)
+										Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
+											log 'UserID', Plugin.userId()
+											log 'UserLoc', latLngObj
+										if inRange
+											log 'Trying beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
+										else
+											log 'Trying stop of beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
 			else
 				log 'Location could not be found'
 			Obs.onClean ->

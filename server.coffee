@@ -101,7 +101,7 @@ exports.client_checkinLocation = (client, location) ->
 
 		beacons = Db.shared.ref('game', 'beacons')
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
-		beacons.iterate (beacon) ->
+		beacons.observeEach (beacon) ->
 			current = beacon.get('inRange', client)?
 			beaconDistance = distance(location.lat, location.lng, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
 			newStatus = beaconDistance < beaconRadius
@@ -109,6 +109,7 @@ exports.client_checkinLocation = (client, location) ->
 				# Cancel timers of ongoing caputes/neutralizes (new ones will be set below if required)
 				Timer.cancel 'onCapture', {beacon: beacon.n, players: getInrangePlayers(beacon.n)}
 				Timer.cancel 'onNeutralize', {beacon: beacon.n, players: getInrangePlayers(beacon.n)}
+				removed = undefined
 				if newStatus
 					owner = beacon.get 'owner'
 					log 'Added to inRange: id=', client, ', name=', Plugin.userName(client)
@@ -118,13 +119,15 @@ exports.client_checkinLocation = (client, location) ->
 					log 'Removed from inRange: id=', client, ', name=', Plugin.userName(client)
 					# clean takeover
 					beacon.remove 'inRange', client
-
+					removed = client
+				log 'removed=', removed
 				# ========== Handle changes for inRange players ==========
 				# Determine members per team
 				teamMembers = (0 for team in [0..5])
 				Db.shared.iterate 'game', 'beacons', beacon.n, 'inRange', (player) !->
-					team = getTeamOfUser(player.n)
-					teamMembers[team] = teamMembers[team]+1
+					if (not removed?) or player.n isnt removed
+						team = getTeamOfUser(player.n)
+						teamMembers[team] = teamMembers[team]+1
 				#log 'teamMembers count: ', teamMembers	
 
 				# Determine who is competing
@@ -168,7 +171,7 @@ exports.client_checkinLocation = (client, location) ->
 
 				else if competing.length > 1 or competing.length is 0
 					# No progess, stand-off
-					beacon.set 'actionStarted', new Date()
+					beacon.set 'actionStarted', new Date()/1000
 					beacon.set 'action', 'none'
 					if competing.length > 1
 						log 'Capture of beacon ', beacon.n, ' on hold, competing teams: ', competing
