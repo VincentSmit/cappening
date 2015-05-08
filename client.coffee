@@ -171,7 +171,7 @@ addProgressBar = ->
 							#background: '-webkit-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
 							#background: '-o-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
 							#background: '-ms-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
-							background: 'linear-gradient(to bottom,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
+							background_: 'linear-gradient(to bottom,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.3) 100%)'
 							filter: "progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#4d000000',GradientType=0 )"
 							backgroundColor: nextColor
 							zIndex: "10"
@@ -874,53 +874,54 @@ renderLocation = ->
 					window.beaconCurrentLocation = marker
 					Obs.observe ->
 						indicationArrowRedraw.get()
-						if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
-							map.on('moveend', indicationArrowListener)
-							# Render an arrow that points to your location if you do not have it on your screen already
-							if !(map.getBounds().contains(latLngObj))
-								#log 'Your location is outside your viewport, rendering indication arrow'
-								# The arrow has to be inside the map element to get it rendered in the proper place, therefore plain javascript is required
-								arrowDiv = document.createElement "div"
-								arrowDiv.setAttribute 'id', 'indicationArrow'
-								mainElement = document.getElementById("OpenStreetMap")
-								if mainElement?
-									mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
-									center= map.getCenter()
-									
-									difLat = Math.abs(latLngObj.lat - map.getCenter().lat)
-									difLng = Math.abs(latLngObj.lng - map.getCenter().lng)
-									angle = 0
-									if latLngObj.lng > center.lng and latLngObj.lat > center.lat
-										angle = Math.atan(difLng/difLat) 
-									else if latLngObj.lng > center.lng and latLngObj.lat <= center.lat
-										angle = Math.atan(difLat/difLng)+ Math.PI/2 
-									else if latLngObj.lng <= center.lng and latLngObj.lat <= center.lat
-										angle = Math.atan(difLng/difLat)+ Math.PI
-									else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
-										angle = (Math.PI-Math.atan(difLng/difLat)) + Math.PI
-									angleDeg = 	angle*180/Math.PI		
-									if angleDeg<=22.5 or angleDeg > 337.5
-										arrowDiv.className = 'indicationArrowN'
-									else if angleDeg >22.5 and angleDeg<=67.5
-										arrowDiv.className = 'indicationArrowNE'
-									else if angleDeg >67.5 and angleDeg<=112.5
-										arrowDiv.className = 'indicationArrowE'
-									else if angleDeg >112.5 and angleDeg<=157.5
-										arrowDiv.className = 'indicationArrowSE'
-									else if angleDeg >157.5 and angleDeg<=202.5
-										arrowDiv.className = 'indicationArrowS'
-									else if angleDeg >202.5 and angleDeg<=247.5
-										arrowDiv.className = 'indicationArrowSW'
-									else if angleDeg >247.5 and angleDeg<=292.5
-										arrowDiv.className = 'indicationArrowW'
-									else if angleDeg >292.5 and angleDeg<=337.5
-										arrowDiv.className = 'indicationArrowNW'
-									#log 'angleDeg=', angleDeg
-									arrowDiv.style.transform = "rotate(" +angle + "rad)"
-									arrowDiv.style.webkitTransform = "rotate(" +angle + "rad)"
-									arrowDiv.style.mozTransform = "rotate(" +angle + "rad)"
-									arrowDiv.style.msTransform = "rotate(" +angle + "rad)"
-									arrowDiv.style.oTransform = "rotate(" +angle + "rad)"
+						if mapReady()
+							if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
+								map.on('moveend', indicationArrowListener)
+								# Render an arrow that points to your location if you do not have it on your screen already
+								if !(map.getBounds().contains(latLngObj))
+									#log 'Your location is outside your viewport, rendering indication arrow'
+									# The arrow has to be inside the map element to get it rendered in the proper place, therefore plain javascript is required
+									arrowDiv = document.createElement "div"
+									arrowDiv.setAttribute 'id', 'indicationArrow'
+									mainElement = document.getElementById("OpenStreetMap")
+									if mainElement?
+										mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
+										center= map.getCenter()
+										
+										difLat = Math.abs(latLngObj.lat - map.getCenter().lat)
+										difLng = Math.abs(latLngObj.lng - map.getCenter().lng)
+										angle = 0
+										if latLngObj.lng > center.lng and latLngObj.lat > center.lat
+											angle = Math.atan(difLng/difLat) 
+										else if latLngObj.lng > center.lng and latLngObj.lat <= center.lat
+											angle = Math.atan(difLat/difLng)+ Math.PI/2 
+										else if latLngObj.lng <= center.lng and latLngObj.lat <= center.lat
+											angle = Math.atan(difLng/difLat)+ Math.PI
+										else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
+											angle = (Math.PI-Math.atan(difLng/difLat)) + Math.PI
+										angleDeg = 	angle*180/Math.PI		
+										if angleDeg<=22.5 or angleDeg > 337.5
+											arrowDiv.className = 'indicationArrowN'
+										else if angleDeg >22.5 and angleDeg<=67.5
+											arrowDiv.className = 'indicationArrowNE'
+										else if angleDeg >67.5 and angleDeg<=112.5
+											arrowDiv.className = 'indicationArrowE'
+										else if angleDeg >112.5 and angleDeg<=157.5
+											arrowDiv.className = 'indicationArrowSE'
+										else if angleDeg >157.5 and angleDeg<=202.5
+											arrowDiv.className = 'indicationArrowS'
+										else if angleDeg >202.5 and angleDeg<=247.5
+											arrowDiv.className = 'indicationArrowSW'
+										else if angleDeg >247.5 and angleDeg<=292.5
+											arrowDiv.className = 'indicationArrowW'
+										else if angleDeg >292.5 and angleDeg<=337.5
+											arrowDiv.className = 'indicationArrowNW'
+										#log 'angleDeg=', angleDeg
+										arrowDiv.style.transform = "rotate(" +angle + "rad)"
+										arrowDiv.style.webkitTransform = "rotate(" +angle + "rad)"
+										arrowDiv.style.mozTransform = "rotate(" +angle + "rad)"
+										arrowDiv.style.msTransform = "rotate(" +angle + "rad)"
+										arrowDiv.style.oTransform = "rotate(" +angle + "rad)"
 						Obs.onClean ->
 							# Deregister move/zoom listeners to update indication arrow
 							if mapReady()
