@@ -703,11 +703,12 @@ zoomToBounds = ->
 renderBeacons = ->
 	log "rendering beacons"
 	Db.shared.observeEach 'game', 'beacons', (beacon) !->
+		beaconKey = beacon.key() # save the key for the onClean
 		if mapReady() and map?
 			# Add the marker to the map
 			if not window.beaconMarkers?
 				log "beaconMarkers list reset"
-				window.beaconMarkers = [];
+				window.beaconMarkers = {};
 			teamNumber = beacon.get('owner')
 			if teamNumber isnt undefined
 				teamColor=  Db.shared.peek('colors', teamNumber, 'hex')
@@ -724,16 +725,18 @@ renderBeacons = ->
 				
 				location = L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng'))
 				marker = L.marker(location, {icon: areaIcon})
+
+				circle = L.circle(location, Db.shared.get('game', 'beaconRadius'), {
+					color: teamColor,
+					fillColor: teamColor,
+					fillOpacity: 0.3
+					weight: 2
+				});
 				if Db.shared.peek('gameState')==0
 					markerDelClick = (e) ->
-						i = 0;
-						while i<beaconCircles.length
-							if sameLocation marker.getLatLng(), beaconCircles[i].getLatLng()
-								map.removeLayer beaconCircles[i]
-								beaconCircles.splice(beaconCircles.indexOf(beaconCircles[i]), 1)
-							i++
+						map.removeLayer circle
 						map.removeLayer marker
-						Server.send 'deleteMarker', Plugin.userId(), marker.getLatLng()
+						Server.send 'deleteBeacon', Plugin.userId(), e.latlng
 					marker.on('dblclick', markerDelClick)	
 				else
 					popup = L.popup()
@@ -742,62 +745,39 @@ renderBeacons = ->
 							"<br><br>lat: " + location.lat + "<br>long: " + location.lng)
 					marker.bindPopup(popup)
 				marker.addTo(map)
-				beaconMarkers.push marker
+				beaconMarkers[beacon.key()] = marker
 				#log 'Added marker, marker list: ', beaconMarkers
 				
 				# Add the area circle to the map 
 				if not window.beaconCircles?
 					log "beaconCircles list reset"
-					window.beaconCircles = [];
+					window.beaconCircles = {}
 
-				circle = L.circle(location, Db.shared.get('game', 'beaconRadius'), {
-					color: teamColor,
-					fillColor: teamColor,
-					fillOpacity: 0.3
-					weight: 2
-				});
 				# Open the popup of the marker
-				if Db.shared.peek('gameState')==0
+				if Db.shared.peek('gameState') == 0
 					circleDelClick = (e) ->
-						i = 0;
-						while i<beaconMarkers.length
-							if sameLocation circle.getLatLng(), beaconMarkers[i].getLatLng()
-								map.removeLayer beaconMarkers[i]
-								beaconMarkers.splice(beaconMarkers.indexOf(beaconMarkers[i]), 1)
-							i++
 						map.removeLayer circle
-						Server.send 'deleteMarker', Plugin.userId(), circle.getLatLng()
+						map.removeLayer marker
+						Server.send 'deleteBeacon', Plugin.userId(), circle.getLatLng()
 					circle.on('dblclick', circleDelClick)
 				else
-					circleClick = (e) -> 
-						i = 0;
-						while i<beaconMarkers.length
-							if sameLocation circle.getLatLng(), beaconMarkers[i].getLatLng()
-								beaconMarkers[i].togglePopup()
-							i++				
+					circleClick = () -> 
+						beaconMarkers[beacon.key()].togglePopup()		
 					circle.on('click', circleClick)
 				circle.addTo(map)
-				beaconCircles.push circle
+				beaconCircles[beaconKey] = circle
 				log "Added beacon and circle"
 		else 
 			log "map not ready yet"
 		Obs.onClean ->
 			if beaconMarkers? and map?
 				log 'onClean() beacon+circle'
-				i = 0;
-				while i<beaconMarkers.length
-					if sameLocation L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng')), beaconMarkers[i].getLatLng()
-						map.removeLayer beaconMarkers[i]
-						beaconMarkers.splice(beaconMarkers.indexOf(beaconMarkers[i]), 1)
-					else
-						i++
-				i = 0;
-				while i<beaconCircles.length
-					if sameLocation L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng')), beaconCircles[i].getLatLng()
-						map.removeLayer beaconCircles[i]
-						beaconCircles.splice(beaconCircles.indexOf(beaconCircles[i]), 1)
-					else
-						i++
+				if beaconMarkers[beaconKey]?
+					map.removeLayer beaconMarkers[beaconKey]
+					delete beaconMarkers[beaconKey]
+				if beaconCircles[beaconKey]?
+					map.removeLayer beaconCircles[beaconKey]
+					delete beaconCircles[beaconKey]
 	, (beacon) ->
 		-beacon.get()
 		
@@ -862,21 +842,11 @@ checkAllBeacons = ->
 	if beaconCircles? and beaconMarkers? and locationOne? and locationTwo? and mapReady()
 		bounds = L.latLngBounds(locationOne.getLatLng(), locationTwo.getLatLng())
 		i = 0;
-		while i<beaconCircles.length
-			if !bounds.contains(beaconCircles[i].getBounds())
-				map.removeLayer beaconCircles[i]
-				invalidMarker =  beaconCircles[i].getLatLng()
-				Server.sync 'deleteMarker', Plugin.userId(), invalidMarker
-				j=0;
-				while j<beaconMarkers.length
-					if sameLocation(beaconMarkers[j].getLatLng(), invalidMarker)
-						map.removeLayer beaconMarkers[j]
-						beaconMarkers.splice(beaconMarkers.indexOf(beaconMarkers[j]), 1)
-					else
-						j++
-				beaconCircles.splice(beaconCircles.indexOf(beaconCircles[i]), 1)
-			else
-				i++
+		for key in beaconCircles
+			if beaconCircles.hasOwnPropery(key) and beaconCircles[key]?
+				if !bounds.contains(beaconCircles[key].getBounds())
+					map.removeLayer beaconCircles[key]
+					Server.sync 'deleteBeacon', Plugin.userId(), beaconCircles[key].getLatLng()
 	
 # Render the location of the user on the map (currently broken)
 renderLocation = -> 

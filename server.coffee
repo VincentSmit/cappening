@@ -40,15 +40,15 @@ exports.client_addMarker = (client, location) ->
 		Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', 10
 		Db.shared.set 'game', 'beacons', nextNumber, 'action', "none"
 
-exports.client_deleteMarker = (client, location) ->	
+exports.client_deleteBeacon = (client, location) ->	
 	#Finding the right beacon
 	if Db.shared.get('gameState') isnt 0
-		log Plugin.userName(client), ' (id=', client, ') tried to delete a marker while game is not in setup phase!'
+		log Plugin.userName(client), ' (id=', client, ') tried to delete a beacon while game is not in setup phase!'
 	else
-		log 'Deleting marker: lat=', location.lat, ', lng=', location.lng
 		Db.shared.iterate 'game', 'beacons', (beacon) !->
 			if beacon.get('location', 'lat') == location.lat and beacon.get('location', 'lng') == location.lng
-				Db.shared.remove 'game', 'beacons', beacon.n
+				log 'Deleted beacon: key='+beacon.key()+', lat=', location.lat, ', lng=', location.lng
+				Db.shared.remove 'game', 'beacons', beacon.key()
 	
 # Set the round time unit and number
 exports.client_setRoundTime = (roundTimeNumber, roundTimeUnit) ->
