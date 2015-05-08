@@ -238,10 +238,10 @@ scoresContent = ->
 	Ui.list !->
 		Dom.style
 			padding: '0'
-		Db.shared.observeEach 'game', 'teams', (team) !->
-			teamColor = Db.shared.peek('colors', team.n, 'hex')
-			teamName = Db.shared.peek('colors', team.n, 'name')
-			teamScore = Db.shared.get('game', 'teams', team.n, 'teamScore')
+		Db.shared.iterate 'game', 'teams', (team) !->
+			teamColor = Db.shared.peek('colors', team.key(), 'hex')
+			teamName = Db.shared.peek('colors', team.key(), 'name')
+			teamScore = Db.shared.get('game', 'teams', team.key(), 'teamScore')
 			# list of teams and their scores
 			expanded = Obs.create(false)
 			Ui.item !->
@@ -260,10 +260,10 @@ scoresContent = ->
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
 					# To Do expand voor scores
 					if expanded.get()
-						Db.shared.observeEach 'game', 'teams', team.n , 'users', (user) !->
+						team.iterate 'users', (user) !->
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
-								Dom.text  Plugin.userName(user.n) + " has a score of " + user.get('userScore') + " points"
+								Dom.text  Plugin.userName(user.key()) + " has a score of " + user.get('userScore') + " points"
 						, (user) -> (-user.get('userScore'))
 					else
 						Dom.div !->
@@ -277,8 +277,8 @@ logContent = ->
 	Ui.list !->
 		Dom.style
 			padding: '0'
-		Db.shared.observeEach 'game', 'eventlist', (capture) !->
-			if capture.n != "maxId"
+		Db.shared.iterate 'game', 'eventlist', (capture) !->
+			if capture.key() != "maxId"
 				log 'capture' 
 				Ui.item !->
 					Dom.style
@@ -702,7 +702,7 @@ zoomToBounds = ->
 # Add beacons to the map
 renderBeacons = ->
 	log "rendering beacons"
-	Db.shared.observeEach 'game', 'beacons', (beacon) !->
+	Db.shared.iterate 'game', 'beacons', (beacon) !->
 		beaconKey = beacon.key() # save the key for the onClean
 		if mapReady() and map?
 			# Add the marker to the map
@@ -964,7 +964,7 @@ getTeamOfUser = (userId) ->
 	result = -1
 	Db.shared.iterate 'game', 'teams', (team) !->
 		if team.peek('users', userId, 'userName')?
-			result = team.n
+			result = team.key()
 	#if result is -1
 	#	log 'Warning: Did not find team for userId=', userId
 	return result
