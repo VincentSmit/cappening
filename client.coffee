@@ -162,7 +162,7 @@ addProgressBar = ->
 						border: 0
 						boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
 						marginBottom: '-25px'
-						#overflowX: 'hidden'
+						overflowX: 'hidden'
 					Dom.div !->
 						Dom.style
 							height: "25px"
