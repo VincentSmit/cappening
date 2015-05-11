@@ -851,8 +851,10 @@ checkAllBeacons = ->
 # Render the location of the user on the map (currently broken)
 renderLocation = -> 
 	if Geoloc.isSubscribed()
-		state = Geoloc.track()
+		#Server.send 'log', Plugin.userId(), "Track location"
+		state = Geoloc.track(100, 0)
 		Obs.observe ->
+			#Server.send 'log', Plugin.userId(), "Found new location"
 			location = state.get('latlong');
 			if location?
 				log 'Rendered location on the map'
@@ -877,6 +879,26 @@ renderLocation = ->
 						if mapReady()
 							if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
 								map.on('moveend', indicationArrowListener)
+								# Info bar (testing purposes)
+								###
+								Dom.div !->
+									Dom.cls 'infobar'
+									Dom.div !->
+										Dom.style
+											float: 'left'
+											marginRight: '10px'
+											width: '30px'
+											_flexGrow: '0'
+											_flexShrink: '0'
+										Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 30
+									Dom.div !->
+										Dom.style
+											_flexGrow: '1'
+											_flexShrink: '1'
+										Dom.text "lat=" + location[0] + ", lng=" + location[1] + ", accuracy=" + state.get('accuracy') + ", slow=" + state.get('slow') + ", time=" + state.get('timestamp') + " ("
+										Time.deltaText state.get('timestamp')/1000
+										Dom.text ") "
+								###
 								# Render an arrow that points to your location if you do not have it on your screen already
 								if !(map.getBounds().contains(latLngObj))
 									#log 'Your location is outside your viewport, rendering indication arrow'

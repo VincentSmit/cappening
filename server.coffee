@@ -69,6 +69,12 @@ exports.client_setBounds = (one, two) ->
 # exports.client_getIngameUserId = (client) ->
 # 	client.reply 
 
+exports.onGeoloc = (userId, geoloc) ->
+	log 'Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
+
+exports.client_log = (userId, message) ->
+	log 'Client:'+Plugin.userName(userId)+":"+userId+": "+message
+
 # Start the game
 exports.client_startGame = ->
 	setTimer()
