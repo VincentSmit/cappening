@@ -262,8 +262,17 @@ scoresContent = ->
 					if expanded.get()
 						team.iterate 'users', (user) !->
 							Dom.div !->
-								Dom.style fontSize: '75%', marginTop: '6px'
-								Dom.text  Plugin.userName(user.key()) + " has a score of " + user.get('userScore') + " points"
+								Dom.style clear: 'both'
+								Dom.div !->
+									Dom.style fontSize: '75%', marginTop: '6px', marginRight: '6px', display: 'block', float: 'left'
+									Dom.text Plugin.userName(user.n) + " has: "
+								Dom.div !->
+									Dom.style fontSize: '75%', marginTop: '6px', display: 'block', float: 'left'
+									Dom.text user.get('userScore') + " points"
+									Dom.br()
+									Dom.text user.get('captured') + " captured"
+									Dom.br()
+									Dom.text user.get('neutralized') + " neutralized"
 						, (user) -> (-user.get('userScore'))
 					else
 						Dom.div !->

@@ -84,6 +84,8 @@ exports.client_startGame = ->
 	while(userIds.length > 0)
 		randomNumber = Math.floor(Math.random() * userIds.length)
 		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userScore', 0
+		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'captured', 0
+		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'neutralized', 0
 		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userName', Plugin.userName(userIds[randomNumber])
 		log 'team', team, 'has player', Plugin.userName(userIds[randomNumber]) 
 		userIds.splice(randomNumber,1)
@@ -230,11 +232,17 @@ exports.onCapture = (args) !->
 	log "[onCapture()] " + client
 	beaconValue = beacon.peek('captureValue')
 	modifyScore client, beaconValue
+
+	team = getTeamOfUser(player)
+	# Increment captures per team and per capturer
 	for player in args.players.split(', ')
-		Db.shared.modify 'game', 'teams', getTeamOfUser(player), 'users', player, 'captured', (v) -> v+1
+		Db.shared.modify 'game', 'teams', team , 'users', player, 'captured', (v) -> v+1
+		log player + " captured: " + Db.shared.get 'game', 'teams', team, 'users', player, 'captured'
 	Db.shared.modify 'game', 'teams', nextOwner, 'captured', (v) -> v+1
     # Modify beacon value
 	beacon.modify 'captureValue', (v) -> v - 1 if beaconValue > 1
+	
+
 
 # Called by the beacon neutralize timer
 exports.onNeutralize = (args) !->
@@ -244,7 +252,7 @@ exports.onNeutralize = (args) !->
 	beacon.set 'percentage', 0
 	beacon.set 'owner', -1
 
-	# Handle points and statistics
+	# Increment neutralizes per team and per capturer
 	for player in args.players.split(', ')
 		Db.shared.modify 'game', 'teams', getTeamOfUser(player), 'users', player, 'neutralized', (v) -> v+1
 	Db.shared.modify 'game', 'teams', neutralizer, 'neutralized', (v) -> v+1
