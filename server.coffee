@@ -25,7 +25,29 @@ exports.onConfig = (config) ->
 exports.onGeoloc = (userId, geoloc) ->
 	log 'Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
 
-
+# Handle new users joining the happening
+exports.onJoin = (userId) ->
+	log 'Player ' + Plugin.userName(userId) + ' is joining the Happeing'
+	if Db.shared.get 'gameState' == 1
+		# Find teams with lowest number of members
+		min = 99999
+		lowest = []
+		Db.shared.iterate 'game', 'teams', (team) !->
+			if team.count() < min
+				min = team.count()
+				lowest = []
+				lowest.push team.key()
+			else if team.count() == min
+				lowest.push team.key()
+		# Draw a random team from those
+		randomNumber = Math.floor(Math.random() * lowest.length)
+		team = lowest[randomNumber]
+		# Add player to team
+		Db.shared.set 'game', 'teams', team, 'users', userId, 'userScore', 0
+		Db.shared.set 'game', 'teams', team, 'users', userId, 'captured', 0
+		Db.shared.set 'game', 'teams', team, 'users', userId, 'neutralized', 0
+		Db.shared.set 'game', 'teams', team, 'users', userId, 'userName', Plugin.userName(userId)
+		log 'Added to team ' + team
 
 #==================== Client calls ====================
 # Add a beacon (during setup phase)
