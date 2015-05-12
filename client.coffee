@@ -767,6 +767,10 @@ renderBeacons = ->
 						.setContent("Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "." + 
 							"<br><br>lat: " + location.lat + "<br>long: " + location.lng)
 					marker.bindPopup(popup)
+					markerClick = () -> 
+						beaconMarkers[beacon.key()].togglePopup()		
+					marker.on('dbclick', markerClick)
+					marker.on('contextmenu', markerClick)
 				marker.addTo(map)
 				beaconMarkers[beacon.key()] = marker
 				#log 'Added marker, marker list: ', beaconMarkers
@@ -895,6 +899,10 @@ renderLocation = ->
 					});
 					marker = L.marker(latLngObj, {icon: locationIcon})
 					marker.bindPopup("This is your current location." + "<br>Accuracy: " + state.get('accuracy') + 'm')
+					markerClick = () -> 
+						marker.togglePopup()		
+					marker.on('dbclick', markerClick)
+					marker.on('contextmenu', markerClick)
 					marker.addTo(map)
 					window.beaconCurrentLocation = marker
 					# Info bar (testing purposes)
