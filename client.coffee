@@ -17,6 +17,7 @@ window.indicationArrowRedraw = Obs.create(0);
 
 # ========== Events ==========
 exports.render = ->
+	log Db.shared
 	log 'FULL RENDER'
 	loadOpenStreetMap()
 
@@ -498,24 +499,38 @@ setupContent = ->
 					Dom.onTap !->
 						Db.local.set('currentSetupPage', 'setup2')
 			renderMap()
-			if !placedBeacons and mapReady() and location?
-				location = window.beaconCurrentLocation.getLatLng()
-				one = L.latLng(location.lat+0.01,location.lng-0.02)
-				two = L.latLng(location.lat-0.01,location.lng+0.02)
-				Server.send 'setBounds', one, two
 			renderBeacons()
 			Obs.observe ->
 				if mapReady()
 					# Setup map corners
+					# Update the play area square thing
+					markerDragged = ->
+						if mapReady()
+							Server.sync 'setBounds', window.locationOne.getLatLng(), window.locationTwo.getLatLng(), !->
+								# TODO: fix prediction, does not work yet
+								#log 'predicting bounds change'
+								#Db.shared.set 'game', 'bounds', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
+								#log 'predicted bounds: ', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
+							checkAllBeacons()
 					# Corner 1
-					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
+					lat1 = Db.shared.get('game', 'bounds', 'one', 'lat')
+					lng1 =  Db.shared.get('game', 'bounds', 'one', 'lng')
+					if not lat1? or not lng1
+						lat1 = 52.249822176849
+						lng1 = 6.8396973609924
+					loc1 = L.latLng(lat1, lng1)
 					window.locationOne = L.marker(loc1, {draggable: true})
 					locationOne.on 'dragend', ->
 						log 'marker drag 1'
 						markerDragged()
 					locationOne.addTo(map)
 					# Corner 2
-					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
+					lat2 = Db.shared.get('game', 'bounds', 'two', 'lat')
+					lng2 = Db.shared.get('game', 'bounds', 'two', 'lng')
+					if not lat2? or not lng2
+						lat2 = 52.236578295702
+						lng2 = 6.8598246574402
+					loc2 = L.latLng(lat2, lng2)
 					window.locationTwo = L.marker(loc2, {draggable: true})
 					locationTwo.on 'dragend', ->
 						log 'marker drag 2'
@@ -569,8 +584,7 @@ setupContent = ->
 					Dom.cls 'stepbar-right'
 					log 'setup2 new'
 					Dom.onTap !->
-						Server.send 'startGame', !->
-							log 'Predict function gameStart?'
+						Server.send 'startGame'
 			renderMap()
 			renderBeacons()
 			Obs.observe ->
@@ -829,13 +843,6 @@ indicationArrowListener = (event) ->
 
 convertLatLng = (location) ->
 	return L.latLng(location.lat, location.lng)	
-			
-# Update the play area square thing
-markerDragged = ->
-	if mapReady()
-		Server.send 'setBounds', window.locationOne.getLatLng(), window.locationTwo.getLatLng(), !->
-			log 'Predict function setbounds?'
-		checkAllBeacons()
 	
 # Compare 2 locations to see if they are the same
 sameLocation = (location1, location2) ->
@@ -871,6 +878,14 @@ renderLocation = ->
 				if mapReady()
 					# Show the player's location on the map
 					latLngObj= L.latLng(location[0], location[1])
+					if not (Db.shared.peek('game', 'bounds', 'one', 'lat')?)
+						one = L.latLng(latLngObj.lat+0.01,latLngObj.lng-0.02)
+						two = L.latLng(latLngObj.lat-0.01,latLngObj.lng+0.02)
+						Server.sync 'setBounds', one, two,  !->
+							# TODO: fix prediction, does not work yet
+							#log 'predicting bounds change'
+							#Db.shared.set 'game', 'bounds', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
+							#log 'predicted bounds: ', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
 					locationIcon = L.icon({
 						iconUrl: Plugin.resourceUri('location.png'),
 						iconSize:     [40, 40], 
@@ -879,35 +894,33 @@ renderLocation = ->
 					});
 					marker = L.marker(latLngObj, {icon: locationIcon})
 					marker.bindPopup("This is your current location." + "<br>Accuracy: " + state.get('accuracy') + 'm')
-					if window.beaconCurrentLocation
-						map.removeLayer window.beaconCurrentLocation
 					marker.addTo(map)
 					window.beaconCurrentLocation = marker
+					# Info bar (testing purposes)
+					###
+					Dom.div !->
+						Dom.cls 'infobar'
+						Dom.div !->
+							Dom.style
+								float: 'left'
+								marginRight: '10px'
+								width: '30px'
+								_flexGrow: '0'
+								_flexShrink: '0'
+							Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 30
+						Dom.div !->
+							Dom.style
+								_flexGrow: '1'
+								_flexShrink: '1'
+							Dom.text "lat=" + location[0] + ", lng=" + location[1] + ", accuracy=" + state.get('accuracy') + ", slow=" + state.get('slow') + ", time=" + state.get('timestamp') + " ("
+							Time.deltaText state.get('timestamp')/1000
+							Dom.text ") "
+					###
 					Obs.observe ->
 						indicationArrowRedraw.get()
 						if mapReady()
 							if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
 								map.on('moveend', indicationArrowListener)
-								# Info bar (testing purposes)
-								###
-								Dom.div !->
-									Dom.cls 'infobar'
-									Dom.div !->
-										Dom.style
-											float: 'left'
-											marginRight: '10px'
-											width: '30px'
-											_flexGrow: '0'
-											_flexShrink: '0'
-										Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 30
-									Dom.div !->
-										Dom.style
-											_flexGrow: '1'
-											_flexShrink: '1'
-										Dom.text "lat=" + location[0] + ", lng=" + location[1] + ", accuracy=" + state.get('accuracy') + ", slow=" + state.get('slow') + ", time=" + state.get('timestamp') + " ("
-										Time.deltaText state.get('timestamp')/1000
-										Dom.text ") "
-								###
 								# Render an arrow that points to your location if you do not have it on your screen already
 								if !(map.getBounds().contains(latLngObj))
 									#log 'Your location is outside your viewport, rendering indication arrow'

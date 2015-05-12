@@ -237,7 +237,7 @@ exports.onCapture = (args) !->
 	# Increment captures per team and per capturer
 	for player in args.players.split(', ')
 		Db.shared.modify 'game', 'teams', team , 'users', player, 'captured', (v) -> v+1
-		log player + " captured: " + Db.shared.get 'game', 'teams', team, 'users', player, 'captured'
+		log player + " captured: " + Db.shared.peek 'game', 'teams', team, 'users', player, 'captured'
 	Db.shared.modify 'game', 'teams', nextOwner, 'captured', (v) -> v+1
     # Modify beacon value
 	beacon.modify 'captureValue', (v) -> v - 1 if beaconValue > 1
@@ -292,7 +292,7 @@ initializeGame = ->
 	Db.shared.set 'gameState', 0
 	Db.shared.modify 'gameNumber', (v) -> (0||v)+1
 	Db.shared.set 'game', {}
-	Db.shared.set 'game', 'bounds', {one: {lat: 52.249822176849, lng: 6.8396973609924}, two: {lat: 52.236578295702, lng: 6.8598246574402}}
+	#Db.shared.set 'game', 'bounds', {one: {lat: 52.249822176849, lng: 6.8396973609924}, two: {lat: 52.236578295702, lng: 6.8598246574402}} # TOOD remove
 	Db.shared.set 'game', 'numberOfTeams', 2
 	Db.shared.set 'game', 'beaconRadius', 200
 	Db.shared.set 'game', 'roundTimeUnit', 'Days'
@@ -311,7 +311,7 @@ initializeColors = ->
 			5:    {name: 'purple',  capitalizedName: 'Purple',  hex: '#E700D4'}
 		}
 
-#game timer
+# Game timer
 setTimer = !->
 	if Db.shared.peek('game', 'roundTimeUnit') is 'Months'
 		seconds = Db.shared.peek('game', 'roundTimeNumber')*2592000
