@@ -3,26 +3,31 @@ Plugin = require 'plugin'
 Timer = require 'timer'
 Event = require 'event'
 
-# ========== Events ==========
+# ==================== Events ====================
 # Game install
 exports.onInstall = ->
 	initializeColors()
 	initializeGame()
 
 # Game update 
-exports.onUpgrade = !->	
+exports.onUpgrade = ->	
 	# Normally nothing to do here
 	#initializeColors()
 	#initializeGame()
 
 # Config changes (by admin or plugin adder)
-exports.onConfig = (config) !->
+exports.onConfig = (config) ->
 	if config.restart
 		log 'Restarting game'
 		initializeGame()
 	
+# Get background location from player, TODO: notify player when close to beacon
+exports.onGeoloc = (userId, geoloc) ->
+	log 'Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
 
-#========== Client calls ==========
+
+
+#==================== Client calls ====================
 # Add a beacon (during setup phase)
 exports.client_addMarker = (client, location) ->
 	if Db.shared.peek('gameState') isnt 0
@@ -68,9 +73,6 @@ exports.client_setBounds = (one, two) ->
 # Get clients ingame user ID
 # exports.client_getIngameUserId = (client) ->
 # 	client.reply 
-
-exports.onGeoloc = (userId, geoloc) ->
-	log 'Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
 
 exports.client_log = (userId, message) ->
 	log 'Client:'+Plugin.userName(userId)+":"+userId+": "+message
@@ -188,7 +190,7 @@ exports.client_checkinLocation = (client, location) ->
 						log 'Capture of beacon ', beacon.key(), ' stopped, left the area'
 
 # Update the takeover percentage of a beacon depening on current action and the passed time
-updateBeaconPercentage = (beacon) !->
+updateBeaconPercentage = (beacon) ->
 	currentPercentage = beacon.peek 'percentage'
 	action = beacon.peek 'action'
 	actionStarted = beacon.peek 'actionStarted'
@@ -204,8 +206,10 @@ updateBeaconPercentage = (beacon) !->
 		beacon.set 'percentage', newPercentage
 
 
+
+#==================== Functions called by timers ====================
 # Called by the beacon capture timer
-exports.onCapture = (args) !->
+exports.onCapture = (args) ->
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
 	nextOwner = beacon.peek('nextOwner')
 	log 'Team ', nextOwner, ' has captured beacon ', beacon.key(), ', players: ', args.players
@@ -242,10 +246,8 @@ exports.onCapture = (args) !->
     # Modify beacon value
 	beacon.modify 'captureValue', (v) -> v - 1 if beaconValue > 1
 	
-
-
 # Called by the beacon neutralize timer
-exports.onNeutralize = (args) !->
+exports.onNeutralize = (args) ->
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
 	neutralizer = beacon.peek('nextOwner')
 	log 'Team ', neutralizer, ' has neutralized beacon ', beacon.key(), ', players: ', args.players
@@ -271,7 +273,9 @@ exports.onNeutralize = (args) !->
 exports.endGame = !->
 	log "The game ended!"
 
-# ========== Functions ==========
+
+
+# ==================== Functions ====================
 # Get a string of the players that are inRange of a beacon
 getInrangePlayers = (beacon) ->
 	playersStr = undefined
@@ -312,7 +316,7 @@ initializeColors = ->
 		}
 
 # Game timer
-setTimer = !->
+setTimer = ->
 	if Db.shared.peek('game', 'roundTimeUnit') is 'Months'
 		seconds = Db.shared.peek('game', 'roundTimeNumber')*2592000
 	else if Db.shared.peek('game', 'roundTimeUnit') is 'Days'
