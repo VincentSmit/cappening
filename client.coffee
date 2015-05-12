@@ -769,7 +769,6 @@ renderBeacons = ->
 					marker.bindPopup(popup)
 					markerClick = () -> 
 						beaconMarkers[beacon.key()].togglePopup()		
-					marker.on('dbclick', markerClick)
 					marker.on('contextmenu', markerClick)
 				marker.addTo(map)
 				beaconMarkers[beacon.key()] = marker
@@ -790,6 +789,7 @@ renderBeacons = ->
 				else
 					circleClick = () -> 
 						beaconMarkers[beacon.key()].togglePopup()		
+					circle.on('contextmenu', circleClick)
 					circle.on('click', circleClick)
 				circle.addTo(map)
 				beaconCircles[beaconKey] = circle
@@ -901,7 +901,6 @@ renderLocation = ->
 					marker.bindPopup("This is your current location." + "<br>Accuracy: " + state.get('accuracy') + 'm')
 					markerClick = () -> 
 						marker.togglePopup()		
-					marker.on('dbclick', markerClick)
 					marker.on('contextmenu', markerClick)
 					marker.addTo(map)
 					window.beaconCurrentLocation = marker
