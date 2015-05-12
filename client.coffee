@@ -886,6 +886,7 @@ renderLocation = ->
 							#log 'predicting bounds change'
 							#Db.shared.set 'game', 'bounds', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
 							#log 'predicted bounds: ', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
+						map.setView(latLngObj)
 					locationIcon = L.icon({
 						iconUrl: Plugin.resourceUri('location.png'),
 						iconSize:     [40, 40], 
