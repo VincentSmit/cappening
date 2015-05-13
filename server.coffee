@@ -12,7 +12,9 @@ exports.onInstall = ->
 # Game update 
 exports.onUpgrade = ->	
 	# Normally nothing to do here
-	#initializeColors()
+	if not Db.shared.peek('colors', '-1', 'name')?
+		log 'Initialized colors again'
+		initializeColors()
 	#initializeGame()
 
 # Config changes (by admin or plugin adder)
@@ -304,7 +306,7 @@ exports.overtimeScore = (args) ->
 	Timer.set 3600000, 'overtimeScore', args
 
 #Function called when the game ends
-exports.endGame = !->
+exports.endGame = (args) ->
 	log "The game ended!"
 
 
@@ -361,7 +363,7 @@ setTimer = ->
 	end = Plugin.time()+seconds #in seconds
 	Db.shared.set 'game', 'endTime', end
 	Timer.cancel
-	Timer.set seconds*1000, #'endGame' endGame is the function called when the timer ends
+	Timer.set seconds*1000, 'endGame' #endGame is the function called when the timer ends
 		
 # Calculate distance
 distance = (inputLat1, inputLng1, inputLat2, inputLng2) ->
