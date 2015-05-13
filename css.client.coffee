@@ -177,11 +177,11 @@ Dom.css
 		borderRight: 'solid 8px transparent'
 		position: 'absolute'
 	'.indicationArrowN':
-		top: '0'
+		top: '50px'
 		left: '50%'
 		marginLeft: '-15px'
 	'.indicationArrowNE':
-		top: '0'
+		top: '50px'
 		right: '0'
 	'.indicationArrowE':
 		top: '50%'
@@ -202,7 +202,7 @@ Dom.css
 		top: '50%'
 		marginTop: '-15px'	
 	'.indicationArrowNW':
-		top: '0'
+		top: '50px'
 		left: '0'
 	
 
