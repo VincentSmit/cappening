@@ -2,8 +2,6 @@ Dom.css
 # Main element
 	'#main':
 		padding: '0 !important'
-		_display: 'flex'
-		_flexDirection: 'column'
 	'.container':
 		padding: '8px'
 # Main content page
@@ -24,10 +22,11 @@ Dom.css
 		display: "none"
 # Map element
 	'#OpenStreetMap':
-		width: '100%'
-		_flexGrow: '1'
-		_flexShrink: '1'
-		order: '50'
+		position: 'absolute !important'
+		top: '0'
+		right: '0'
+		bottom: '0'
+		left: '0'
 		backgroundColor: '#030303'
 # Plugin setup pages
 	'.stepbar': # The bar at the top
@@ -38,24 +37,22 @@ Dom.css
 		zIndex: "5"
 		boxShadow: "0 3px 5px 0 rgba(0, 0, 0, 0.2)"
 		borderColor: "#EFEFEF"
-		fontSize: '20px'
+		fontSize: '19px'
 		boxSizing: 'border-box'
-		display_: 'flex'
-		_flexDirection: 'row'
-		_flexGrow: '0'
-		_flexShrink: '0'
+		position: 'absolute'
+		width: '100%'
 	'.stepbar-middle': # The middle section
-		_flexGrow: '1'
-		_flexShrink: '1'
 		textOverflow: 'ellipsis'
 		whiteSpace: 'nowrap'
 		overflow: 'hidden'
+		padding: '0 80px 0 80px'
 	'.stepbar-button': # A button with an arrow
 		borderColor: 'inherit'
 		fontSize: '16px'
 		color: '#EFEFEF'
 		_flexGrow: '0'
 		_flexShrink: '0'
+		position: 'absolute'
 	'.stepbar-button:hover':
 		backgroundColor: '#7C7C7C'
 	'.stepbar-button:active':
@@ -64,6 +61,8 @@ Dom.css
 		textAlign: 'left'
 		paddingLeft: '38px'
 		paddingRight: '10px'
+		left: '0'
+		top: '0'
 	'.stepbar-left::before':
 		content: '""' # The left arrow button (pseudo element to create the arrow)
 		position: 'absolute'
@@ -79,6 +78,8 @@ Dom.css
 		textAlign: 'right'
 		paddingRight: '38px'
 		paddingLeft: '10px'
+		right: '0'
+		top: '0'
 	'.stepbar-right::before': # The right arrow button (pseudo element to create the arrow)
 		content: '""'
 		position: 'absolute'

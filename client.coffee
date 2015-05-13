@@ -19,7 +19,9 @@ window.indicationArrowRedraw = Obs.create(0);
 exports.render = ->
 	log Db.shared
 	log 'FULL RENDER'
+	#Server.call 'log', Plugin.userId(), "FULL RENDER"
 	loadOpenStreetMap()
+
 
 	Obs.observe ->
 		# Check if cleanup from last game is required
@@ -51,7 +53,7 @@ exports.render = ->
 			page = "main" if not page?   
 			end = Db.shared.peek('game', 'endTime')								
 			Page.setTitle !->
-				Dom.text "The game ends "
+				Dom.text "Game ends "
 				Time.deltaText end
 			# Display the correct page
 			if page == 'main'
@@ -76,7 +78,8 @@ addBar = ->
 	Dom.div !->
 		Dom.style
 			height: "50px"
-			zIndex: "5"
+			width: '100%'
+			position: 'absolute'
 			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
         #DIV button to help page
 		Dom.div !->
@@ -161,12 +164,11 @@ addProgressBar = ->
 					Dom.style
 						height: "25px"
 						width: "100%"
-						zIndex: "5"
+						position: 'absolute'
+						marginTop: '50px'
 						backgroundColor: "rgba(243,243,243,0.3)"
 						border: 0
 						boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
-						marginBottom: '-25px'
-						#overflowX: 'hidden'
 					Dom.div !->
 						Dom.style
 							height: "25px"
@@ -355,10 +357,6 @@ logContent = ->
 				Dom.style Flex: 1, fontSize: '120%'
 				Dom.text "The game has started!"
 
-	end = Db.shared.get('game', 'endTime')
-	Dom.text "The game ends "
-	Time.deltaText end
-
 	
 
 placedBeacons= false
@@ -376,6 +374,7 @@ setupContent = ->
 			# Bar to indicate the setup progress
 			Dom.div !->
 				Dom.cls 'stepbar'
+				Dom.style position: 'initial'
 				# Left button
 				Dom.div !->
 					Dom.text tr("Prev")
@@ -400,8 +399,7 @@ setupContent = ->
 				# Not enough players warning
 				if Plugin.users.count().get() <= 1
 					Dom.h2 "Warning"
-					Dom.text "Be sure to invite some friends if you actually want to play the game. One cannot play alone!"
-					Dom.text "(You can test it out though)."
+					Dom.text "Be sure to invite some friends if you actually want to play the game. One cannot play alone! (You can test it out though)."
 				# Teams input
 				Dom.h2 tr("Select the number of teams")
 				Dom.div !->
@@ -425,7 +423,7 @@ setupContent = ->
 				Dom.h2 tr("Round time")
 				Dom.text tr "Select the round time, recommended: 7 days."
 				Dom.div !->
-					Dom.style Box: "middle", margin: '10px 0 10px 0', flexGrow: '0', flexShrink: '0'
+					Dom.style margin: '10px 0 10px 0'
 					sanitize = (value) ->
 						if value < 1
 							return 1
@@ -438,6 +436,7 @@ setupContent = ->
 							Dom.style
 								width: 0
 								height: 0
+								margin: '0 auto'
 								borderStyle: "solid"
 								borderWidth: "#{if direction>0 then 0 else 20}px 20px #{if direction>0 then 20 else 0}px 20px"
 								borderColor: "#{if roundTimeNumber.get()<=1 then 'transparent' else '#0077cf'} transparent #{if roundTimeNumber.get()>=999 then 'transparent' else '#0077cf'} transparent"
@@ -446,7 +445,7 @@ setupContent = ->
 									roundTimeNumber.set sanitize(roundTimeNumber.peek()+direction)
 					# Number input
 					Dom.div !->
-						Dom.style Box: "vertical center", margin: '0 10px 0 0'
+						Dom.style margin: '0 10px 0 0', width: '51px', float: 'left'
 						renderArrow 1
 						Dom.input !->
 							inputElement = Dom.get()
@@ -466,7 +465,7 @@ setupContent = ->
 						renderArrow -1
 					# Unit inputs
 					Dom.div !->
-						Dom.style float: 'left', clear: 'both'
+						Dom.style float: 'left', paddingTop: '13px'
 						renderTimeButton = (unit) ->
 							Dom.div !->
 								Dom.text unit
@@ -492,7 +491,7 @@ setupContent = ->
 						Db.local.set('currentSetupPage', 'setup0')
 				# Middle block
 				Dom.div !->
-					Dom.text tr("Select playingfield")
+					Dom.text tr("Select playarea")
 					Dom.cls 'stepbar-middle'
 				# Right button
 				Dom.div !->
@@ -633,13 +632,13 @@ renderMap = ->
 		if mapElement?
 			# use it again
 			mainElement = document.getElementsByTagName("main")[0]
-			mainElement.insertBefore(mapElement, null)  # Inserts the element at the end
+			mainElement.insertBefore(mapElement, mainElement.childNodes[0])  # Inserts the element at the start
 			log "Reused html element for map"
 		else
 			window.mapElement = document.createElement "div"
 			mapElement.setAttribute 'id', 'OpenStreetMap'
 			mainElement = document.getElementsByTagName("main")[0]
-			mainElement.insertBefore(mapElement, null)  # Inserts the element at the end
+			mainElement.insertBefore(mapElement, mainElement.childNodes[0])  # Inserts the element at the start
 			log "Created html element for map"
 		Obs.onClean ->
 			log "Removed html element for map (stored for later)"
@@ -705,11 +704,11 @@ limitToBounds = ->
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 			bounds = L.latLngBounds(loc1, loc2)
 			if bounds? and loc1? and loc2?
-				map.setMaxBounds(bounds)
+				map.setMaxBounds(bounds.pad(0.05))
+				#map.fitBounds(bounds); # Causes problems, because it zooms to max all the time
+				map._layersMinZoom = map.getBoundsZoom(bounds.pad(0.05))
 			else
 				log "Bounds not existing"
-			#map.fitBounds(bounds); # Causes problems, because it zooms to max all the time
-			map._layersMinZoom = map.getBoundsZoom(bounds)
 			Obs.onClean ->
 				if map?
 					log "  Map bounds and minzoom reset"
@@ -723,7 +722,8 @@ zoomToBounds = ->
 			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 			bounds = L.latLngBounds(loc1, loc2)
-			map.fitBounds(bounds);
+			if loc1? and loc2? and bounds?
+				map.fitBounds(bounds.pad(0.05));
 
 # Add beacons to the map
 renderBeacons = ->
@@ -872,147 +872,151 @@ checkAllBeacons = ->
 					Server.sync 'deleteBeacon', Plugin.userId(), beaconCircles[key].getLatLng()
 	
 # Render the location of the user on the map (currently broken)
-renderLocation = -> 
-	if Geoloc.isSubscribed()
-		#Server.send 'log', Plugin.userId(), "Track location"
-		state = Geoloc.track(100, 0)
-		Obs.observe ->
-			#Server.send 'log', Plugin.userId(), "Found new location"
-			location = state.get('latlong');
-			if location?
-				log 'Rendered location on the map'
-				location = location.split(',')
-				if mapReady()
-					# Show the player's location on the map
-					latLngObj= L.latLng(location[0], location[1])
-					if not (Db.shared.peek('game', 'bounds', 'one', 'lat')?)
-						one = L.latLng(latLngObj.lat+0.01,latLngObj.lng-0.02)
-						two = L.latLng(latLngObj.lat-0.01,latLngObj.lng+0.02)
-						Server.sync 'setBounds', one, two,  !->
-							# TODO: fix prediction, does not work yet
-							#log 'predicting bounds change'
-							#Db.shared.set 'game', 'bounds', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
-							#log 'predicted bounds: ', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
-						map.setView(latLngObj)
-					locationIcon = L.icon({
-						iconUrl: Plugin.resourceUri('location.png'),
-						iconSize:     [40, 40], 
-						iconAnchor:   [20, 40], 
-						popupAnchor:  [0, -40]
-					});
-					marker = L.marker(latLngObj, {icon: locationIcon})
-					marker.bindPopup("This is your current location." + "<br>Accuracy: " + state.get('accuracy') + 'm')
-					markerClick = () -> 
-						marker.togglePopup()		
-					marker.on('contextmenu', markerClick)
-					marker.addTo(map)
-					window.beaconCurrentLocation = marker
-					# Info bar (testing purposes)
-					###
-					Dom.div !->
-						Dom.cls 'infobar'
+renderLocation = ->
+	#Server.call 'log', Plugin.userId(), "[renderLocation()]"
+	Obs.observe ->
+		if Geoloc.isSubscribed()
+			#Server.call 'log', Plugin.userId(), "Track location"
+			state = Geoloc.track(100, 0)
+			Obs.observe ->
+				#Server.call 'log', Plugin.userId(), "Found new location"
+				location = state.get('latlong');
+				if location?
+					log 'Rendered location on the map'
+					location = location.split(',')
+					if mapReady()
+						# Show the player's location on the map
+						latLngObj= L.latLng(location[0], location[1])
+						if not (Db.shared.peek('game', 'bounds', 'one', 'lat')?)
+							one = L.latLng(latLngObj.lat+0.01,latLngObj.lng-0.02)
+							two = L.latLng(latLngObj.lat-0.01,latLngObj.lng+0.02)
+							Server.sync 'setBounds', one, two,  !->
+								# TODO: fix prediction, does not work yet
+								#log 'predicting bounds change'
+								#Db.shared.set 'game', 'bounds', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
+								#log 'predicted bounds: ', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
+							map.setView(latLngObj)
+						locationIcon = L.icon({
+							iconUrl: Plugin.resourceUri('location.png'),
+							iconSize:     [40, 40], 
+							iconAnchor:   [20, 40], 
+							popupAnchor:  [0, -40]
+						});
+						marker = L.marker(latLngObj, {icon: locationIcon})
+						marker.bindPopup("This is your current location." + "<br>Accuracy: " + state.get('accuracy') + 'm')
+						markerClick = () -> 
+							marker.togglePopup()		
+						marker.on('contextmenu', markerClick)
+						marker.addTo(map)
+						window.beaconCurrentLocation = marker
+						# Info bar (testing purposes)
+						###
 						Dom.div !->
-							Dom.style
-								float: 'left'
-								marginRight: '10px'
-								width: '30px'
-								_flexGrow: '0'
-								_flexShrink: '0'
-							Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 30
-						Dom.div !->
-							Dom.style
-								_flexGrow: '1'
-								_flexShrink: '1'
-							Dom.text "lat=" + location[0] + ", lng=" + location[1] + ", accuracy=" + state.get('accuracy') + ", slow=" + state.get('slow') + ", time=" + state.get('timestamp') + " ("
-							Time.deltaText state.get('timestamp')/1000
-							Dom.text ") "
-					###
-					Obs.observe ->
-						indicationArrowRedraw.get()
-						if mapReady()
-							if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
-								map.on('moveend', indicationArrowListener)
-								# Render an arrow that points to your location if you do not have it on your screen already
-								if !(map.getBounds().contains(latLngObj))
-									#log 'Your location is outside your viewport, rendering indication arrow'
-									# The arrow has to be inside the map element to get it rendered in the proper place, therefore plain javascript is required
-									arrowDiv = document.createElement "div"
-									arrowDiv.setAttribute 'id', 'indicationArrow'
-									mainElement = document.getElementById("OpenStreetMap")
-									if mainElement?
-										mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
-										center= map.getCenter()
-										
-										difLat = Math.abs(latLngObj.lat - map.getCenter().lat)
-										difLng = Math.abs(latLngObj.lng - map.getCenter().lng)
-										angle = 0
-										if latLngObj.lng > center.lng and latLngObj.lat > center.lat
-											angle = Math.atan(difLng/difLat) 
-										else if latLngObj.lng > center.lng and latLngObj.lat <= center.lat
-											angle = Math.atan(difLat/difLng)+ Math.PI/2 
-										else if latLngObj.lng <= center.lng and latLngObj.lat <= center.lat
-											angle = Math.atan(difLng/difLat)+ Math.PI
-										else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
-											angle = (Math.PI-Math.atan(difLng/difLat)) + Math.PI
-										angleDeg = 	angle*180/Math.PI		
-										if angleDeg<=22.5 or angleDeg > 337.5
-											arrowDiv.className = 'indicationArrowN'
-										else if angleDeg >22.5 and angleDeg<=67.5
-											arrowDiv.className = 'indicationArrowNE'
-										else if angleDeg >67.5 and angleDeg<=112.5
-											arrowDiv.className = 'indicationArrowE'
-										else if angleDeg >112.5 and angleDeg<=157.5
-											arrowDiv.className = 'indicationArrowSE'
-										else if angleDeg >157.5 and angleDeg<=202.5
-											arrowDiv.className = 'indicationArrowS'
-										else if angleDeg >202.5 and angleDeg<=247.5
-											arrowDiv.className = 'indicationArrowSW'
-										else if angleDeg >247.5 and angleDeg<=292.5
-											arrowDiv.className = 'indicationArrowW'
-										else if angleDeg >292.5 and angleDeg<=337.5
-											arrowDiv.className = 'indicationArrowNW'
-										#log 'angleDeg=', angleDeg
-										arrowDiv.style.transform = "rotate(" +angle + "rad)"
-										arrowDiv.style.webkitTransform = "rotate(" +angle + "rad)"
-										arrowDiv.style.mozTransform = "rotate(" +angle + "rad)"
-										arrowDiv.style.msTransform = "rotate(" +angle + "rad)"
-										arrowDiv.style.oTransform = "rotate(" +angle + "rad)"
-						Obs.onClean ->
-							# Deregister move/zoom listeners to update indication arrow
+							Dom.cls 'infobar'
+							Dom.div !->
+								Dom.style
+									float: 'left'
+									marginRight: '10px'
+									width: '30px'
+									_flexGrow: '0'
+									_flexShrink: '0'
+								Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 30
+							Dom.div !->
+								Dom.style
+									_flexGrow: '1'
+									_flexShrink: '1'
+								Dom.text "lat=" + location[0] + ", lng=" + location[1] + ", accuracy=" + state.get('accuracy') + ", slow=" + state.get('slow') + ", time=" + state.get('timestamp') + " ("
+								Time.deltaText state.get('timestamp')/1000
+								Dom.text ") "
+						###
+						Obs.observe ->
+							indicationArrowRedraw.get()
 							if mapReady()
-								map.off('moveend', indicationArrowListener)
-							# Remove the indication arrow
-							toRemove = document.getElementById('indicationArrow');
-							if toRemove?
-								toRemove.parentNode.removeChild(toRemove);
-					# Checking if users are capable of taking over beacons
-					Obs.observe ->
-						if Db.shared.peek('gameState') is 1 # Only when the game is running, do something
-							log 'Checking beacon takeover'
-							Db.shared.iterate 'game', 'beacons', (beacon) !->
-								beaconCoord = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
-								if not beaconCoord?
-									log 'beacon coordinate not found'
-								else
-									distance = latLngObj.distanceTo(beaconCoord)
-									#log 'distance=', distance, 'beacon=', beacon
-									within = distance - Db.shared.peek('game','beaconRadius') <= 0
-									inRange = beacon.peek('inRange', Plugin.userId())?
-									if (within and not inRange) or (not within and inRange)
-										Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
-											log 'UserID', Plugin.userId()
-											log 'UserLoc', latLngObj
-										if inRange
-											log 'Trying beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
-										else
-											log 'Trying stop of beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
-			else
-				log 'Location could not be found'
-			Obs.onClean ->
-				if mapReady() and beaconCurrentLocation?
-					# Remove the location marker
-					map.removeLayer beaconCurrentLocation
-					window.beaconCurrentLocation = null
+								if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
+									map.on('moveend', indicationArrowListener)
+									# Render an arrow that points to your location if you do not have it on your screen already
+									if !(map.getBounds().contains(latLngObj))
+										#log 'Your location is outside your viewport, rendering indication arrow'
+										# The arrow has to be inside the map element to get it rendered in the proper place, therefore plain javascript is required
+										arrowDiv = document.createElement "div"
+										arrowDiv.setAttribute 'id', 'indicationArrow'
+										mainElement = document.getElementById("OpenStreetMap")
+										if mainElement?
+											mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
+											center= map.getCenter()
+											
+											difLat = Math.abs(latLngObj.lat - map.getCenter().lat)
+											difLng = Math.abs(latLngObj.lng - map.getCenter().lng)
+											angle = 0
+											if latLngObj.lng > center.lng and latLngObj.lat > center.lat
+												angle = Math.atan(difLng/difLat) 
+											else if latLngObj.lng > center.lng and latLngObj.lat <= center.lat
+												angle = Math.atan(difLat/difLng)+ Math.PI/2 
+											else if latLngObj.lng <= center.lng and latLngObj.lat <= center.lat
+												angle = Math.atan(difLng/difLat)+ Math.PI
+											else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
+												angle = (Math.PI-Math.atan(difLng/difLat)) + Math.PI
+											angleDeg = 	angle*180/Math.PI		
+											if angleDeg<=22.5 or angleDeg > 337.5
+												arrowDiv.className = 'indicationArrowN'
+											else if angleDeg >22.5 and angleDeg<=67.5
+												arrowDiv.className = 'indicationArrowNE'
+											else if angleDeg >67.5 and angleDeg<=112.5
+												arrowDiv.className = 'indicationArrowE'
+											else if angleDeg >112.5 and angleDeg<=157.5
+												arrowDiv.className = 'indicationArrowSE'
+											else if angleDeg >157.5 and angleDeg<=202.5
+												arrowDiv.className = 'indicationArrowS'
+											else if angleDeg >202.5 and angleDeg<=247.5
+												arrowDiv.className = 'indicationArrowSW'
+											else if angleDeg >247.5 and angleDeg<=292.5
+												arrowDiv.className = 'indicationArrowW'
+											else if angleDeg >292.5 and angleDeg<=337.5
+												arrowDiv.className = 'indicationArrowNW'
+											#log 'angleDeg=', angleDeg
+											arrowDiv.style.transform = "rotate(" +angle + "rad)"
+											arrowDiv.style.webkitTransform = "rotate(" +angle + "rad)"
+											arrowDiv.style.mozTransform = "rotate(" +angle + "rad)"
+											arrowDiv.style.msTransform = "rotate(" +angle + "rad)"
+											arrowDiv.style.oTransform = "rotate(" +angle + "rad)"
+							Obs.onClean ->
+								# Deregister move/zoom listeners to update indication arrow
+								if mapReady()
+									map.off('moveend', indicationArrowListener)
+								# Remove the indication arrow
+								toRemove = document.getElementById('indicationArrow');
+								if toRemove?
+									toRemove.parentNode.removeChild(toRemove);
+						# Checking if users are capable of taking over beacons
+						Obs.observe ->
+							if Db.shared.peek('gameState') is 1 # Only when the game is running, do something
+								log 'Checking beacon takeover'
+								Db.shared.iterate 'game', 'beacons', (beacon) !->
+									beaconCoord = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+									if not beaconCoord?
+										log 'beacon coordinate not found'
+									else
+										distance = latLngObj.distanceTo(beaconCoord)
+										#log 'distance=', distance, 'beacon=', beacon
+										within = distance - Db.shared.peek('game','beaconRadius') <= 0
+										inRange = beacon.peek('inRange', Plugin.userId())?
+										if (within and not inRange) or (not within and inRange)
+											Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
+												log 'UserID', Plugin.userId()
+												log 'UserLoc', latLngObj
+											if inRange
+												log 'Trying beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
+											else
+												log 'Trying stop of beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
+				else
+					log 'Location could not be found'
+				Obs.onClean ->
+					if mapReady() and beaconCurrentLocation?
+						# Remove the location marker
+						map.removeLayer beaconCurrentLocation
+						window.beaconCurrentLocation = null
+		Obs.onClean ->
+			#Server.call 'log', Plugin.userId(), "Untrack location"
 
 # ========== Functions ==========
 # Get the team id the user is added to
