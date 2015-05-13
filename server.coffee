@@ -239,6 +239,9 @@ exports.onCapture = (args) ->
 	beacon.set 'owner', nextOwner
 	beacon.set 'actionStarted', new Date()/1000
 	beacon.set 'action', 'none'
+	
+	# Set a timer to gain teamscore overtime							
+	Timer.set 3000, 'overtimeScore', {beacon: beacon.key()}
 
 	# Add event log entrie(s)
 	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
@@ -275,6 +278,9 @@ exports.onNeutralize = (args) ->
 	log 'Team ', neutralizer, ' has neutralized beacon ', beacon.key(), ', players: ', args.players
 	beacon.set 'percentage', 0
 	beacon.set 'owner', -1
+	
+	#cancel gain teamscore overtime
+	Timer.cancel 'overtimeScore', {beacon: beacon.key()}
 
 	# Increment neutralizes per team and per capturer
 	for player in args.players.split(', ')
@@ -290,6 +296,12 @@ exports.onNeutralize = (args) ->
 	beacon.set 'actionStarted', new Date()/1000
 	# Set timer for capturing
 	Timer.set (100-percentage)*10*30, 'onCapture', args
+	
+# Modify teamscore for possessing a beacon for a certain amount of time	
+exports.overtimeScore = (args) ->
+	owner = Db.shared.peek 'game', 'beacons',  args.beacon, 'owner'
+	Db.shared.modify 'game', 'teams', owner, 'teamScore', (v) -> v + 1
+	Timer.set 3600000, 'overtimeScore', args
 
 #Function called when the game ends
 exports.endGame = !->
@@ -314,6 +326,7 @@ initializeGame = ->
 	Db.shared.iterate 'game', 'beacons', (beacon) ->
 		Timer.cancel 'onCapture', {beacon: beacon.key(), players: getInrangePlayers(beacon.key())}
 		Timer.cancel 'onNeutralize', {beacon: beacon.key(), players: getInrangePlayers(beacon.key())}
+		Timer.cancel 'overtimeScore', {beacon: beacon.key()}
 	# Reset database to defaults
 	Db.shared.set 'gameState', 0
 	Db.shared.modify 'gameNumber', (v) -> (0||v)+1
