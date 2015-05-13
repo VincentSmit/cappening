@@ -49,7 +49,10 @@ exports.render = ->
 			# Set page title
 			page = Page.state.get(0)
 			page = "main" if not page?   
-			Page.setTitle page
+			end = Db.shared.peek('game', 'endTime')								
+			Page.setTitle !->
+				Dom.text "The game ends "
+				Time.deltaText end
 			# Display the correct page
 			if page == 'main'
 				mainContent()
