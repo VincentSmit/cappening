@@ -11,11 +11,31 @@ exports.onInstall = ->
 
 # Game update 
 exports.onUpgrade = ->	
-	# Normally nothing to do here
+	# Check if the color array is defined correctly
 	if not Db.shared.peek('colors', '-1', 'name')?
 		log 'Initialized colors again'
 		initializeColors()
-	#initializeGame()
+	
+	# Check version number and upgrade if required
+	version = Db.shared.peek('version')
+	newVersion = version
+	if not version?
+		version = 0
+	# Version checking
+	if version < 1 # Initialize deviceId, fixes inRange system
+		newVersion = 1
+		Db.shared.set 'maxDeviceId', 0
+	if version < 2 # Clean team neutral from the scores list and clean event about team neutral (got there because of a bug)
+		newVersion = 2
+		Db.shared.remove 'game', 'teams', -1
+		Db.shared.iterate 'game', 'eventlist', (e) ->
+			if (e.peek('conqueror')? and e.peek('conqueror') == -1) or (e.peek('leading')? and e.peek('leading') == -1)
+				Db.shared.remove 'game', 'eventlist', e.key()
+
+	# Write new version to the database
+	if newVersion isnt version
+		log '[onUpgrade] Upgraded version from '+version+' to '+newVersion
+		Db.shared.set 'version', newVersion
 
 # Config changes (by admin or plugin adder)
 exports.onConfig = (config) ->
@@ -59,8 +79,8 @@ exports.onGeoloc = (userId, geoloc) ->
 
 # Handle new users joining the happening
 exports.onJoin = (userId) ->
-	log 'Player ' + Plugin.userName(userId) + ' is joining the Happeing'
-	if Db.shared.get 'gameState' == 1
+	log 'Player ' + Plugin.userName(userId) + ' is joining the Happening'
+	if Db.shared.peek 'gameState' == 1
 		# Find teams with lowest number of members
 		min = 99999
 		lowest = []
@@ -128,6 +148,12 @@ exports.client_setBounds = (one, two) ->
 # exports.client_getIngameUserId = (client) ->
 # 	client.reply 
 
+exports.client_getNewDeviceId = (client, result) ->
+	newId = (Db.shared.peek('maxDeviceId'))+1
+	log 'newId ' + newId + ' send to ' + Plugin.userName(client) + " (" + client + ")"
+	Db.shared.set 'maxDeviceId', newId
+	result.reply newId
+
 exports.client_log = (userId, message) ->
 	log 'Client:'+Plugin.userName(userId)+":"+userId+": "+message
 
@@ -157,7 +183,7 @@ exports.client_startGame = ->
     	text: "The game has started!"
 
 # Checkin location for capturing a beacon		
-exports.client_checkinLocation = (client, location) ->
+exports.client_checkinLocation = (client, location, device) ->
 	if Db.shared.peek 'gameState' is not 1
 		log 'Client ', client, ' (', Plugin.userName(client), ') tried to capture beacon while game is not running!'
 	else
@@ -175,21 +201,28 @@ exports.client_checkinLocation = (client, location) ->
 				Timer.cancel 'onNeutralize', {beacon: beacon.key(), players: getInrangePlayers(beacon.key())}
 				removed = undefined;
 				if newStatus
+					if not device? # Deal with old clients by denying them to be added to inRange
+						log 'Denied adding to inRange, no deviceId provided: id=' + client + ', name=' + Plugin.userName(client) 
+						return
 					owner = beacon.peek 'owner'
-					log 'Added to inRange: id=', client, ', name=', Plugin.userName(client)
-					beacon.set 'inRange', client, 'true'
+					log 'Added to inRange: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device
+					beacon.set 'inRange', client, device
 					# Start takeover
 				else
-					log 'Removed from inRange: id=', client, ', name=', Plugin.userName(client)
-					# clean takeover
-					beacon.remove 'inRange', client
-					removed = client
+					inRangeValue = beacon.peek('inRange', client)
+					if inRangeValue == 'true' || inRangeValue == device
+						log 'Removed from inRange: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device
+						# clean takeover
+						beacon.remove 'inRange', client
+						removed = client
+					else
+						log 'Denied removing from inRange, deviceId does not match: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device, ', inRangeValue=' + inRangeValue
 				#log 'removed=', removed
 				# ========== Handle changes for inRange players ==========
 				# Determine members per team
 				teamMembers = (0 for team in [0..5])
 				beacon.iterate 'inRange', (player) !->
-					if parseInt(player.key()) != parseInt(removed)
+					if parseInt(player.key(), 10) != parseInt(removed, 10)
 						team = getTeamOfUser(player.key())
 						teamMembers[team] = teamMembers[team]+1
 				#log 'teamMembers count: ', teamMembers	
@@ -294,11 +327,10 @@ exports.onCapture = (args) ->
 	beaconValue = beacon.peek('captureValue')
 	modifyScore client, beaconValue
 
-	team = getTeamOfUser(player)
 	# Increment captures per team and per capturer
 	for player in args.players.split(', ')
-		Db.shared.modify 'game', 'teams', team , 'users', player, 'captured', (v) -> v+1
-		log player + " captured: " + Db.shared.peek 'game', 'teams', team, 'users', player, 'captured'
+		Db.shared.modify 'game', 'teams', nextOwner , 'users', player, 'captured', (v) -> v+1
+		log player + " from team " + nextOwner + " captured " + Db.shared.peek('game', 'teams', nextOwner, 'users', player, 'captured') + " beacons"
 	Db.shared.modify 'game', 'teams', nextOwner, 'captured', (v) -> v+1
     # Modify beacon value
 	beacon.modify 'captureValue', (v) -> v - 1 if beaconValue > 1

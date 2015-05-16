@@ -64,6 +64,17 @@ exports.render = ->
 				scoresContent()
 			else if page == 'log'
 				logContent()
+	Obs.observe ->
+		deviceId = Db.local.peek 'deviceId'
+		if not deviceId?
+			result = Obs.create(null)
+			Server.send 'getNewDeviceId', Plugin.userId(), result.func()
+			Obs.observe ->
+				if result.get()?
+					log 'Got deviceId ' + result.get()
+					Db.local.set 'deviceId', result.get()
+				else
+					log 'Did not get deviceId from server'
 
 exports.renderSettings = !->
 	if Db.shared
@@ -114,7 +125,8 @@ addProgressBar = ->
 		Db.shared.iterate 'game', 'beacons', (beacon) !->
 			action = beacon.get('action') # Subscribe to changes in action, only thing that matters
 			log 'action=', action
-			if beacon.peek('inRange', Plugin.userId())?
+			inRangeValue = beacon.peek('inRange', Plugin.userId())
+			if inRangeValue? and (inRangeValue == 'true' || inRangeValue == Db.local.get('deviceId'))
 				log 'Rendering progress bar'
 				Obs.onClean ->
 					log 'Cleaned progress bar...'
@@ -214,7 +226,7 @@ helpContent = ->
 	Dom.div !->
 		Dom.cls 'container'
 		Dom.h2 "King of the Hill instructions!"
-		Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.get('game','numberOfTeams') + " teams"
+		Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.peek('game','numberOfTeams') + " teams"
 		Dom.br()
 		Dom.br()
 		Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
@@ -356,10 +368,6 @@ logContent = ->
 			Dom.div !->
 				Dom.style Flex: 1, fontSize: '120%'
 				Dom.text "The game has started!"
-
-	
-
-placedBeacons= false
 
 setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
@@ -574,7 +582,6 @@ setupContent = ->
 					Dom.cls 'stepbar-left'
 					Dom.onTap !->
 						Db.local.set('currentSetupPage', 'setup1')
-						placedBeacons = true
 				# Middle block
 				Dom.div !->
 					Dom.text tr("Place beacons")
@@ -758,7 +765,7 @@ renderBeacons = ->
 					fillOpacity: 0.3
 					weight: 2
 				});
-				if Db.shared.peek('gameState')==0
+				if Db.shared.peek('gameState') == 0
 					markerDelClick = (e) ->
 						map.removeLayer circle
 						map.removeLayer marker
@@ -1000,15 +1007,14 @@ renderLocation = ->
 										distance = latLngObj.distanceTo(beaconCoord)
 										#log 'distance=', distance, 'beacon=', beacon
 										within = distance - Db.shared.peek('game','beaconRadius') <= 0
-										inRange = beacon.peek('inRange', Plugin.userId())?
-										if (within and not inRange) or (not within and inRange)
-											Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
-												log 'UserID', Plugin.userId()
-												log 'UserLoc', latLngObj
-											if inRange
-												log 'Trying beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
+										deviceId = Db.local.peek('deviceId')
+										inRangeValue = beacon.peek('inRange', Plugin.userId())
+										if (within and not inRangeValue?) or (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
+											Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId
+											if inRangeValue?
+												log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 											else
-												log 'Trying stop of beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
+												log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 				else
 					log 'Location could not be found'
 				Obs.onClean ->
