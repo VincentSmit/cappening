@@ -751,7 +751,18 @@ renderBeacons = ->
 				
 				location = L.latLng(beacon.get('location', 'lat'), beacon.get('location', 'lng'))
 				marker = L.marker(location, {icon: areaIcon})
-
+				popup = L.popup()
+					.setLatLng(location)
+					.setContent("Beacon owned by " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + " team."
+				marker.bindPopup(popup)
+				marker.addTo(map)
+				beaconMarkers.push marker
+				#log 'Added marker, marker list: ', beaconMarkers
+				
+				# Add the area circle to the map 
+				if not window.beaconCircles?
+					log "beaconCircles list reset"
+					window.beaconCircles = [];
 				circle = L.circle(location, Db.shared.get('game', 'beaconRadius'), {
 					color: teamColor,
 					fillColor: teamColor,
