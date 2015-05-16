@@ -864,13 +864,14 @@ mapReady = ->
 checkAllBeacons = ->
 	if beaconCircles? and beaconMarkers? and locationOne? and locationTwo? and mapReady()
 		bounds = L.latLngBounds(locationOne.getLatLng(), locationTwo.getLatLng())
-		i = 0;
-		for key in beaconCircles
-			if beaconCircles.hasOwnPropery(key) and beaconCircles[key]?
-				if !bounds.contains(beaconCircles[key].getBounds())
-					map.removeLayer beaconCircles[key]
-					Server.sync 'deleteBeacon', Plugin.userId(), beaconCircles[key].getLatLng()
-	
+		for key of beaconCircles
+			if !bounds.contains(beaconCircles[key].getBounds())
+				Server.sync 'deleteBeacon', Plugin.userId(), beaconCircles[key].getLatLng()
+				map.removeLayer beaconCircles[key]
+				delete beaconCircles[key]
+				map.removeLayer beaconMarkers[key]
+				delete beaconMarkers[key]
+
 # Render the location of the user on the map (currently broken)
 renderLocation = ->
 	#Server.call 'log', Plugin.userId(), "[renderLocation()]"
