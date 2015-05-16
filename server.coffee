@@ -23,9 +23,39 @@ exports.onConfig = (config) ->
 		log 'Restarting game'
 		initializeGame()
 	
-# Get background location from player, TODO: notify player when close to beacon
+# Get background location from player.
 exports.onGeoloc = (userId, geoloc) ->
 	log 'Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
+	recieved = new Date()/1000
+	if Db.shared.peek('gameState') is 1 and (recieved - (Db.shared.peek('lastNotification', userId) || 0))> 30*60
+		beacons = Db.shared.ref('game', 'beacons')
+		beaconRadius = Db.shared.peek('game', 'beaconRadius')
+		found=false;
+		#Check if user is in range of an enemy beacon, opening the app will capture the beacon
+		beacons.iterate (beacon) ->
+			if beacon.peek('owner') isnt getTeamOfUser(userId) and !found
+				log distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+				if distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng')) < beaconRadius
+					#send notifcation
+					Event.create
+						unit: 'inRange'
+						text: 'You are in range of an enemy beacon, capture it now!'
+					found=true;
+		#Check if user is nearby an enemy beacon.
+		if !found
+			beacons.iterate (beacon) ->
+				if beacon.peek('owner') isnt getTeamOfUser(userId) and !found
+					dist = distance(geoloc.latitude, geoloc.longitude, beacon.peek('location','lat'), beacon.peek('location','lng'))
+					if dist < beaconRadius *2.5
+						#send notifcation
+						Event.create
+							unit: 'nearby'
+							text: 'You are ' + parseInt(dist,10)+ ' m away from an enemy beacon, capture it now!'
+						found=true;	
+		#Last notification send, so that the user will not be spammed with notifications
+		if found
+			Db.shared.set('lastNotification', userId, recieved)
+
 
 # Handle new users joining the happening
 exports.onJoin = (userId) ->
@@ -143,7 +173,7 @@ exports.client_checkinLocation = (client, location) ->
 				# Cancel timers of ongoing caputes/neutralizes (new ones will be set below if required)
 				Timer.cancel 'onCapture', {beacon: beacon.key(), players: getInrangePlayers(beacon.key())}
 				Timer.cancel 'onNeutralize', {beacon: beacon.key(), players: getInrangePlayers(beacon.key())}
-				removed = undefined
+				removed = undefined;
 				if newStatus
 					owner = beacon.peek 'owner'
 					log 'Added to inRange: id=', client, ', name=', Plugin.userName(client)
@@ -314,7 +344,7 @@ exports.endGame = (args) ->
 # ==================== Functions ====================
 # Get a string of the players that are inRange of a beacon
 getInrangePlayers = (beacon) ->
-	playersStr = undefined
+	playersStr = undefined;
 	Db.shared.iterate 'game', 'beacons', beacon, 'inRange', (player) !->
 		if playersStr?
 			playersStr = playersStr + ', ' + player.key()
