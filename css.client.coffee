@@ -131,7 +131,9 @@ Dom.css
 # Infobar at the bottom of the screen
 	'.infobar':
 		width: '100%'
-		order: '100'
+		position: 'absolute'
+		bottom: '0'
+		zIndex: '2000'
 		padding: '11px'
 		fontSize: '16px'
 		boxSizing: 'border-box'
