@@ -59,6 +59,7 @@ exports.onGeoloc = (userId, geoloc) ->
 					#send notifcation
 					Event.create
 						unit: 'inRange'
+						include: userId
 						text: 'You are in range of an enemy beacon, capture it now!'
 					found=true;
 		#Check if user is nearby an enemy beacon.
@@ -70,6 +71,7 @@ exports.onGeoloc = (userId, geoloc) ->
 						#send notifcation
 						Event.create
 							unit: 'nearby'
+							include: userId
 							text: 'You are ' + parseInt(dist,10)+ ' m away from an enemy beacon, capture it now!'
 						found=true;	
 		#Last notification send, so that the user will not be spammed with notifications
