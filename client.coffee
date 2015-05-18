@@ -92,6 +92,8 @@ addBar = ->
 			width: '100%'
 			position: 'absolute'
 			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
+			backgroundColor: hexToRGBA(Db.shared.peek('colors', getTeamOfUser(Plugin.userId()), 'hex'), 0.9)
+			_textShadow: '0 0 5px #000000, 0 0 5px #000000' 
         #DIV button to help page
 		Dom.div !->
 			Dom.text  "?"
@@ -115,9 +117,7 @@ addBar = ->
 			teamId = getTeamOfUser(Plugin.userId())
 			Obs.observe !->
 				Dom.text Db.shared.get( 'game', 'teams', teamId, 'teamScore') + " points"
-			Dom.cls 'bar-button'
-			Dom.style ->
-				backgroundColor: Db.shared.peek('colors', teamId, 'hex')
+			Dom.cls 'bar-button'  
 
 addProgressBar = ->
 	Obs.observe ->
@@ -225,22 +225,22 @@ mainContent = ->
 helpContent = ->
 	Dom.div !->
 		Dom.cls 'container'
-		Dom.h2 "King of the Hill instructions!"
+		Dom.h2 "Game information"
 		Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.peek('game','numberOfTeams') + " teams"
 		Dom.br()
 		Dom.br()
 		Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
 		Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
-		Dom.text "When the bar at the bottom of your screen has been filled with your team color, you've conquered the beacon. "
-		Dom.text "A neutral beacon will take 1 minute to conquer, but an occupied beacon will take two. You first need to drain the opponents' color, before you can fill it with yours! "
+		Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
+		Dom.text "A neutral beacon will take 30 seconds to conquer, but an occupied beacon will take one minute. You first need to drain the opponents' color, before you can fill it with yours! "
 		Dom.br()
 		Dom.br()
 		Dom.h2 "Rules"
-		Dom.text "You gain 100 points for being the first team to conquer a certain beacon. "
+		Dom.text "You gain 10 points for being the first team to conquer a certain beacon. "
 		Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
+		Dom.text "Every hour the beacon is in your posession, it will generate a number of points. "
 		Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
-		Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 100 to 80, 60, 40 and 20. "
-		Dom.text "However, when a beacon is conquered, it is safe for 1 hour (can't be captured by another team). "
+		Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 10 to 9, 8 all the way to 1. "
 		Dom.text "The team with the highest score at the end of the game wins. "
 		Dom.br()
 		Dom.br()
@@ -250,7 +250,7 @@ helpContent = ->
 		Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
 		Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
 		Dom.br()
-		Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
+		Dom.text "The last tab in the bar shows your current team score! "
 
 scoresContent = ->
 	Ui.list !->
@@ -431,7 +431,7 @@ setupContent = ->
 				Dom.h2 tr("Round time")
 				Dom.text tr "Select the round time, recommended: 7 days."
 				Dom.div !->
-					Dom.style margin: '10px 0 10px 0'
+					Dom.style margin: '10px 0 10px 0', height: '81px'
 					sanitize = (value) ->
 						if value < 1
 							return 1
@@ -486,6 +486,13 @@ setupContent = ->
 						renderTimeButton 'Hours'
 						renderTimeButton 'Days'
 						renderTimeButton 'Months'
+				# Gameinfo setup page:
+				Dom.div !->
+					Dom.style margin: '-8px'
+					helpContent()
+
+							
+
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -1042,7 +1049,7 @@ renderLocation = ->
 					if mapReady() and beaconCurrentLocation?
 						# Remove the location marker
 						map.removeLayer beaconCurrentLocation
-						window.beaconCurrentLocation = null
+						window.beaconCurrentLocation = null;
 		Obs.onClean ->
 			#Server.call 'log', Plugin.userId(), "Untrack location"
 
@@ -1056,3 +1063,17 @@ getTeamOfUser = (userId) ->
 	#if result is -1
 	#	log 'Warning: Did not find team for userId=', userId
 	return result
+	
+	
+hexToRGBA =(hex, opacity) ->
+	result = 'rgba('
+	hex = hex.replace '#', ''
+	if hex.length is 3
+		result += [parseInt(hex.slice(0,1) + hex.slice(0, 1), 16), parseInt(hex.slice(1,2) + hex.slice(1, 1), 16), parseInt(hex.slice(2,3) + hex.slice(2, 1), 16), opacity]
+	else if hex.length is 6
+		result += [parseInt(hex.slice(0,2), 16), parseInt(hex.slice(2,4), 16), parseInt(hex.slice(4,6), 16), opacity]
+	else
+		result += [0, 0, 0, 0.0]
+	return result+')'
+ 
+

@@ -10,7 +10,6 @@ Dom.css
 		width: "25%"
 		float: "left"
 		color: "white"
-		backgroundColor: "#666"
 		lineHeight: "50px"
 		textAlign: "center"
 		verticalAlign: "middle"
