@@ -275,12 +275,17 @@ scoresContent = ->
 					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '80px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
 					# To Do expand voor scores
-					if expanded.get()
+					if expanded.get() || team.count('users').get() <= 1
 						team.iterate 'users', (user) !->
 							Dom.div !->
 								Dom.style clear: 'both'
+								Ui.avatar Plugin.userAvatar(user.key()),
+									style: margin: '6px 10px 0 0', float: 'left'
+									size: 40
+									onTap: (!-> Plugin.userInfo(user.key()))
 								Dom.div !->
-									Dom.style fontSize: '75%', marginTop: '6px', marginRight: '6px', display: 'block', float: 'left'
+									Dom.br()
+									Dom.style fontSize: '75%', marginTop: '6px', marginRight: '6px', display: 'block', float: 'left', minWidth: '75px'
 									Dom.text Plugin.userName(user.n) + " has: "
 								Dom.div !->
 									Dom.style fontSize: '75%', marginTop: '6px', display: 'block', float: 'left'
@@ -294,8 +299,9 @@ scoresContent = ->
 						Dom.div !->
 							Dom.style fontSize: '75%', marginTop: '6px'
 							Dom.text "Tap for details"
-				Dom.onTap !->
-					expanded.set(!expanded.get())
+				if team.count('users').get() > 1
+					Dom.onTap !->
+						expanded.set(!expanded.get())
 		, (team) -> [(-team.get('teamScore')), team.get('name')]
 
 logContent = ->
