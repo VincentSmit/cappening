@@ -185,12 +185,11 @@ exports.client_startGame = ->
     	text: "The game has started!"
 
 # Checkin location for capturing a beacon		
-exports.client_checkinLocation = (client, location, device) ->
+exports.client_checkinLocation = (client, location, device, accuracy) ->
 	if Db.shared.peek 'gameState' is not 1
 		log 'Client ', client, ' (', Plugin.userName(client), ') tried to capture beacon while game is not running!'
 	else
 		log 'checkinLocation() client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
-
 		beacons = Db.shared.ref('game', 'beacons')
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
 		beacons.iterate (beacon) ->
@@ -205,6 +204,9 @@ exports.client_checkinLocation = (client, location, device) ->
 				if newStatus
 					if not device? # Deal with old clients by denying them to be added to inRange
 						log 'Denied adding to inRange, no deviceId provided: id=' + client + ', name=' + Plugin.userName(client) 
+						return
+					if accuracy > beaconRadius
+						log 'Denied adding to inRange of '+Plugin.userName(client)+' ('+client+'), accuracy too low: '+accuracy+'m'
 						return
 					owner = beacon.peek 'owner'
 					log 'Added to inRange: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device
@@ -394,8 +396,6 @@ initializeGame = ->
 		Timer.cancel 'onNeutralize', {beacon: beacon.key(), players: getInrangePlayers(beacon.key())}
 		Timer.cancel 'overtimeScore', {beacon: beacon.key()}
 	# Reset database to defaults
-	Db.shared.set 'gameState', 0
-	Db.shared.modify 'gameNumber', (v) -> (0||v)+1
 	Db.shared.set 'game', {}
 	#Db.shared.set 'game', 'bounds', {one: {lat: 52.249822176849, lng: 6.8396973609924}, two: {lat: 52.236578295702, lng: 6.8598246574402}} # TOOD remove
 	Db.shared.set 'game', 'numberOfTeams', 2
@@ -403,6 +403,9 @@ initializeGame = ->
 	Db.shared.set 'game', 'roundTimeUnit', 'Days'
 	Db.shared.set 'game', 'roundTimeNumber', 7
 	Db.shared.set 'game', 'eventlist', 'maxId', 0
+
+	Db.shared.set 'gameState', 0
+	Db.shared.modify 'gameNumber', (v) -> (0||v)+1
 
 initializeColors = ->
 	Db.shared.set 'colors', 

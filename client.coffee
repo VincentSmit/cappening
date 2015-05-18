@@ -25,7 +25,7 @@ exports.render = ->
 
 	Obs.observe ->
 		# Check if cleanup from last game is required
-		local = Db.local.get 'gameNumber'
+		local = Db.local.peek 'gameNumber'
 		remote = Db.shared.get 'gameNumber'
 		log 'Game cleanup checked, local=', local, ', remote=', remote
 		if !(local?) || local != remote
@@ -1006,15 +1006,36 @@ renderLocation = ->
 									else
 										distance = latLngObj.distanceTo(beaconCoord)
 										#log 'distance=', distance, 'beacon=', beacon
-										within = distance - Db.shared.peek('game','beaconRadius') <= 0
+										beaconRadius = Db.shared.peek('game', 'beaconRadius')
+										within = distance - beaconRadius <= 0
 										deviceId = Db.local.peek('deviceId')
 										inRangeValue = beacon.peek('inRange', Plugin.userId())
-										if (within and not inRangeValue?) or (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
-											Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId
-											if inRangeValue?
-												log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
+										accuracy = state.get('accuracy')
+										if (within and not inRangeValue?)
+											log 'accuracy='+accuracy+', beaconRadius='+beaconRadius
+											if accuracy > beaconRadius # Deny capturing with low accuracy
+												log 'Did not checkin location, accuracy too low: '+accuracy
+												Dom.div !->
+													Dom.cls 'infobar'
+													Dom.div !->
+														Dom.style
+															float: 'left'
+															marginRight: '10px'
+															width: '30px'
+															_flexGrow: '0'
+															_flexShrink: '0'
+														Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 30 # TODO change to warning icon instead of info
+													Dom.div !->
+														Dom.style
+															_flexGrow: '1'
+															_flexShrink: '1'
+														Dom.text 'Accuracy too low to capure this beacon!'													
 											else
-												log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
+												log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
+												Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
+										else if (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
+											log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
+											Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
 				else
 					log 'Location could not be found'
 				Obs.onClean ->
