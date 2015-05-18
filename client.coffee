@@ -316,7 +316,7 @@ logContent = ->
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
 							Page.nav 'main'
-							map.setView(L.latLng(Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
+							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
 						Dom.div !->
 							Dom.style
 								width: '70px'
@@ -601,8 +601,11 @@ setupContent = ->
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
 					log 'setup2 new'
-					Dom.onTap !->
-						Server.send 'startGame'
+					if Db.shared.count('game', 'beacons').get() >=1
+						Dom.onTap !->
+							Server.send 'startGame'
+					else
+						Dom.cls 'stepbar-disable'
 			renderMap()
 			renderBeacons()
 			Obs.observe ->
