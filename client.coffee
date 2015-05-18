@@ -1031,7 +1031,7 @@ renderLocation = ->
 															width: '30px'
 															_flexGrow: '0'
 															_flexShrink: '0'
-														Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 30 # TODO change to warning icon instead of info
+														Icon.render data: 'warn', color: '#fff', style: { paddingRight: '10px'}, size: 30 # TODO change to warning icon instead of info
 													Dom.div !->
 														Dom.style
 															_flexGrow: '1'
