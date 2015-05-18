@@ -485,10 +485,14 @@ setupContent = ->
 						renderTimeButton 'Days'
 						renderTimeButton 'Months'
 				# Gameinfo setup page:
+				expanded = Obs.create(false)
 				Dom.div !->
 					Dom.style margin: '-8px'
-					helpContent()
-
+					Ui.button tr('Game info'), !->
+						expanded.set(!expanded.get())
+					if expanded.get()
+						helpContent()
+					
 							
 
 		else if currentPage is 'setup1' # Setup map boundaries
