@@ -15,6 +15,7 @@ Dom.css
 		verticalAlign: "middle"
 		borderRight: '1px solid #ABABAB'
 		boxSizing: 'border-box'
+		backgroundColor: 'transparent'
 	'.bar-button:last-of-type':
 		borderRight: '0 none'
 	'.mapbox-logo':

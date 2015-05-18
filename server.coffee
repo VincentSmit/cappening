@@ -31,10 +31,13 @@ exports.onUpgrade = ->
 		Db.shared.iterate 'game', 'eventlist', (e) ->
 			if (e.peek('conqueror')? and e.peek('conqueror') == -1) or (e.peek('leading')? and e.peek('leading') == -1)
 				Db.shared.remove 'game', 'eventlist', e.key()
+	if version < 3 # Change yellow color
+		newVersion = 3
+		initializeColors()
 
 	# Write new version to the database
 	if newVersion isnt version
-		log '[onUpgrade] Upgraded version from '+version+' to '+newVersion
+		log '[onUpgrade] Upgraded from version '+version+' to '+newVersion+'.'
 		Db.shared.set 'version', newVersion
 
 # Config changes (by admin or plugin adder)
@@ -414,7 +417,7 @@ initializeColors = ->
 			0:    {name: 'blue',    capitalizedName: 'Blue',    hex: '#3882b6'},
 			1:    {name: 'red',     capitalizedName: 'Red',     hex: '#FF3C00'},
 			2:    {name: 'green',   capitalizedName: 'Green',   hex: '#009F22'},
-			3:    {name: 'yellow',  capitalizedName: 'Yellow',  hex: '#F6FF00'},
+			3:    {name: 'yellow',  capitalizedName: 'Yellow',  hex: '#E8E03F'},
 			4:    {name: 'orange',  capitalizedName: 'Orange',  hex: '#FFB400'},
 			5:    {name: 'purple',  capitalizedName: 'Purple',  hex: '#E700D4'}
 		}

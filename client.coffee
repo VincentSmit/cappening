@@ -121,10 +121,8 @@ addBar = ->
 
 addProgressBar = ->
 	Obs.observe ->
-		log 'Render progress bar outer'
 		Db.shared.iterate 'game', 'beacons', (beacon) !->
 			action = beacon.get('action') # Subscribe to changes in action, only thing that matters
-			log 'action=', action
 			inRangeValue = beacon.peek('inRange', Plugin.userId())
 			if inRangeValue? and (inRangeValue == 'true' || inRangeValue == Db.local.get('deviceId'))
 				log 'Rendering progress bar'
@@ -1036,7 +1034,7 @@ renderLocation = ->
 														Dom.style
 															_flexGrow: '1'
 															_flexShrink: '1'
-														Dom.text 'Accuracy too low to capure this beacon!'													
+														Dom.text 'Your accuracy of '+accuracy+' meter is higher than the maximum allowed '+beaconRadius+' meter.'
 											else
 												log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 												Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
