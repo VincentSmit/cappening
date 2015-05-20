@@ -618,10 +618,11 @@ setupContent = ->
 				if mapReady()
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
-					log loc1 + " " + loc2
-					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 5, fillOpacity: 0.05, clickable: false})
-					boundaryRectangle.addTo(map)
-					map.on('contextmenu', addMarkerListener)
+					if loc1? and loc2
+						log loc1 + " " + loc2
+						window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 5, fillOpacity: 0.05, clickable: false})
+						boundaryRectangle.addTo(map)
+						map.on('contextmenu', addMarkerListener)
 				Obs.onClean ->
 					log 'onClean() rectangle'
 					if mapReady()
@@ -642,7 +643,7 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the area of effect for this beacon."
+					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the capture area for this beacon."
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
@@ -729,9 +730,9 @@ limitToBounds = ->
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 			bounds = L.latLngBounds(loc1, loc2)
 			if bounds? and loc1? and loc2?
+				map._layersMinZoom = map.getBoundsZoom(bounds.pad(0.05))
 				map.setMaxBounds(bounds.pad(0.05))
 				#map.fitBounds(bounds); # Causes problems, because it zooms to max all the time
-				map._layersMinZoom = map.getBoundsZoom(bounds.pad(0.05))
 			else
 				log "Bounds not existing"
 			Obs.onClean ->
