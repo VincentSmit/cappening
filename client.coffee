@@ -791,10 +791,17 @@ renderBeacons = ->
 						Server.send 'deleteBeacon', Plugin.userId(), e.latlng
 					marker.on('dblclick', markerDelClick)	
 				else
+					inrange = getInRange(beacon)
+					if inrange == "  "
+						inrange = "No players competing for this beacon"
+					else
+						inrange = "Competitors:" + inRange
+						
 					popup = L.popup()
 						.setLatLng(location)
 						.setContent("Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "." + 
-							"<br><br>Value: " + beacon.peek('captureValue' + " points!"))
+							"<br>Value: " + beacon.peek('captureValue') + " points!" +
+							"<br>"+ inrange)
 					marker.bindPopup(popup)
 					markerClick = () -> 
 						beaconMarkers[beacon.key()].togglePopup()		
@@ -1075,17 +1082,23 @@ getTeamOfUser = (userId) ->
 	#if result is -1
 	#	log 'Warning: Did not find team for userId=', userId
 	return result
-	
-	
-hexToRGBA =(hex, opacity) ->
-	result = 'rgba('
-	hex = hex.replace '#', ''
-	if hex.length is 3
-		result += [parseInt(hex.slice(0,1) + hex.slice(0, 1), 16), parseInt(hex.slice(1,2) + hex.slice(1, 1), 16), parseInt(hex.slice(2,3) + hex.slice(2, 1), 16), opacity]
-	else if hex.length is 6
-		result += [parseInt(hex.slice(0,2), 16), parseInt(hex.slice(2,4), 16), parseInt(hex.slice(4,6), 16), opacity]
-	else
-		result += [0, 0, 0, 0.0]
-	return result+')'
- 
 
+hexToRGBA = (hex, opacity) ->
+       result = 'rgba('
+       hex = hex.replace '#', ''
+       if hex.length is 3
+               result += [parseInt(hex.slice(0,1) + hex.slice(0, 1), 16), parseInt(hex.slice(1,2) + hex.slice(1, 1), 16), parseInt(hex.slice(2,3) + hex.slice(2, 1), 16), opacity]
+       else if hex.length is 6
+               result += [parseInt(hex.slice(0,2), 16), parseInt(hex.slice(2,4), 16), parseInt(hex.slice(4,6), 16), opacity]
+       else
+               result += [0, 0, 0, 0.0]
+       return result+')'
+
+getInRange = (beacon) ->
+	ids = beacon.get('inRange')
+	log(ids + " Dit zijn de inrange users")
+	players = "  ";
+	for usr in ids
+		if usr?
+			players = players + plugin.userName(usr) + ", "
+	return players;
