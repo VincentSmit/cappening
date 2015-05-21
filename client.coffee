@@ -51,10 +51,22 @@ exports.render = ->
 			# Set page title
 			page = Page.state.get(0)
 			page = "main" if not page?   
-			end = Db.shared.peek('game', 'endTime')								
-			Page.setTitle !->
-				Dom.text "Game ends "
-				Time.deltaText end
+			Obs.observe ->
+				nEnd = Db.shared.get('game', 'newEndTime')
+				end = Db.shared.peek('game', 'endTime')
+				if(nEnd isnt 0)
+					end = nEnd		
+				#make the subtitle red if the game is within 1 hour of ending
+				Page.setTitle !->
+					if (end - Plugin.time()) < 3600
+						Dom.div !->
+							Dom.style
+								color: "red"
+							Dom.text "The game ends "
+							Time.deltaText end
+					else
+						Dom.text "The game ends "
+						Time.deltaText end
 			# Display the correct page
 			if page == 'main'
 				mainContent()

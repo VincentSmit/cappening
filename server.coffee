@@ -344,6 +344,28 @@ exports.onCapture = (args) ->
     # Modify beacon value
 	beacon.modify 'captureValue', (v) -> v - 1 if beacon.peek('captureValue') > 1
 	
+	# The game will end in 1 hour if all the beacons are captured by one team
+	capOwner = Db.shared.peek('game', 'beacons', '0', 'owner')
+	log 'capOwner', capOwner
+	allBeaconsCaptured = true
+	Db.shared.iterate 'game', 'beacons', (beacon) ->
+		if capOwner isnt beacon.peek('owner')
+			log 'capOwner2', beacon.peek('owner')
+			allBeaconsCaptured = false
+			log 'capturedBeaconState', allBeaconsCaptured
+	log 'allbeaconscapturedFinal', allBeaconsCaptured
+	endTime=Db.shared.peek('game', 'endTime')
+	if allBeaconsCaptured and endTime-Plugin.time()>3600
+		owner = Db.shared.peek('colors', nextOwner , 'name')
+		Event.create
+			unit: 'captureAll'
+			text: "Team " + Db.shared.peek('colors', beacon.get('owner'), 'name') + " has captured all beacons, the game will end in 1 hour if you don't reconquer!!"
+		end = Plugin.time()+3600 #in seconds
+		log 'end', end
+		Db.shared.set 'game', 'newEndTime', end
+		Timer.cancel 'endGame'
+		Timer.set 3600000, 'endGame'
+	
 # Called by the beacon neutralize timer
 exports.onNeutralize = (args) ->
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
@@ -355,6 +377,12 @@ exports.onNeutralize = (args) ->
 	
 	#cancel gain teamscore overtime
 	Timer.cancel 'overtimeScore', {beacon: beacon.key()}
+	
+	#Call the timer to reset the time in the correct endtime in the database
+	end = Db.shared.peek 'game', 'endTime'
+	Db.shared.modify 'game', 'newEndTime', (v) -> 0
+	Timer.cancel 'endGame'
+	Timer.set (end-Plugin.time())*1000, 'endGame'
 
 	# Increment neutralizes per team and per capturer
 	for player in inRangeOfTeam
