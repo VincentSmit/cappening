@@ -400,8 +400,8 @@ exports.onNeutralize = (args) ->
 	# Set timer for capturing
 	Timer.set (100-percentage)*10*30, 'onCapture', args
 	
-	# Modify teamscore for possessing a beacon for a certain amount of time	
-	exports.overtimeScore = (args) ->
+# Modify teamscore for possessing a beacon for a certain amount of time	
+exports.overtimeScore = (args) ->
 	owner = Db.shared.peek 'game', 'beacons',  args.beacon, 'owner'
 	Db.shared.modify 'game', 'teams', owner, 'teamScore', (v) -> v + 1
 	Timer.set global.pointsTime, 'overtimeScore', args # Every hour
