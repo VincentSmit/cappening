@@ -6,6 +6,7 @@ Event = require 'event'
 # Global constants, use .peek()
 global = {
 	pointsTime: 3600000
+	pointsTimeSec: 3600
 }
 
 # ==================== Events ====================
@@ -347,7 +348,7 @@ exports.onCapture = (args) ->
 	# The game will end in 1 hour if all the beacons are captured by one team
 	capOwner = Db.shared.peek('game', 'beacons', '0', 'owner')
 	log 'capOwner', capOwner
-	allBeaconsCaptured = true
+	allBeaconsCaptured = true 
 	Db.shared.iterate 'game', 'beacons', (beacon) ->
 		if capOwner isnt beacon.peek('owner')
 			log 'capOwner2', beacon.peek('owner')
@@ -355,16 +356,16 @@ exports.onCapture = (args) ->
 			log 'capturedBeaconState', allBeaconsCaptured
 	log 'allbeaconscapturedFinal', allBeaconsCaptured
 	endTime=Db.shared.peek('game', 'endTime')
-	if allBeaconsCaptured and endTime-Plugin.time()>3600
+	if allBeaconsCaptured and endTime-Plugin.time()>pointsTimeSec
 		owner = Db.shared.peek('colors', nextOwner , 'name')
 		Event.create
 			unit: 'captureAll'
 			text: "Team " + Db.shared.peek('colors', beacon.get('owner'), 'name') + " has captured all beacons, the game will end in 1 hour if you don't reconquer!!"
-		end = Plugin.time()+3600 #in seconds
+		end = Plugin.time()+pointsTimeSec #in seconds
 		log 'end', end
 		Db.shared.set 'game', 'newEndTime', end
 		Timer.cancel 'endGame'
-		Timer.set 3600000, 'endGame'
+		Timer.set pointsTime, 'endGame'
 	
 # Called by the beacon neutralize timer
 exports.onNeutralize = (args) ->
@@ -399,8 +400,8 @@ exports.onNeutralize = (args) ->
 	# Set timer for capturing
 	Timer.set (100-percentage)*10*30, 'onCapture', args
 	
-# Modify teamscore for possessing a beacon for a certain amount of time	
-exports.overtimeScore = (args) ->
+	# Modify teamscore for possessing a beacon for a certain amount of time	
+	exports.overtimeScore = (args) ->
 	owner = Db.shared.peek 'game', 'beacons',  args.beacon, 'owner'
 	Db.shared.modify 'game', 'teams', owner, 'teamScore', (v) -> v + 1
 	Timer.set global.pointsTime, 'overtimeScore', args # Every hour
