@@ -276,6 +276,7 @@ scoresContent = ->
 				Dom.style
 					padding: '14px'
 					minHeight: '71px'
+					alignItems: 'stretch'
 				Dom.div !->
 					Dom.style
 						width: '70px'
@@ -284,7 +285,7 @@ scoresContent = ->
 						backgroundSize: 'cover'
 						position: 'absolute'
 				Dom.div !->
-					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '80px'
+					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '84px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
 					# To Do expand voor scores
 					if expanded.get() || team.count('users').get() <= 1
