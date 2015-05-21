@@ -63,7 +63,7 @@ exports.onGeoloc = (userId, geoloc) ->
 		#Check if user is in range of an enemy beacon, opening the app will capture the beacon
 		beacons.iterate (beacon) ->
 			if beacon.peek('owner') isnt getTeamOfUser(userId) and !found
-				log distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+				#log distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
 				if distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng')) < beaconRadius
 					#send notifcation
 					Event.create
