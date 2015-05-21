@@ -25,7 +25,7 @@ exports.render = ->
 
 	Obs.observe ->
 		# Check if cleanup from last game is required
-		local = Db.local.get 'gameNumber'
+		local = Db.local.peek 'gameNumber'
 		remote = Db.shared.get 'gameNumber'
 		log 'Game cleanup checked, local=', local, ', remote=', remote
 		if !(local?) || local != remote
@@ -64,6 +64,17 @@ exports.render = ->
 				scoresContent()
 			else if page == 'log'
 				logContent()
+	Obs.observe ->
+		deviceId = Db.local.peek 'deviceId'
+		if not deviceId?
+			result = Obs.create(null)
+			Server.send 'getNewDeviceId', Plugin.userId(), result.func()
+			Obs.observe ->
+				if result.get()?
+					log 'Got deviceId ' + result.get()
+					Db.local.set 'deviceId', result.get()
+				else
+					log 'Did not get deviceId from server'
 
 exports.renderSettings = !->
 	if Db.shared
@@ -81,6 +92,8 @@ addBar = ->
 			width: '100%'
 			position: 'absolute'
 			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
+			backgroundColor: hexToRGBA(Db.shared.peek('colors', getTeamOfUser(Plugin.userId()), 'hex'), 0.9)
+			_textShadow: '0 0 5px #000000, 0 0 5px #000000' 
         #DIV button to help page
 		Dom.div !->
 			Dom.text  "?"
@@ -104,17 +117,14 @@ addBar = ->
 			teamId = getTeamOfUser(Plugin.userId())
 			Obs.observe !->
 				Dom.text Db.shared.get( 'game', 'teams', teamId, 'teamScore') + " points"
-			Dom.cls 'bar-button'
-			Dom.style ->
-				backgroundColor: Db.shared.peek('colors', teamId, 'hex')
+			Dom.cls 'bar-button'  
 
 addProgressBar = ->
 	Obs.observe ->
-		log 'Render progress bar outer'
 		Db.shared.iterate 'game', 'beacons', (beacon) !->
 			action = beacon.get('action') # Subscribe to changes in action, only thing that matters
-			log 'action=', action
-			if beacon.peek('inRange', Plugin.userId())?
+			inRangeValue = beacon.peek('inRange', Plugin.userId())
+			if inRangeValue? and (inRangeValue == 'true' || inRangeValue == Db.local.get('deviceId'))
 				log 'Rendering progress bar'
 				Obs.onClean ->
 					log 'Cleaned progress bar...'
@@ -213,22 +223,22 @@ mainContent = ->
 helpContent = ->
 	Dom.div !->
 		Dom.cls 'container'
-		Dom.h2 "King of the Hill instructions!"
-		Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.get('game','numberOfTeams') + " teams"
+		Dom.h2 "Game information"
+		Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.peek('game','numberOfTeams') + " teams"
 		Dom.br()
 		Dom.br()
 		Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
 		Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
-		Dom.text "When the bar at the bottom of your screen has been filled with your team color, you've conquered the beacon. "
-		Dom.text "A neutral beacon will take 1 minute to conquer, but an occupied beacon will take two. You first need to drain the opponents' color, before you can fill it with yours! "
+		Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
+		Dom.text "A neutral beacon will take 30 seconds to conquer, but an occupied beacon will take one minute. You first need to drain the opponents' color, before you can fill it with yours! "
 		Dom.br()
 		Dom.br()
 		Dom.h2 "Rules"
-		Dom.text "You gain 100 points for being the first team to conquer a certain beacon. "
+		Dom.text "You gain 10 points for being the first team to conquer a certain beacon. "
 		Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
+		Dom.text "Every hour the beacon is in your posession, it will generate a number of points. "
 		Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
-		Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 100 to 80, 60, 40 and 20. "
-		Dom.text "However, when a beacon is conquered, it is safe for 1 hour (can't be captured by another team). "
+		Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 10 to 9, 8 all the way to 1. "
 		Dom.text "The team with the highest score at the end of the game wins. "
 		Dom.br()
 		Dom.br()
@@ -238,7 +248,7 @@ helpContent = ->
 		Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
 		Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
 		Dom.br()
-		Dom.text "The last tab in the bar shows your current team score. You can tap it to quickly find out some personal details! "
+		Dom.text "The last tab in the bar shows your current team score! "
 
 scoresContent = ->
 	Ui.list !->
@@ -265,12 +275,17 @@ scoresContent = ->
 					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '80px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
 					# To Do expand voor scores
-					if expanded.get()
+					if expanded.get() || team.count('users').get() <= 1
 						team.iterate 'users', (user) !->
 							Dom.div !->
 								Dom.style clear: 'both'
+								Ui.avatar Plugin.userAvatar(user.key()),
+									style: margin: '6px 10px 0 0', float: 'left'
+									size: 40
+									onTap: (!-> Plugin.userInfo(user.key()))
 								Dom.div !->
-									Dom.style fontSize: '75%', marginTop: '6px', marginRight: '6px', display: 'block', float: 'left'
+									Dom.br()
+									Dom.style fontSize: '75%', marginTop: '6px', marginRight: '6px', display: 'block', float: 'left', minWidth: '75px'
 									Dom.text Plugin.userName(user.n) + " has: "
 								Dom.div !->
 									Dom.style fontSize: '75%', marginTop: '6px', display: 'block', float: 'left'
@@ -284,8 +299,9 @@ scoresContent = ->
 						Dom.div !->
 							Dom.style fontSize: '75%', marginTop: '6px'
 							Dom.text "Tap for details"
-				Dom.onTap !->
-					expanded.set(!expanded.get())
+				if team.count('users').get() > 1
+					Dom.onTap !->
+						expanded.set(!expanded.get())
 		, (team) -> [(-team.get('teamScore')), team.get('name')]
 
 logContent = ->
@@ -306,7 +322,7 @@ logContent = ->
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
 							Page.nav 'main'
-							map.setView(L.latLng(Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.get('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
+							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
 						Dom.div !->
 							Dom.style
 								width: '70px'
@@ -356,10 +372,6 @@ logContent = ->
 			Dom.div !->
 				Dom.style Flex: 1, fontSize: '120%'
 				Dom.text "The game has started!"
-
-	
-
-placedBeacons= false
 
 setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
@@ -423,7 +435,7 @@ setupContent = ->
 				Dom.h2 tr("Round time")
 				Dom.text tr "Select the round time, recommended: 7 days."
 				Dom.div !->
-					Dom.style margin: '10px 0 10px 0'
+					Dom.style margin: '10px 0 10px 0', height: '81px'
 					sanitize = (value) ->
 						if value < 1
 							return 1
@@ -478,6 +490,17 @@ setupContent = ->
 						renderTimeButton 'Hours'
 						renderTimeButton 'Days'
 						renderTimeButton 'Months'
+				# Gameinfo setup page:
+				expanded = Obs.create(false)
+				Dom.div !->
+					Dom.style margin: '-8px'
+					Ui.button tr('Game info'), !->
+						expanded.set(!expanded.get())
+					if expanded.get()
+						helpContent()
+					
+							
+
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -574,7 +597,6 @@ setupContent = ->
 					Dom.cls 'stepbar-left'
 					Dom.onTap !->
 						Db.local.set('currentSetupPage', 'setup1')
-						placedBeacons = true
 				# Middle block
 				Dom.div !->
 					Dom.text tr("Place beacons")
@@ -585,18 +607,22 @@ setupContent = ->
 					Dom.cls 'stepbar-button'
 					Dom.cls 'stepbar-right'
 					log 'setup2 new'
-					Dom.onTap !->
-						Server.send 'startGame'
+					if Db.shared.count('game', 'beacons').get() >=1
+						Dom.onTap !->
+							Server.send 'startGame'
+					else
+						Dom.cls 'stepbar-disable'
 			renderMap()
 			renderBeacons()
 			Obs.observe ->
 				if mapReady()
 					loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 					loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
-					log loc1 + " " + loc2
-					window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 5, fillOpacity: 0.05, clickable: false})
-					boundaryRectangle.addTo(map)
-					map.on('contextmenu', addMarkerListener)
+					if loc1? and loc2
+						log loc1 + " " + loc2
+						window.boundaryRectangle = L.rectangle([loc1, loc2], {color: "#ff7800", weight: 5, fillOpacity: 0.05, clickable: false})
+						boundaryRectangle.addTo(map)
+						map.on('contextmenu', addMarkerListener)
 				Obs.onClean ->
 					log 'onClean() rectangle'
 					if mapReady()
@@ -617,7 +643,7 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the area of effect for this beacon."
+					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the capture area for this beacon."
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
@@ -704,9 +730,9 @@ limitToBounds = ->
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
 			bounds = L.latLngBounds(loc1, loc2)
 			if bounds? and loc1? and loc2?
+				map._layersMinZoom = map.getBoundsZoom(bounds.pad(0.05))
 				map.setMaxBounds(bounds.pad(0.05))
 				#map.fitBounds(bounds); # Causes problems, because it zooms to max all the time
-				map._layersMinZoom = map.getBoundsZoom(bounds.pad(0.05))
 			else
 				log "Bounds not existing"
 			Obs.onClean ->
@@ -769,7 +795,7 @@ renderBeacons = ->
 					fillOpacity: 0.3
 					weight: 2
 				});
-				if Db.shared.peek('gameState')==0
+				if Db.shared.peek('gameState') == 0
 					markerDelClick = (e) ->
 						map.removeLayer circle
 						map.removeLayer marker
@@ -875,13 +901,14 @@ mapReady = ->
 checkAllBeacons = ->
 	if beaconCircles? and beaconMarkers? and locationOne? and locationTwo? and mapReady()
 		bounds = L.latLngBounds(locationOne.getLatLng(), locationTwo.getLatLng())
-		i = 0;
-		for key in beaconCircles
-			if beaconCircles.hasOwnPropery(key) and beaconCircles[key]?
-				if !bounds.contains(beaconCircles[key].getBounds())
-					map.removeLayer beaconCircles[key]
-					Server.sync 'deleteBeacon', Plugin.userId(), beaconCircles[key].getLatLng()
-	
+		for key of beaconCircles
+			if !bounds.contains(beaconCircles[key].getBounds())
+				Server.sync 'deleteBeacon', Plugin.userId(), beaconCircles[key].getLatLng()
+				map.removeLayer beaconCircles[key]
+				delete beaconCircles[key]
+				map.removeLayer beaconMarkers[key]
+				delete beaconMarkers[key]
+
 # Render the location of the user on the map (currently broken)
 renderLocation = ->
 	#Server.call 'log', Plugin.userId(), "[renderLocation()]"
@@ -1009,23 +1036,43 @@ renderLocation = ->
 									else
 										distance = latLngObj.distanceTo(beaconCoord)
 										#log 'distance=', distance, 'beacon=', beacon
-										within = distance - Db.shared.peek('game','beaconRadius') <= 0
-										inRange = beacon.peek('inRange', Plugin.userId())?
-										if (within and not inRange) or (not within and inRange)
-											Server.send 'checkinLocation', Plugin.userId(), latLngObj, !->
-												log 'UserID', Plugin.userId()
-												log 'UserLoc', latLngObj
-											if inRange
-												log 'Trying beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
+										beaconRadius = Db.shared.peek('game', 'beaconRadius')
+										within = distance - beaconRadius <= 0
+										deviceId = Db.local.peek('deviceId')
+										inRangeValue = beacon.peek('inRange', Plugin.userId())
+										accuracy = state.get('accuracy')
+										if (within and not inRangeValue?)
+											log 'accuracy='+accuracy+', beaconRadius='+beaconRadius
+											if accuracy > beaconRadius # Deny capturing with low accuracy
+												log 'Did not checkin location, accuracy too low: '+accuracy
+												Dom.div !->
+													Dom.cls 'infobar'
+													Dom.div !->
+														Dom.style
+															float: 'left'
+															marginRight: '10px'
+															width: '30px'
+															_flexGrow: '0'
+															_flexShrink: '0'
+														Icon.render data: 'warn', color: '#fff', style: { paddingRight: '10px'}, size: 30 # TODO change to warning icon instead of info
+													Dom.div !->
+														Dom.style
+															_flexGrow: '1'
+															_flexShrink: '1'
+														Dom.text 'Your accuracy of '+accuracy+' meter is higher than the maximum allowed '+beaconRadius+' meter.'
 											else
-												log 'Trying stop of beacon takeover: userId=', Plugin.userId(), ', location=', latLngObj
+												log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
+												Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
+										else if (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
+											log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
+											Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
 				else
 					log 'Location could not be found'
 				Obs.onClean ->
 					if mapReady() and beaconCurrentLocation?
 						# Remove the location marker
 						map.removeLayer beaconCurrentLocation
-						window.beaconCurrentLocation = null
+						window.beaconCurrentLocation = null;
 		Obs.onClean ->
 			#Server.call 'log', Plugin.userId(), "Untrack location"
 
@@ -1039,3 +1086,17 @@ getTeamOfUser = (userId) ->
 	#if result is -1
 	#	log 'Warning: Did not find team for userId=', userId
 	return result
+	
+	
+hexToRGBA =(hex, opacity) ->
+	result = 'rgba('
+	hex = hex.replace '#', ''
+	if hex.length is 3
+		result += [parseInt(hex.slice(0,1) + hex.slice(0, 1), 16), parseInt(hex.slice(1,2) + hex.slice(1, 1), 16), parseInt(hex.slice(2,3) + hex.slice(2, 1), 16), opacity]
+	else if hex.length is 6
+		result += [parseInt(hex.slice(0,2), 16), parseInt(hex.slice(2,4), 16), parseInt(hex.slice(4,6), 16), opacity]
+	else
+		result += [0, 0, 0, 0.0]
+	return result+')'
+ 
+
