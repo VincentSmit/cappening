@@ -57,13 +57,11 @@ exports.onGeoloc = (userId, geoloc) ->
 	log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
 	recieved = new Date()/1000
 	if Db.shared.peek('gameState') is 1 and (recieved - (Db.shared.peek('lastNotification', userId) || 0))> 30*60
-		beacons = Db.shared.ref('game', 'beacons')
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
 		found=false;
 		#Check if user is in range of an enemy beacon, opening the app will capture the beacon
-		beacons.iterate (beacon) ->
-			if beacon.peek('owner') isnt getTeamOfUser(userId) and !found
-				#log distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+		Db.shared.iterate 'game', 'beacons', (beacon)!->
+			if (parseInt(beacon.peek('owner'),10) != parseInt(getTeamOfUser(userId),10)) and !found
 				if distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng')) < beaconRadius
 					#send notifcation
 					Event.create
@@ -481,7 +479,7 @@ distance = (inputLat1, inputLng1, inputLat2, inputLng2) ->
 
 # Get the team id the user is added to
 getTeamOfUser = (userId) ->
-	result = undefined
+	result = undefined;
 	Db.shared.iterate 'game', 'teams', (team) !->
 		if team.peek('users', userId, 'userName')?
 			result = team.key()
