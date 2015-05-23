@@ -71,18 +71,6 @@ exports.onGeoloc = (userId, geoloc) ->
 						include: userId
 						text: 'You are in range of an enemy beacon, capture it now!'
 					found=true;
-		#Check if user is nearby an enemy beacon.
-		if !found
-			beacons.iterate (beacon) ->
-				if beacon.peek('owner') isnt getTeamOfUser(userId) and !found
-					dist = distance(geoloc.latitude, geoloc.longitude, beacon.peek('location','lat'), beacon.peek('location','lng'))
-					if dist < beaconRadius *2.5
-						#send notifcation
-						Event.create
-							unit: 'nearby'
-							include: userId
-							text: 'You are ' + parseInt(dist,10)+ ' m away from an enemy beacon, capture it now!'
-						found=true;	
 		#Last notification send, so that the user will not be spammed with notifications
 		if found
 			Db.shared.set('lastNotification', userId, recieved)
@@ -348,7 +336,7 @@ exports.onCapture = (args) ->
 	# The game will end in 1 hour if all the beacons are captured by one team
 	capOwner = Db.shared.peek('game', 'beacons', '0', 'owner')
 	log 'capOwner', capOwner
-	allBeaconsCaptured = true 
+	allBeaconsCaptured = true; 
 	Db.shared.iterate 'game', 'beacons', (beacon) ->
 		if capOwner isnt beacon.peek('owner')
 			log 'capOwner2', beacon.peek('owner')
