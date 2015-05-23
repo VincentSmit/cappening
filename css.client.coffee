@@ -178,33 +178,6 @@ Dom.css
 		borderLeft: 'solid 8px transparent'
 		borderRight: 'solid 8px transparent'
 		position: 'absolute'
-	'.indicationArrowN':
-		top: '50px'
-		left: '50%'
-		marginLeft: '-15px'
-	'.indicationArrowNE':
-		top: '50px'
-		right: '0'
-	'.indicationArrowE':
-		top: '50%'
-		right: '0'
-		marginTop: '-15px'	
-	'.indicationArrowSE':
-		right: '0'
-		bottom: '0'
-	'.indicationArrowS':
-		bottom: '0'
-		left: '50%'
-		marginLeft: '-15px'	
 	'.indicationArrowSW':
 		bottom: '0'
 		left: '0'
-	'.indicationArrowW':
-		left: '0'
-		top: '50%'
-		marginTop: '-15px'	
-	'.indicationArrowNW':
-		top: '50px'
-		left: '0'
-	
-

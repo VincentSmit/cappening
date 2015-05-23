@@ -51,10 +51,22 @@ exports.render = ->
 			# Set page title
 			page = Page.state.get(0)
 			page = "main" if not page?   
-			end = Db.shared.peek('game', 'endTime')								
-			Page.setTitle !->
-				Dom.text "Game ends "
-				Time.deltaText end
+			Obs.observe ->
+				nEnd = Db.shared.get('game', 'newEndTime')
+				end = Db.shared.peek('game', 'endTime')
+				if(nEnd isnt 0)
+					end = nEnd		
+				#make the subtitle red if the game is within 1 hour of ending
+				Page.setTitle !->
+					if (end - Plugin.time()) < 3600
+						Dom.div !->
+							Dom.style
+								color: "red"
+							Dom.text "The game ends "
+							Time.deltaText end
+					else
+						Dom.text "The game ends "
+						Time.deltaText end
 			# Display the correct page
 			if page == 'main'
 				mainContent()
@@ -264,6 +276,7 @@ scoresContent = ->
 				Dom.style
 					padding: '14px'
 					minHeight: '71px'
+					alignItems: 'stretch'
 				Dom.div !->
 					Dom.style
 						width: '70px'
@@ -272,7 +285,7 @@ scoresContent = ->
 						backgroundSize: 'cover'
 						position: 'absolute'
 				Dom.div !->
-					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '80px'
+					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '84px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
 					# To Do expand voor scores
 					if expanded.get() || team.count('users').get() <= 1
@@ -998,22 +1011,7 @@ renderLocation = ->
 											else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
 												angle = (Math.PI-Math.atan(difLng/difLat)) + Math.PI
 											angleDeg = 	angle*180/Math.PI		
-											if angleDeg<=22.5 or angleDeg > 337.5
-												arrowDiv.className = 'indicationArrowN'
-											else if angleDeg >22.5 and angleDeg<=67.5
-												arrowDiv.className = 'indicationArrowNE'
-											else if angleDeg >67.5 and angleDeg<=112.5
-												arrowDiv.className = 'indicationArrowE'
-											else if angleDeg >112.5 and angleDeg<=157.5
-												arrowDiv.className = 'indicationArrowSE'
-											else if angleDeg >157.5 and angleDeg<=202.5
-												arrowDiv.className = 'indicationArrowS'
-											else if angleDeg >202.5 and angleDeg<=247.5
-												arrowDiv.className = 'indicationArrowSW'
-											else if angleDeg >247.5 and angleDeg<=292.5
-												arrowDiv.className = 'indicationArrowW'
-											else if angleDeg >292.5 and angleDeg<=337.5
-												arrowDiv.className = 'indicationArrowNW'
+											arrowDiv.className = 'indicationArrowSW'
 											#log 'angleDeg=', angleDeg
 											arrowDiv.style.transform = "rotate(" +angle + "rad)"
 											arrowDiv.style.webkitTransform = "rotate(" +angle + "rad)"

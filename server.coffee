@@ -6,6 +6,7 @@ Event = require 'event'
 # Global constants, use .peek()
 global = {
 	pointsTime: 3600000
+	pointsTimeSec: 3600
 }
 
 # ==================== Events ====================
@@ -56,13 +57,11 @@ exports.onGeoloc = (userId, geoloc) ->
 	log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
 	recieved = new Date()/1000
 	if Db.shared.peek('gameState') is 1 and (recieved - (Db.shared.peek('lastNotification', userId) || 0))> 30*60
-		beacons = Db.shared.ref('game', 'beacons')
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
 		found=false;
 		#Check if user is in range of an enemy beacon, opening the app will capture the beacon
-		beacons.iterate (beacon) ->
-			if beacon.peek('owner') isnt getTeamOfUser(userId) and !found
-				log distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+		Db.shared.iterate 'game', 'beacons', (beacon)!->
+			if (parseInt(beacon.peek('owner'),10) != parseInt(getTeamOfUser(userId),10)) and !found
 				if distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng')) < beaconRadius
 					#send notifcation
 					Event.create
@@ -70,18 +69,6 @@ exports.onGeoloc = (userId, geoloc) ->
 						include: userId
 						text: 'You are in range of an enemy beacon, capture it now!'
 					found=true;
-		#Check if user is nearby an enemy beacon.
-		if !found
-			beacons.iterate (beacon) ->
-				if beacon.peek('owner') isnt getTeamOfUser(userId) and !found
-					dist = distance(geoloc.latitude, geoloc.longitude, beacon.peek('location','lat'), beacon.peek('location','lng'))
-					if dist < beaconRadius *2.5
-						#send notifcation
-						Event.create
-							unit: 'nearby'
-							include: userId
-							text: 'You are ' + parseInt(dist,10)+ ' m away from an enemy beacon, capture it now!'
-						found=true;	
 		#Last notification send, so that the user will not be spammed with notifications
 		if found
 			Db.shared.set('lastNotification', userId, recieved)
@@ -344,6 +331,28 @@ exports.onCapture = (args) ->
     # Modify beacon value
 	beacon.modify 'captureValue', (v) -> v - 1 if beacon.peek('captureValue') > 1
 	
+	# The game will end in 1 hour if all the beacons are captured by one team
+	capOwner = Db.shared.peek('game', 'beacons', '0', 'owner')
+	log 'capOwner', capOwner
+	allBeaconsCaptured = true; 
+	Db.shared.iterate 'game', 'beacons', (beacon) ->
+		if capOwner isnt beacon.peek('owner')
+			log 'capOwner2', beacon.peek('owner')
+			allBeaconsCaptured = false
+			log 'capturedBeaconState', allBeaconsCaptured
+	log 'allbeaconscapturedFinal', allBeaconsCaptured
+	endTime=Db.shared.peek('game', 'endTime')
+	if allBeaconsCaptured and endTime-Plugin.time()>pointsTimeSec
+		owner = Db.shared.peek('colors', nextOwner , 'name')
+		Event.create
+			unit: 'captureAll'
+			text: "Team " + Db.shared.peek('colors', beacon.get('owner'), 'name') + " has captured all beacons, the game will end in 1 hour if you don't reconquer!!"
+		end = Plugin.time()+pointsTimeSec #in seconds
+		log 'end', end
+		Db.shared.set 'game', 'newEndTime', end
+		Timer.cancel 'endGame'
+		Timer.set pointsTime, 'endGame'
+	
 # Called by the beacon neutralize timer
 exports.onNeutralize = (args) ->
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
@@ -355,6 +364,12 @@ exports.onNeutralize = (args) ->
 	
 	#cancel gain teamscore overtime
 	Timer.cancel 'overtimeScore', {beacon: beacon.key()}
+	
+	#Call the timer to reset the time in the correct endtime in the database
+	end = Db.shared.peek 'game', 'endTime'
+	Db.shared.modify 'game', 'newEndTime', (v) -> 0
+	Timer.cancel 'endGame'
+	Timer.set (end-Plugin.time())*1000, 'endGame'
 
 	# Increment neutralizes per team and per capturer
 	for player in inRangeOfTeam
@@ -464,7 +479,7 @@ distance = (inputLat1, inputLng1, inputLat2, inputLng2) ->
 
 # Get the team id the user is added to
 getTeamOfUser = (userId) ->
-	result = undefined
+	result = undefined;
 	Db.shared.iterate 'game', 'teams', (team) !->
 		if team.peek('users', userId, 'userName')?
 			result = team.key()
