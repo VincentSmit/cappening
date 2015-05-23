@@ -643,7 +643,7 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the capture area for this beacon."
+					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the capture area for this beacon. Double click or double tap to delete a beacon."
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
@@ -791,17 +791,24 @@ renderBeacons = ->
 						Server.send 'deleteBeacon', Plugin.userId(), e.latlng
 					marker.on('dblclick', markerDelClick)	
 				else
-					inrange = getInRange(beacon)
-					if inrange == "  "
-						inrange = "No players competing for this beacon"
+					players = undefined;
+					Db.shared.iterate 'game', 'beacons' , beacon.key(), 'inRange', (user) !->
+						user.get()
+						if players?
+							players = players + ", " + Plugin.userName(user.key())
+						else 
+							players = Plugin.userName(user.key())
+
+					if players?
+						players = "Competitors: " + players
 					else
-						inrange = "Competitors:" + inRange
+						players = "No players competing for this beacon"
 						
 					popup = L.popup()
 						.setLatLng(location)
 						.setContent("Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "." + 
 							"<br>Value: " + beacon.peek('captureValue') + " points!" +
-							"<br>"+ inrange)
+							"<br>"+ players)
 					marker.bindPopup(popup)
 					markerClick = () -> 
 						beaconMarkers[beacon.key()].togglePopup()		
@@ -1093,12 +1100,3 @@ hexToRGBA = (hex, opacity) ->
        else
                result += [0, 0, 0, 0.0]
        return result+')'
-
-getInRange = (beacon) ->
-	ids = beacon.get('inRange')
-	log(ids + " Dit zijn de inrange users")
-	players = "  ";
-	for usr in ids
-		if usr?
-			players = players + plugin.userName(usr) + ", "
-	return players;
