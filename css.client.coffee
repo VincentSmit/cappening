@@ -3,11 +3,11 @@ Dom.css
 	'#main':
 		padding: '0 !important'
 	'.container':
-		padding: '8px'
+		padding: '14px'
 # Main content page
 	'.bar-button':
 		height: "100%"
-		width: "25%"
+		width: "33%"
 		float: "left"
 		color: "white"
 		lineHeight: "50px"
@@ -148,7 +148,7 @@ Dom.css
 		borderBottom: "2px solid"
 		paddingBottom: "2px"
 		textTransform: "uppercase"
-		textShadow: "1px 1px 2px #000000"
+		textShadow: "1px 1px 2px #000000"		
 #Indication Arrow
 	'#indicationArrow':
 		width: '30px'

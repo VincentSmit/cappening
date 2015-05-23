@@ -108,28 +108,37 @@ addBar = ->
 			_textShadow: '0 0 5px #000000, 0 0 5px #000000' 
         #DIV button to help page
 		Dom.div !->
-			Dom.text  "?"
+			Dom.style
+				width: '33%'
+				paddingTop: '10px'
+			Icon.render data: 'info', color: '#fff', size: 30
 			Dom.cls 'bar-button'                
 			Dom.onTap !->
 				Page.nav 'help' 
         #DIV button to Event log
 		Dom.div !->
-			Dom.text "Event Log"
+			Dom.style
+				width: '33%'
+				paddingTop: '10px'
+			Icon.render data: 'clipboard', color: '#fff', size: 30
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'log'
 		#DIV button to help page
 		Dom.div !->
-			Dom.text "Scores"
+			Dom.style
+				width: '33%'
+				paddingTop: '10px'
+			Icon.render data: 'award4', color: '#fff', size: 30
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'scores'
 		#DIV button to main menu
-		Dom.div !->
-			teamId = getTeamOfUser(Plugin.userId())
-			Obs.observe !->
-				Dom.text Db.shared.get( 'game', 'teams', teamId, 'teamScore') + " points"
-			Dom.cls 'bar-button'  
+		#Dom.div !->
+		#	teamId = getTeamOfUser(Plugin.userId())
+		#	Obs.observe !->
+		#		Dom.text Db.shared.get( 'game', 'teams', teamId, 'teamScore') + " points"
+		#	Dom.cls 'bar-button'  
 
 addProgressBar = ->
 	Obs.observe ->
@@ -235,7 +244,11 @@ mainContent = ->
 helpContent = ->
 	Dom.div !->
 		Dom.cls 'container'
-		Dom.h2 "Game information"
+		Dom.h1 "Game information"
+		Dom.text "On this page you find all the information about the game! "
+		Dom.br()
+		Dom.br()
+		Dom.h2 "General info"
 		Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.peek('game','numberOfTeams') + " teams"
 		Dom.br()
 		Dom.br()
@@ -259,10 +272,13 @@ helpContent = ->
 		Dom.br()
 		Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
 		Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
-		Dom.br()
-		Dom.text "The last tab in the bar shows your current team score! "
 
 scoresContent = ->
+	position = 0
+	Dom.div !->
+		Dom.style
+			paddingLeft: "14px"
+		Dom.h1 "Teamscores"
 	Ui.list !->
 		Dom.style
 			padding: '0'
@@ -270,6 +286,7 @@ scoresContent = ->
 			teamColor = Db.shared.peek('colors', team.key(), 'hex')
 			teamName = Db.shared.peek('colors', team.key(), 'name')
 			teamScore = Db.shared.get('game', 'teams', team.key(), 'teamScore')
+			position = position + 1
 			# list of teams and their scores
 			expanded = Obs.create(false)
 			Ui.item !->
@@ -284,6 +301,13 @@ scoresContent = ->
 						background: teamColor
 						backgroundSize: 'cover'
 						position: 'absolute'
+					Dom.div !->
+						Dom.style
+							fontSize: "40px"
+							paddingTop: "12px"
+							textAlign: "center"
+							color: "white"
+						Dom.text position
 				Dom.div !->
 					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '84px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
@@ -318,6 +342,10 @@ scoresContent = ->
 		, (team) -> [(-team.get('teamScore')), team.get('name')]
 
 logContent = ->
+	Dom.div !->
+		Dom.style
+			paddingLeft: "14px"
+		Dom.h1 "Eventlog"
 	Ui.list !->
 		Dom.style
 			padding: '0'
