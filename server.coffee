@@ -3,7 +3,7 @@ Plugin = require 'plugin'
 Timer = require 'timer'
 Event = require 'event'
 
-# Global constants, use .peek()
+# Global constants, use global.<variable>
 global = {
 	pointsTime: 3600000
 }
