@@ -311,8 +311,9 @@ scoresContent = ->
 				Dom.div !->
 					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '84px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
+					log 'users: ', Plugin.users, ', length: ', Plugin.users.count().peek()
 					# To Do expand voor scores
-					if expanded.get() || team.count('users').get() <= 1
+					if expanded.get() || Plugin.users.count().peek() <= 6
 						team.iterate 'users', (user) !->
 							Dom.div !->
 								Dom.style clear: 'both'
@@ -336,7 +337,7 @@ scoresContent = ->
 						Dom.div !->
 							Dom.style fontSize: '75%', marginTop: '6px'
 							Dom.text "Tap for details"
-				if team.count('users').get() > 1
+				if Plugin.users.count().peek() > 1
 					Dom.onTap !->
 						expanded.set(!expanded.get())
 		, (team) -> [(-team.get('teamScore')), team.get('name')]
