@@ -39,7 +39,10 @@ exports.onUpgrade = ->
 	if version < 3 # Change yellow color
 		newVersion = 3
 		initializeColors()
-	# TODO change inRange to new layout
+	if version < 4 # Remove everyone from inRange, change to new layout of database section
+		newVersion = 4
+		Db.shared.iterate 'game', 'beacons', (beacon) !->
+			beacon.remove 'inRange'
 
 
 	# Write new version to the database
@@ -186,10 +189,9 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 	if Db.shared.peek 'gameState' is not 1
 		log '[checkinLocation()] Client ', client, ' (', Plugin.userName(client), ') tried to capture beacon while game is not running!'
 	else
-		log '[checkinLocation()] client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
-		beacons = Db.shared.ref('game', 'beacons')
+		#log '[checkinLocation()] client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
-		beacons.iterate (beacon) ->
+		Db.shared.iterate 'game', 'beacons', (beacon) ->
 			current = beacon.peek('inRange', client)?
 			beaconDistance = distance(location.lat, location.lng, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
 			newStatus = beaconDistance < beaconRadius
@@ -198,6 +200,7 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 				Timer.cancel 'onCapture', {beacon: beacon.key()}
 				Timer.cancel 'onNeutralize', {beacon: beacon.key()}
 				removed = undefined;
+				owner = beacon.peek 'owner'
 				if newStatus
 					if not device? # Deal with old clients by denying them to be added to inRange
 						log '[checkinLocation()] Denied adding to inRange, no deviceId provided: id=' + client + ', name=' + Plugin.userName(client) 
@@ -205,12 +208,10 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 					if accuracy > beaconRadius
 						log '[checkinLocation()] Denied adding to inRange of '+Plugin.userName(client)+' ('+client+'), accuracy too low: '+accuracy+'m'
 						return
-					owner = beacon.peek 'owner'
 					log '[checkinLocation()] Added to inRange: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device
-					beacon.set 'inRange', client, device
-
-					# TODO do stuff for inrange timeout
-
+					beacon.set 'inRange', client, 'device', device
+					refreshInrangeTimer(client, device)
+					updateBeaconStatus(beacon, removed)
 					# Start takeover
 				else
 					inRangeValue = beacon.peek('inRange', client)
@@ -222,60 +223,9 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 					else
 						log '[checkinLocation()] Denied removing from inRange, deviceId does not match: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device, ', inRangeValue=' + inRangeValue
 				#log 'removed=', removed
-				# ========== Handle changes for inRange players ==========
-				# Determine members per team
-				teamMembers = (0 for team in [0..5])
-				beacon.iterate 'inRange', (player) !->
-					if parseInt(player.key(), 10) != parseInt(removed, 10)
-						team = getTeamOfUser(player.key())
-						teamMembers[team] = teamMembers[team]+1
-				#log 'teamMembers count: ', teamMembers	
-
-				# Determine who is competing
-				max = 0
-				competing = []
-				for team in [0..5]
-					if teamMembers[team] > max
-						max = teamMembers[team]
-						competing = []
-						competing.push team
-					else if teamMembers[team] == max
-						competing.push team
-				# Update percentage taken for current time
-				log '[checkinLocation()] Competing teams=', competing
-				updateBeaconPercentage(beacon)
-
-				# Check if there should be progress
-				if competing.length == 1
-					# Team will capture the flag
-					activeTeam = competing[0]
-					if activeTeam != owner
-						beacon.set 'nextOwner', activeTeam
-						percentage = beacon.peek 'percentage'
-						if owner == -1
-							# Capturing
-							log '[checkinLocation()] Team ', activeTeam, ' is capturing beacon ', beacon.key()
-							beacon.set 'actionStarted', new Date()/1000
-							beacon.set 'action', 'capture'
-							# Set timer for capturing
-							Timer.set (100-percentage)*10*30, 'onCapture', {beacon: beacon.key()}
-						else
-							# Neutralizing
-							log '[checkinLocation()] Team ', activeTeam, ' is neutralizing beacon ', beacon.key()
-							beacon.set 'actionStarted', new Date()/1000
-							beacon.set 'action', 'neutralize'
-							Timer.set percentage*10*30, 'onNeutralize', {beacon: beacon.key()}
-					else
-						log '[checkinLocation()] Active team already has the beacon, ', activeTeam, '=', owner
-
-				else
-					# No progess, stand-off
-					beacon.set 'actionStarted', new Date()/1000
-					beacon.set 'action', 'none'
-					if competing.length > 1
-						log '[checkinLocation()] Capture of beacon ', beacon.key(), ' on hold, competing teams: ', competing
-					else
-						log '[checkinLocation()] Capture of beacon ', beacon.key(), ' stopped, left the area'
+				
+			else
+				refreshInrangeTimer(client, device)
 
 # Update the takeover percentage of a beacon depening on current action and the passed time
 updateBeaconPercentage = (beacon) ->
@@ -292,6 +242,62 @@ updateBeaconPercentage = (beacon) ->
 		newPercentage = currentPercentage-(time/30*100)
 		newPercentage = 0 if newPercentage<0
 		beacon.set 'percentage', newPercentage
+
+updateBeaconStatus = (beacon, removed) ->
+	# ========== Handle changes for inRange players ==========
+	# Determine members per team
+	owner = beacon.peek('owner')
+	teamMembers = (0 for team in [0..5])
+	beacon.iterate 'inRange', (player) !->
+		if parseInt(player.key(), 10) != parseInt(removed, 10)
+			team = getTeamOfUser(player.key())
+			teamMembers[team] = teamMembers[team]+1
+	#log 'teamMembers count: ', teamMembers	
+
+	# Determine who is competing
+	max = 0
+	competing = []
+	for team in [0..5]
+		if teamMembers[team] > max
+			max = teamMembers[team]
+			competing = []
+			competing.push team
+		else if teamMembers[team] == max
+			competing.push team
+	# Update percentage taken for current time
+	log '[checkinLocation()] Competing teams=', competing
+	updateBeaconPercentage(beacon)
+
+	# Check if there should be progress
+	if competing.length == 1
+		# Team will capture the flag
+		activeTeam = competing[0]
+		if activeTeam != owner
+			beacon.set 'nextOwner', activeTeam
+			percentage = beacon.peek 'percentage'
+			if owner == -1
+				# Capturing
+				log '[checkinLocation()] Team ', activeTeam, ' is capturing beacon ', beacon.key()
+				beacon.set 'actionStarted', new Date()/1000
+				beacon.set 'action', 'capture'
+				# Set timer for capturing
+				Timer.set (100-percentage)*10*30, 'onCapture', {beacon: beacon.key()}
+			else
+				# Neutralizing
+				log '[checkinLocation()] Team ', activeTeam, ' is neutralizing beacon ', beacon.key()
+				beacon.set 'actionStarted', new Date()/1000
+				beacon.set 'action', 'neutralize'
+				Timer.set percentage*10*30, 'onNeutralize', {beacon: beacon.key()}
+		else
+			log '[checkinLocation()] Active team already has the beacon, ', activeTeam, '=', owner
+	else
+		# No progess, stand-off
+		beacon.set 'actionStarted', new Date()/1000
+		beacon.set 'action', 'none'
+		if competing.length > 1
+			log '[checkinLocation()] Capture of beacon ', beacon.key(), ' on hold, competing teams: ', competing
+		else
+			log '[checkinLocation()] Capture of beacon ', beacon.key(), ' stopped, left the area'
 
 
 
@@ -351,7 +357,7 @@ exports.onCapture = (args) ->
 		owner = Db.shared.peek('colors', nextOwner , 'name')
 		Event.create
 			unit: 'captureAll'
-			text: "Team " + Db.shared.peek('colors', beacon.get('owner'), 'name') + " has captured all beacons, the game will end in 1 hour if you don't reconquer!!"
+			text: "Team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + " has captured all beacons, the game will end in 1 hour if you don't reconquer!!"
 		end = Plugin.time()+global.pointsTime/1000 #in seconds
 		log 'end', end
 		Db.shared.set 'game', 'newEndTime', end
@@ -359,6 +365,7 @@ exports.onCapture = (args) ->
 		Timer.set global.pointsTime, 'endGame', {}
 	
 # Called by the beacon neutralize timer
+# args.beacon: beacon that is neutralized
 exports.onNeutralize = (args) ->
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
 	neutralizer = beacon.peek('nextOwner')
@@ -392,6 +399,7 @@ exports.onNeutralize = (args) ->
 	Timer.set (100-percentage)*10*30, 'onCapture', args
 	
 # Modify teamscore for possessing a beacon for a certain amount of time	
+# args.beacon: beacon that is getting points
 exports.overtimeScore = (args) ->
 	owner = Db.shared.peek 'game', 'beacons',  args.beacon, 'owner'
 	Db.shared.modify 'game', 'teams', owner, 'teamScore', (v) -> v + 1
@@ -401,7 +409,13 @@ exports.overtimeScore = (args) ->
 exports.endGame = (args) ->
 	log "[endGame()] The game ended! args="+args
 
-
+# Called when an inRange players did not checkin quickly enough
+# args.beacon: beacon id
+# args.client: user id
+exports.inRangeTimeout = (args) ->
+	#log 'User '+Plugin.userName(args.client)+'('+args.client+') removed from inRange of beacon '+args.beacon
+	Db.shared.remove 'game', 'beacons', args.beacon, 'inRange', args.client
+	updateBeaconStatus(Db.shared.ref('game', 'beacons', args.beacon), -999)
 
 # ==================== Functions ====================
 # Get a string of the players that are inRange of a beacon
@@ -532,5 +546,11 @@ modifyScore = (client, points) !->
 			text: "Team " + Db.shared.peek('colors', teamMax, 'name') + " took the lead!"
 
 refreshInrangeTimer = (client, device) ->
-	log '[refreshInRangeTimer()] Refreshing timer for '+Plugin.userName(client)+' ('+client+') on device '+device
-	# TODO
+	#log '[refreshInRangeTimer()] Refreshing timer for '+Plugin.userName(client)+' ('+client+') on device '+device
+	Db.shared.iterate 'game', 'beacons', (beacon) !->
+		beacon.iterate 'inRange', (user) !->
+			if parseInt(user.key(),10) is parseInt(client,10) and parseInt(user.peek('device'),10) is parseInt(device,10)
+				#log 'Resetting timeout'
+				user.set 'time', new Date()/1000
+				Timer.cancel 'inRangeTimeout', {beacon: beacon.key(), client: client}
+				Timer.set 60*1000, 'inRangeTimeout', {beacon: beacon.key(), client: client}

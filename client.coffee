@@ -12,13 +12,17 @@ Geoloc = require 'geoloc'
 Form = require 'form'
 Icon = require 'icon'
 
-window.redraw = Obs.create(0)
-window.indicationArrowRedraw = Obs.create(0);
+window.redraw = Obs.create(0) # For full redraw
+window.indicationArrowRedraw = Obs.create(0) # For indication arrow redraw
 
 # ========== Events ==========
 exports.render = ->
 	log Db.shared
 	log 'FULL RENDER'
+	if not window.inRangeCheckinRunning?
+		window.inRangeCheckinRunning = {}
+	if not inRangeCheckinRunning[Plugin.groupId()]?
+		inRangeCheckinRunning[Plugin.groupId()] = false
 	#Server.call 'log', Plugin.userId(), "FULL RENDER"
 	loadOpenStreetMap()
 
@@ -89,6 +93,7 @@ exports.render = ->
 				else
 					log 'Did not get deviceId from server'
 
+# Method that is called when admin changes settings (only restart game for now)
 exports.renderSettings = !->
 	if Db.shared
 		Form.check
@@ -107,7 +112,7 @@ addBar = ->
 			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
 			backgroundColor: hexToRGBA(Db.shared.peek('colors', getTeamOfUser(Plugin.userId()), 'hex'), 0.9)
 			_textShadow: '0 0 5px #000000, 0 0 5px #000000' 
-        #DIV button to help page
+        # Button to help page
 		Dom.div !->
 			Icon.render data: 'info', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
 			Dom.div !->
@@ -116,7 +121,7 @@ addBar = ->
 			Dom.cls 'bar-button'                
 			Dom.onTap !->
 				Page.nav 'help' 
-        #DIV button to Event log
+        # Button to event log
 		Dom.div !->
 			Icon.render data: 'clipboard', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
 			Dom.div !->
@@ -125,7 +130,7 @@ addBar = ->
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'log'
-		#DIV button to help page
+		# Button to scores page
 		Dom.div !->
 			Icon.render data: 'award4', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
 			Dom.div !->
@@ -134,18 +139,12 @@ addBar = ->
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'scores'
-		#DIV button to main menu
-		#Dom.div !->
-		#	teamId = getTeamOfUser(Plugin.userId())
-		#	Obs.observe !->
-		#		Dom.text Db.shared.get( 'game', 'teams', teamId, 'teamScore') + " points"
-		#	Dom.cls 'bar-button'  
 
 addProgressBar = ->
 	Obs.observe ->
 		Db.shared.iterate 'game', 'beacons', (beacon) !->
 			action = beacon.get('action') # Subscribe to changes in action, only thing that matters
-			inRangeValue = beacon.peek('inRange', Plugin.userId())
+			inRangeValue = beacon.peek('inRange', Plugin.userId(), 'device')
 			if inRangeValue? and (inRangeValue == 'true' || inRangeValue == Db.local.get('deviceId'))
 				log 'Rendering progress bar'
 				Obs.onClean ->
@@ -360,7 +359,7 @@ logContent = ->
 			padding: '0'
 		Db.shared.iterate 'game', 'eventlist', (capture) !->
 			if capture.key() != "maxId"
-				log 'capture' 
+				#log 'capture' 
 				Ui.item !->
 					Dom.style
 						padding: '14px'
@@ -378,8 +377,8 @@ logContent = ->
 								width: '70px'
 								height: '70px'
 								marginRight: '10px'
-								background: teamColor
-								backgroundSize: 'cover'
+								background: teamColor+"url(#{Plugin.resourceUri('marker-plain.png')}) no-repeat 10px 10px" 
+								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '100%'
 							Dom.text "Team " + teamName + " captured a beacon"
@@ -391,7 +390,7 @@ logContent = ->
 						teamId = capture.get('leading')
 						teamColor = Db.shared.peek('colors', teamId, 'hex')
 						teamName = Db.shared.peek('colors', teamId, 'name')
-						log "print score: teamId; " + teamId
+						#log "print score: teamId; " + teamId
 						Dom.onTap !->
 							page.nav 'scores'							
 						Dom.div !->
@@ -399,8 +398,8 @@ logContent = ->
 								width: '70px'
 								height: '70px'
 								marginRight: '10px'
-								background: teamColor
-								backgroundSize: 'cover'
+								background: teamColor+"url(#{Plugin.resourceUri('rank-switch.png')}) no-repeat 10px 10px" 
+								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '100%'
 							Dom.text "Team " + teamName + " took the lead"
@@ -1089,33 +1088,49 @@ renderLocation = ->
 										beaconRadius = Db.shared.peek('game', 'beaconRadius')
 										within = distance - beaconRadius <= 0
 										deviceId = Db.local.peek('deviceId')
-										inRangeValue = beacon.peek('inRange', Plugin.userId())
+										inRangeValue = beacon.peek('inRange', Plugin.userId(), 'device')
 										accuracy = state.get('accuracy')
-										if (within and not inRangeValue?)
+										checkinLocation = ->
+											log 'checkinLocation: user='+Plugin.userName(Plugin.userId())+' ('+Plugin.userId()+'), deviceId='+deviceId+', accuracy='+accuracy
+											Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
+										if within
 											log 'accuracy='+accuracy+', beaconRadius='+beaconRadius
 											if accuracy > beaconRadius # Deny capturing with low accuracy
-												log 'Did not checkin location, accuracy too low: '+accuracy
-												Dom.div !->
-													Dom.cls 'infobar'
+												if not inRangeValue?
+													#clearInterval(checinLocation) # TODO check if this is required or causes problems
+													#inRangeCheckinRunning[Plugin.groupId()] = false
+													log 'Did not checkin location, accuracy too low: '+accuracy
 													Dom.div !->
-														Dom.style
-															float: 'left'
-															marginRight: '10px'
-															width: '30px'
-															_flexGrow: '0'
-															_flexShrink: '0'
-														Icon.render data: 'warn', color: '#fff', style: { paddingRight: '10px'}, size: 30 # TODO change to warning icon instead of info
-													Dom.div !->
-														Dom.style
-															_flexGrow: '1'
-															_flexShrink: '1'
-														Dom.text 'Your accuracy of '+accuracy+' meter is higher than the maximum allowed '+beaconRadius+' meter.'
+														Dom.cls 'infobar'
+														Dom.div !->
+															Dom.style
+																float: 'left'
+																marginRight: '10px'
+																width: '30px'
+																_flexGrow: '0'
+																_flexShrink: '0'
+															Icon.render data: 'warn', color: '#fff', style: {paddingRight: '10px'}, size: 30
+														Dom.div !->
+															Dom.style
+																_flexGrow: '1'
+																_flexShrink: '1'
+															Dom.text 'Your accuracy of '+accuracy+' meter is higher than the maximum allowed '+beaconRadius+' meter.'
 											else
-												log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
-												Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
+												if inRangeValue?
+													if not inRangeCheckinRunning[Plugin.groupId()]
+														checkinLocation()
+														setInterval(checkinLocation, 30*1000)
+														window.inRangeCheckinRunning[Plugin.groupId()] = true
+												else
+													log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
+													checkinLocation()
+													setInterval(checkinLocation, 30*1000)
+													window.inRangeCheckinRunning[Plugin.groupId()] = true
 										else if (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
 											log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
-											Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
+											clearInterval(checkinLocation)
+											window.inRangeCheckinRunning[Plugin.groupId()] = false
+											checkinLocation()
 				else
 					log 'Location could not be found'
 				Obs.onClean ->
