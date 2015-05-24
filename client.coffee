@@ -62,10 +62,10 @@ exports.render = ->
 						Dom.div !->
 							Dom.style
 								color: "red"
-							Dom.text "The game ends "
+							Dom.text "Game ends "
 							Time.deltaText end
 					else
-						Dom.text "The game ends "
+						Dom.text "Game ends "
 						Time.deltaText end
 			# Display the correct page
 			if page == 'main'

@@ -6,7 +6,6 @@ Event = require 'event'
 # Global constants, use .peek()
 global = {
 	pointsTime: 3600000
-	pointsTimeSec: 3600
 }
 
 # ==================== Events ====================
@@ -54,7 +53,7 @@ exports.onConfig = (config) ->
 	
 # Get background location from player.
 exports.onGeoloc = (userId, geoloc) ->
-	log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
+	#log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
 	recieved = new Date()/1000
 	if Db.shared.peek('gameState') is 1 and (recieved - (Db.shared.peek('lastNotification', userId) || 0))> 30*60
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
@@ -206,6 +205,9 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 					owner = beacon.peek 'owner'
 					log '[checkinLocation()] Added to inRange: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device
 					beacon.set 'inRange', client, device
+
+					# TODO do stuff for inrange timeout
+
 					# Start takeover
 				else
 					inRangeValue = beacon.peek('inRange', client)
@@ -342,16 +344,16 @@ exports.onCapture = (args) ->
 			log 'capturedBeaconState', allBeaconsCaptured
 	log 'allbeaconscapturedFinal', allBeaconsCaptured
 	endTime=Db.shared.peek('game', 'endTime')
-	if allBeaconsCaptured and endTime-Plugin.time()>pointsTimeSec
+	if allBeaconsCaptured and endTime-Plugin.time()>(global.pointsTime/1000)
 		owner = Db.shared.peek('colors', nextOwner , 'name')
 		Event.create
 			unit: 'captureAll'
 			text: "Team " + Db.shared.peek('colors', beacon.get('owner'), 'name') + " has captured all beacons, the game will end in 1 hour if you don't reconquer!!"
-		end = Plugin.time()+pointsTimeSec #in seconds
+		end = Plugin.time()+global.pointsTime/1000 #in seconds
 		log 'end', end
 		Db.shared.set 'game', 'newEndTime', end
-		Timer.cancel 'endGame'
-		Timer.set pointsTime, 'endGame'
+		Timer.cancel 'endGame', {}
+		Timer.set global.pointsTime, 'endGame', {}
 	
 # Called by the beacon neutralize timer
 exports.onNeutralize = (args) ->
@@ -368,8 +370,8 @@ exports.onNeutralize = (args) ->
 	#Call the timer to reset the time in the correct endtime in the database
 	end = Db.shared.peek 'game', 'endTime'
 	Db.shared.modify 'game', 'newEndTime', (v) -> 0
-	Timer.cancel 'endGame'
-	Timer.set (end-Plugin.time())*1000, 'endGame'
+	Timer.cancel 'endGame', {}
+	Timer.set (end-Plugin.time())*1000, 'endGame', {}
 
 	# Increment neutralizes per team and per capturer
 	for player in inRangeOfTeam
@@ -394,7 +396,7 @@ exports.overtimeScore = (args) ->
 
 #Function called when the game ends
 exports.endGame = (args) ->
-	log "[endGame()] The game ended!"
+	log "[endGame()] The game ended! args="+args
 
 
 
@@ -465,8 +467,8 @@ setTimer = ->
 		seconds = Db.shared.peek('game', 'roundTimeNumber')*3600
 	end = Plugin.time()+seconds #in seconds
 	Db.shared.set 'game', 'endTime', end
-	Timer.cancel
-	Timer.set seconds*1000, 'endGame' #endGame is the function called when the timer ends
+	Timer.cancel 'endGame', {}
+	Timer.set seconds*1000, 'endGame', {} #endGame is the function called when the timer ends
 		
 # Calculate distance
 distance = (inputLat1, inputLng1, inputLat2, inputLng2) ->
@@ -526,4 +528,6 @@ modifyScore = (client, points) !->
 			unit: 'score'
 			text: "Team " + Db.shared.peek('colors', teamMax, 'name') + " took the lead!"
 
-
+refreshInrangeTimer = (client, device) ->
+	log '[refreshInRangeTimer()] Refreshing timer for '+Plugin.userName(client)+' ('+client+') on device '+device
+	# TODO
