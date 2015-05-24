@@ -72,7 +72,7 @@ exports.render = ->
 			if page == 'main'
 				mainContent()
 			else if page == 'help'
-				helpContent()
+				helpContent(false)
 			else if page == 'scores'
 				scoresContent()
 			else if page == 'log'
@@ -242,17 +242,19 @@ mainContent = ->
 	renderBeacons()
 
 # Help page 
-helpContent = ->
+helpContent = (setup)->
 	Dom.div !->
 		Dom.cls 'container'
-		Dom.h1 "Game information"
-		Dom.text "On this page you find all the information about the game! "
-		Dom.br()
-		Dom.br()
+		if(!setup)
+			Dom.h1 "Game information"
+			Dom.text "On this page you find all the information about the game! "
+			Dom.br()
+			Dom.br()
 		Dom.h2 "General info"
-		Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.peek('game','numberOfTeams') + " teams"
-		Dom.br()
-		Dom.br()
+		if(!setup)
+			Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.peek('game','numberOfTeams') + " teams"
+			Dom.br()
+			Dom.br()
 		Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
 		Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
 		Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
@@ -554,10 +556,10 @@ setupContent = ->
 				expanded = Obs.create(false)
 				Dom.div !->
 					Dom.style margin: '-8px'
-					Ui.button tr('Game info'), !->
+					Ui.button tr('Game information'), !->
 						expanded.set(!expanded.get())
 					if expanded.get()
-						helpContent()
+						helpContent(true)
 					
 							
 
@@ -644,7 +646,7 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Drag the corners of the rectangle to define the game area."
+					Dom.text "Drag the corners of the rectangle to define the game area. Choose this area wisely, this is where the map will be limited to."
 
 		else if currentPage is 'setup2' # Setup beacons
 			# Bar to indicate the setup progress
