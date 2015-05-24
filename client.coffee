@@ -127,7 +127,13 @@ addBar = ->
 				Page.nav 'log'
 		#DIV button to help page
 		Dom.div !->
-			Icon.render data: 'award4', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
+			#Icon.render data: 'ranking.svg', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
+			Dom.img !->
+				Dom.prop src: Plugin.resourceUri("ranking.png")
+				Dom.style 
+					width: '30px'
+					height: '30px'
+					verticalAlign: 'middle'
 			Dom.div !->
 				Dom.text 'Ranking'
 				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
