@@ -39,6 +39,8 @@ exports.onUpgrade = ->
 	if version < 3 # Change yellow color
 		newVersion = 3
 		initializeColors()
+	# TODO change inRange to new layout
+
 
 	# Write new version to the database
 	if newVersion isnt version
@@ -193,8 +195,8 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 			newStatus = beaconDistance < beaconRadius
 			if newStatus != current
 				# Cancel timers of ongoing caputes/neutralizes (new ones will be set below if required)
-				Timer.cancel 'onCapture', {beacon: beacon.key(), players: getInrangePlayers(beacon.key())}
-				Timer.cancel 'onNeutralize', {beacon: beacon.key(), players: getInrangePlayers(beacon.key())}
+				Timer.cancel 'onCapture', {beacon: beacon.key()}
+				Timer.cancel 'onNeutralize', {beacon: beacon.key()}
 				removed = undefined;
 				if newStatus
 					if not device? # Deal with old clients by denying them to be added to inRange
@@ -360,7 +362,7 @@ exports.onCapture = (args) ->
 exports.onNeutralize = (args) ->
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
 	neutralizer = beacon.peek('nextOwner')
-	inRangeOfTeam = getInrangePlayersOfTeamArray(args.beacon, nextOwner)
+	inRangeOfTeam = getInrangePlayersOfTeamArray(args.beacon, neutralizer)
 	log '[onNeutralize()] Team ', neutralizer, ' has neutralized beacon ', beacon.key(), ', players: '+inRangeOfTeam
 	beacon.set 'percentage', 0
 	beacon.set 'owner', -1
