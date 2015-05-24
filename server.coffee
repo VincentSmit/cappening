@@ -265,7 +265,7 @@ updateBeaconStatus = (beacon, removed) ->
 		else if teamMembers[team] == max
 			competing.push team
 	# Update percentage taken for current time
-	log '[checkinLocation()] Competing teams=', competing
+	#log '[checkinLocation()] Competing teams=', competing
 	updateBeaconPercentage(beacon)
 
 	# Check if there should be progress
@@ -289,7 +289,7 @@ updateBeaconStatus = (beacon, removed) ->
 				beacon.set 'action', 'neutralize'
 				Timer.set percentage*10*30, 'onNeutralize', {beacon: beacon.key()}
 		else
-			log '[checkinLocation()] Active team already has the beacon, ', activeTeam, '=', owner
+			#log '[checkinLocation()] Active team already has the beacon, ', activeTeam, '=', owner
 	else
 		# No progess, stand-off
 		beacon.set 'actionStarted', new Date()/1000
