@@ -12,8 +12,7 @@ Dom.css
 		color: "white"
 		lineHeight: "50px"
 		textAlign: "center"
-		verticalAlign: "middle"
-		borderRight: '1px solid #ABABAB'
+		borderRight: '2px solid rgba(255,255,255,0.3)'
 		boxSizing: 'border-box'
 		backgroundColor: 'transparent'
 	'.bar-button:last-of-type':

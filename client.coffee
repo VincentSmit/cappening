@@ -108,28 +108,28 @@ addBar = ->
 			_textShadow: '0 0 5px #000000, 0 0 5px #000000' 
         #DIV button to help page
 		Dom.div !->
-			Dom.style
-				width: '33%'
-				paddingTop: '10px'
-			Icon.render data: 'info', color: '#fff', size: 30
+			Icon.render data: 'info', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
+			Dom.div !->
+				Dom.text 'Help'
+				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '15px'
 			Dom.cls 'bar-button'                
 			Dom.onTap !->
 				Page.nav 'help' 
         #DIV button to Event log
 		Dom.div !->
-			Dom.style
-				width: '33%'
-				paddingTop: '10px'
-			Icon.render data: 'clipboard', color: '#fff', size: 30
+			Icon.render data: 'clipboard', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
+			Dom.div !->
+				Dom.text 'Events'
+				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '15px'
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'log'
 		#DIV button to help page
 		Dom.div !->
-			Dom.style
-				width: '33%'
-				paddingTop: '10px'
-			Icon.render data: 'award4', color: '#fff', size: 30
+			Icon.render data: 'award4', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
+			Dom.div !->
+				Dom.text 'Ranking'
+				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '15px'
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'scores'
@@ -410,9 +410,21 @@ logContent = ->
 					marginRight: '10px'
 					background: '#DDDDDD'
 					backgroundSize: 'cover'
+				Dom.div !->
+					Dom.style
+						borderLeft: '34px solid #FFFFFF'
+						borderTop: '20px solid transparent'
+						borderBottom: '20px solid transparent'
+						margin: '15px 0 0 20px'
 			Dom.div !->
-				Dom.style Flex: 1, fontSize: '120%'
+				Dom.style Flex: 1, fontSize: '16px'
 				Dom.text "The game has started!"
+				started = Db.shared.get 'game', 'startTime'
+				if started?
+					Dom.div !->
+						Dom.style fontSize: '75%', marginTop: '6px'
+						Dom.text 'Started '
+						Time.deltaText started
 
 setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
@@ -865,7 +877,7 @@ renderBeacons = ->
 
 				# Open the popup of the marker
 				if Db.shared.peek('gameState') == 0
-					circleDelClick = (e) ->
+					circleDelClick = () ->
 						map.removeLayer circle
 						map.removeLayer marker
 						Server.send 'deleteBeacon', Plugin.userId(), circle.getLatLng()
@@ -926,7 +938,7 @@ addMarkerListener = (event) ->
 					log 'clean'
 			###
 
-indicationArrowListener = (event) ->
+indicationArrowListener = () ->
 	indicationArrowRedraw.incr()
 
 convertLatLng = (location) ->
@@ -1117,12 +1129,12 @@ getTeamOfUser = (userId) ->
 	return result
 
 hexToRGBA = (hex, opacity) ->
-       result = 'rgba('
-       hex = hex.replace '#', ''
-       if hex.length is 3
-               result += [parseInt(hex.slice(0,1) + hex.slice(0, 1), 16), parseInt(hex.slice(1,2) + hex.slice(1, 1), 16), parseInt(hex.slice(2,3) + hex.slice(2, 1), 16), opacity]
-       else if hex.length is 6
-               result += [parseInt(hex.slice(0,2), 16), parseInt(hex.slice(2,4), 16), parseInt(hex.slice(4,6), 16), opacity]
-       else
-               result += [0, 0, 0, 0.0]
-       return result+')'
+	result = 'rgba('
+	hex = hex.replace '#', ''
+	if hex.length is 3
+		result += [parseInt(hex.slice(0,1) + hex.slice(0, 1), 16), parseInt(hex.slice(1,2) + hex.slice(1, 1), 16), parseInt(hex.slice(2,3) + hex.slice(2, 1), 16), opacity]
+	else if hex.length is 6
+		result += [parseInt(hex.slice(0,2), 16), parseInt(hex.slice(2,4), 16), parseInt(hex.slice(4,6), 16), opacity]
+	else
+		result += [0, 0, 0, 0.0]
+	return result+')'

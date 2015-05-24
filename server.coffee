@@ -157,6 +157,7 @@ exports.client_log = (userId, message) ->
 exports.client_startGame = ->
 	setTimer()
 	userIds = Plugin.userIds()
+	Db.shared.set 'game', 'startTime', new Date()/1000
 	teams = Db.shared.peek('game','numberOfTeams')
 	team = 0
 	while(userIds.length > 0)
