@@ -56,12 +56,13 @@ exports.render = ->
 				end = Db.shared.peek('game', 'endTime')
 				if(nEnd isnt 0)
 					end = nEnd		
-				#make the subtitle red if the game is within 1 hour of ending
+				#make the subtitle black if the game is within 1 hour of ending
 				Page.setTitle !->
 					if (end - Plugin.time()) < 3600
 						Dom.div !->
 							Dom.style
-								color: "red"
+								color: "#000000"
+								fontWeight: 'bold'
 							Dom.text "Game ends "
 							Time.deltaText end
 					else
@@ -111,7 +112,7 @@ addBar = ->
 			Icon.render data: 'info', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
 			Dom.div !->
 				Dom.text 'Help'
-				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '15px'
+				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
 			Dom.cls 'bar-button'                
 			Dom.onTap !->
 				Page.nav 'help' 
@@ -120,7 +121,7 @@ addBar = ->
 			Icon.render data: 'clipboard', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
 			Dom.div !->
 				Dom.text 'Events'
-				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '15px'
+				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'log'
@@ -129,7 +130,7 @@ addBar = ->
 			Icon.render data: 'award4', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
 			Dom.div !->
 				Dom.text 'Ranking'
-				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '15px'
+				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'scores'
@@ -274,7 +275,7 @@ helpContent = ->
 		Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
 
 scoresContent = ->
-	position = 0
+	#position = 0
 	Dom.div !->
 		Dom.style
 			paddingLeft: "14px"
@@ -286,10 +287,15 @@ scoresContent = ->
 			teamColor = Db.shared.peek('colors', team.key(), 'hex')
 			teamName = Db.shared.peek('colors', team.key(), 'name')
 			teamScore = Db.shared.get('game', 'teams', team.key(), 'teamScore')
-			position = position + 1
+			#position = position + 1
 			# list of teams and their scores
 			expanded = Obs.create(false)
 			Ui.item !->
+				position = 1;
+				item = Dom._get()
+				while((item = item.previousSibling) != null ) 
+					position++;
+				
 				Dom.style
 					padding: '14px'
 					minHeight: '71px'
