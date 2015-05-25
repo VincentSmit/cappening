@@ -81,6 +81,24 @@ exports.render = ->
 				scoresContent()
 			else if page == 'log'
 				logContent()
+		else if gameState is 2 #Game ended
+			page = Page.state.get(0)
+			page = "main" if not page?
+			Page.setTitle !->
+				Dom.div !->
+					if Db.shared.peek( 'game', 'firstTeam') is getTeamOfUser(Plugin.userId())
+						Dom.text "Your team won the game!"
+					else
+						Dom.text "Your team lost the game!"
+			if page == 'main'
+				endGameContent()
+			else if page == 'help'
+				helpContent(false)
+			else if page == 'scores'
+				scoresContent()
+			else if page == 'log'
+				logContent()
+						
 	Obs.observe ->
 		deviceId = Db.local.peek 'deviceId'
 		if not deviceId?
@@ -100,8 +118,7 @@ exports.renderSettings = !->
 			name: 'restart'
 			text: tr 'Restart'
 			sub: tr 'Check this to destroy the current game and start a new one.'	
-
-			
+		
 # ========== Content fuctions ==========
 addBar = ->
 	Dom.div !->
@@ -127,6 +144,7 @@ addBar = ->
 			Dom.div !->
 				Dom.text 'Events'
 				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
+
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'log'
@@ -237,209 +255,24 @@ addProgressBar = ->
 							fontSize: '15px'
 							_textShadow: '0 0 5px #000000, 0 0 5px #000000' # Double for extra visibility
 
-
-# Home page with map
-mainContent = ->
-	log "mainContent()"
-	addBar()
-	addProgressBar()
-	renderMap()
-	renderBeacons()
-
-# Help page 
-helpContent = (setup)->
-	Dom.div !->
-		Dom.cls 'container'
-		if(!setup)
-			Dom.h1 "Game information"
-			Dom.text "On this page you find all the information about the game! "
-			Dom.br()
-			Dom.br()
-		Dom.h2 "General info"
-		if(!setup)
-			Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.peek('game','numberOfTeams') + " teams"
-			Dom.br()
-			Dom.br()
-		Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
-		Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
-		Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
-		Dom.text "A neutral beacon will take 30 seconds to conquer, but an occupied beacon will take one minute. You first need to drain the opponents' color, before you can fill it with yours! "
-		Dom.br()
-		Dom.br()
-		Dom.h2 "Rules"
-		Dom.text "You gain 10 points for being the first team to conquer a certain beacon. "
-		Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
-		Dom.text "Every hour the beacon is in your posession, it will generate a number of points. "
-		Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
-		Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 10 to 9, 8 all the way to 1. "
-		Dom.text "The team with the highest score at the end of the game wins. "
-		Dom.br()
-		Dom.br()
-		Dom.h2 "Use of Map & Tabs"
-		Dom.text "To find locations of beacons you can navigate over the map by swiping. To obtain a more precise location you can zoom in and out by pinching. "
-		Dom.br()
-		Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
-		Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
-
-scoresContent = ->
-	#position = 0
-	Dom.div !->
-		Dom.style
-			paddingLeft: "14px"
-		Dom.h1 "Teamscores"
-	Ui.list !->
-		Dom.style
-			padding: '0'
-		Db.shared.iterate 'game', 'teams', (team) !->
-			teamColor = Db.shared.peek('colors', team.key(), 'hex')
-			teamName = Db.shared.peek('colors', team.key(), 'name')
-			teamScore = Db.shared.get('game', 'teams', team.key(), 'teamScore')
-			#position = position + 1
-			# list of teams and their scores
-			expanded = Obs.create(false)
-			Ui.item !->
-				position = 1;
-				item = Dom._get()
-				while((item = item.previousSibling) != null ) 
-					position++;
-				
-				Dom.style
-					padding: '14px'
-					minHeight: '71px'
-					alignItems: 'stretch'
-				Dom.div !->
-					Dom.style
-						width: '70px'
-						height: '70px'
-						background: teamColor
-						backgroundSize: 'cover'
-						position: 'absolute'
-					Dom.div !->
-						Dom.style
-							fontSize: "40px"
-							paddingTop: "12px"
-							textAlign: "center"
-							color: "white"
-						Dom.text position
-				Dom.div !->
-					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '84px'
-					Dom.text "Team " + teamName + " scored " + teamScore + " points"
-					log 'users: ', Plugin.users, ', length: ', Plugin.users.count().peek()
-					# To Do expand voor scores
-					if expanded.get() || Plugin.users.count().peek() <= 6
-						team.iterate 'users', (user) !->
-							Dom.div !->
-								Dom.style clear: 'both'
-								Ui.avatar Plugin.userAvatar(user.key()),
-									style: margin: '6px 10px 0 0', float: 'left'
-									size: 40
-									onTap: (!-> Plugin.userInfo(user.key()))
-								Dom.div !->
-									Dom.br()
-									Dom.style fontSize: '75%', marginTop: '6px', marginRight: '6px', display: 'block', float: 'left', minWidth: '75px'
-									Dom.text Plugin.userName(user.n) + " has: "
-								Dom.div !->
-									Dom.style fontSize: '75%', marginTop: '6px', display: 'block', float: 'left'
-									Dom.text user.get('userScore') + " points"
-									Dom.br()
-									Dom.text user.get('captured') + " captured"
-									Dom.br()
-									Dom.text user.get('neutralized') + " neutralized"
-						, (user) -> (-user.get('userScore'))
-					else
-						Dom.div !->
-							Dom.style fontSize: '75%', marginTop: '6px'
-							Dom.text "Tap for details"
-				if Plugin.users.count().peek() > 1
-					Dom.onTap !->
-						expanded.set(!expanded.get())
-		, (team) -> [(-team.get('teamScore')), team.get('name')]
-
-logContent = ->
-	Dom.div !->
-		Dom.style
-			paddingLeft: "14px"
-		Dom.h1 "Eventlog"
-	Ui.list !->
-		Dom.style
-			padding: '0'
-		Db.shared.iterate 'game', 'eventlist', (capture) !->
-			if capture.key() != "maxId"
-				#log 'capture' 
-				Ui.item !->
-					Dom.style
-						padding: '14px'
-					if capture.get('type') is "capture" and mapReady()
-						beaconId = capture.get('beacon')
-						teamId = capture.get('conqueror')
-						teamColor = Db.shared.peek('colors', teamId, 'hex')
-						teamName = Db.shared.peek('colors', teamId, 'name')
-						log "print capture: teamId; " + teamId
-						Dom.onTap !->
-							Page.nav 'main'
-							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
-						Dom.div !->
-							Dom.style
-								width: '70px'
-								height: '70px'
-								marginRight: '10px'
-								background: teamColor+"url(#{Plugin.resourceUri('marker-plain.png')}) no-repeat 10px 10px" 
-								backgroundSize: '50px 50px'
-						Dom.div !->
-							Dom.style Flex: 1, fontSize: '100%'
-							Dom.text "Team " + teamName + " captured a beacon"
-							Dom.div !->
-								Dom.style fontSize: '75%', marginTop: '6px'
-								Dom.text "Captured "
-								Time.deltaText capture.get('timestamp')
-					else if capture.get('type') is "score"
-						teamId = capture.get('leading')
-						teamColor = Db.shared.peek('colors', teamId, 'hex')
-						teamName = Db.shared.peek('colors', teamId, 'name')
-						#log "print score: teamId; " + teamId
-						Dom.onTap !->
-							page.nav 'scores'							
-						Dom.div !->
-							Dom.style
-								width: '70px'
-								height: '70px'
-								marginRight: '10px'
-								background: teamColor+"url(#{Plugin.resourceUri('rank-switch.png')}) no-repeat 10px 10px" 
-								backgroundSize: '50px 50px'
-						Dom.div !->
-							Dom.style Flex: 1, fontSize: '100%'
-							Dom.text "Team " + teamName + " took the lead"
-							Dom.div !->
-								Dom.style fontSize: '75%', marginTop: '6px'
-								Dom.text "Captured "
-								Time.deltaText capture.get('timestamp')
-		, (capture) -> (-capture.get('timestamp'))
-		Ui.item !->
+addEndGameBar = ->
+	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
+		Dom.div !->
+			Dom.cls 'endGameBar'
 			Dom.style
-				padding: '14px'
+				backgroundColor: hexToRGBA(Db.shared.peek('colors', Db.shared.peek('game', 'winningTeam'), 'hex'), 0.9)
+			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'winningTeam'), 'name') + " won the game!"
 			Dom.div !->
-				Dom.style
-					width: '70px'
-					height: '70px'
-					marginRight: '10px'
-					background: '#DDDDDD'
-					backgroundSize: 'cover'
-				Dom.div !->
-					Dom.style
-						borderLeft: '34px solid #FFFFFF'
-						borderTop: '20px solid transparent'
-						borderBottom: '20px solid transparent'
-						margin: '15px 0 0 20px'
-			Dom.div !->
-				Dom.style Flex: 1, fontSize: '16px'
-				Dom.text "The game has started!"
-				started = Db.shared.get 'game', 'startTime'
-				if started?
-					Dom.div !->
-						Dom.style fontSize: '75%', marginTop: '6px'
-						Dom.text 'Started '
-						Time.deltaText started
+				Dom.cls 'endGameButton'
+				Dom.text "Restart Game"
+				if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
+					Dom.onTap !-> 
+						#TODO initialize game
+						#TODO game to history
 
+
+# ========== Page Contents ==========
+# Setup pages
 setupContent = ->
 	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
 		currentPage = Db.local.get('currentSetupPage')
@@ -565,9 +398,6 @@ setupContent = ->
 						expanded.set(!expanded.get())
 					if expanded.get()
 						helpContent(true)
-					
-							
-
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -714,7 +544,214 @@ setupContent = ->
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
-
+# Home page with map
+mainContent = ->
+	log "mainContent()"
+	addBar()
+	addProgressBar()
+	renderMap()
+	renderBeacons()
+# Help page 
+helpContent = (setup)->
+	Dom.div !->
+		Dom.cls 'container'
+		if(!setup)
+			Dom.h1 "Game information"
+			Dom.text "On this page you find all the information about the game! "
+			Dom.br()
+			Dom.br()
+		Dom.h2 "General info"
+		if(!setup)
+			Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.peek('game','numberOfTeams') + " teams"
+			Dom.br()
+			Dom.br()
+		Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
+		Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
+		Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
+		Dom.text "A neutral beacon will take 30 seconds to conquer, but an occupied beacon will take one minute. You first need to drain the opponents' color, before you can fill it with yours! "
+		Dom.br()
+		Dom.br()
+		Dom.h2 "Rules"
+		Dom.text "You gain 10 points for being the first team to conquer a certain beacon. "
+		Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
+		Dom.text "Every hour the beacon is in your posession, it will generate a number of points. "
+		Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
+		Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 10 to 9, 8 all the way to 1. "
+		Dom.text "The team with the highest score at the end of the game wins. "
+		Dom.br()
+		Dom.br()
+		Dom.h2 "Use of Map & Tabs"
+		Dom.text "To find locations of beacons you can navigate over the map by swiping. To obtain a more precise location you can zoom in and out by pinching. "
+		Dom.br()
+		Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
+		Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
+# Scores page
+scoresContent = ->
+	#position = 0
+	Dom.div !->
+		Dom.style
+			paddingLeft: "14px"
+		Dom.h1 "Teamscores"
+	Ui.list !->
+		Dom.style
+			padding: '0'
+		Db.shared.iterate 'game', 'teams', (team) !->
+			teamColor = Db.shared.peek('colors', team.key(), 'hex')
+			teamName = Db.shared.peek('colors', team.key(), 'name')
+			teamScore = Db.shared.get('game', 'teams', team.key(), 'teamScore')
+			#position = position + 1
+			# list of teams and their scores
+			expanded = Obs.create(false)
+			Ui.item !->
+				position = 1;
+				item = Dom._get()
+				while((item = item.previousSibling) != null ) 
+					position++;
+				
+				Dom.style
+					padding: '14px'
+					minHeight: '71px'
+					alignItems: 'stretch'
+				Dom.div !->
+					Dom.style
+						width: '70px'
+						height: '70px'
+						background: teamColor
+						backgroundSize: 'cover'
+						position: 'absolute'
+					Dom.div !->
+						Dom.style
+							fontSize: "40px"
+							paddingTop: "12px"
+							textAlign: "center"
+							color: "white"
+						Dom.text position
+				Dom.div !->
+					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '84px'
+					Dom.text "Team " + teamName + " scored " + teamScore + " points"
+					log 'users: ', Plugin.users, ', length: ', Plugin.users.count().peek()
+					# To Do expand voor scores
+					if expanded.get() || Plugin.users.count().peek() <= 6
+						team.iterate 'users', (user) !->
+							Dom.div !->
+								Dom.style clear: 'both'
+								Ui.avatar Plugin.userAvatar(user.key()),
+									style: margin: '6px 10px 0 0', float: 'left'
+									size: 40
+									onTap: (!-> Plugin.userInfo(user.key()))
+								Dom.div !->
+									Dom.br()
+									Dom.style fontSize: '75%', marginTop: '6px', marginRight: '6px', display: 'block', float: 'left', minWidth: '75px'
+									Dom.text Plugin.userName(user.n) + " has: "
+								Dom.div !->
+									Dom.style fontSize: '75%', marginTop: '6px', display: 'block', float: 'left'
+									Dom.text user.get('userScore') + " points"
+									Dom.br()
+									Dom.text user.get('captured') + " captured"
+									Dom.br()
+									Dom.text user.get('neutralized') + " neutralized"
+						, (user) -> (-user.get('userScore'))
+					else
+						Dom.div !->
+							Dom.style fontSize: '75%', marginTop: '6px'
+							Dom.text "Tap for details"
+				if Plugin.users.count().peek() > 1
+					Dom.onTap !->
+						expanded.set(!expanded.get())
+		, (team) -> [(-team.get('teamScore')), team.get('name')]
+# Eventlog page
+logContent = ->
+	Dom.div !->
+		Dom.style
+			paddingLeft: "14px"
+		Dom.h1 "Eventlog"
+	Ui.list !->
+		Dom.style
+			padding: '0'
+		Db.shared.iterate 'game', 'eventlist', (capture) !->
+			if capture.key() != "maxId"
+				#log 'capture' 
+				Ui.item !->
+					Dom.style
+						padding: '14px'
+					if capture.get('type') is "capture" and mapReady()
+						beaconId = capture.get('beacon')
+						teamId = capture.get('conqueror')
+						teamColor = Db.shared.peek('colors', teamId, 'hex')
+						teamName = Db.shared.peek('colors', teamId, 'name')
+						log "print capture: teamId; " + teamId
+						Dom.onTap !->
+							Page.nav 'main'
+							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
+						Dom.div !->
+							Dom.style
+								width: '70px'
+								height: '70px'
+								marginRight: '10px'
+								background: teamColor+"url(#{Plugin.resourceUri('marker-plain.png')}) no-repeat 10px 10px" 
+								backgroundSize: '50px 50px'
+						Dom.div !->
+							Dom.style Flex: 1, fontSize: '100%'
+							Dom.text "Team " + teamName + " captured a beacon"
+							Dom.div !->
+								Dom.style fontSize: '75%', marginTop: '6px'
+								Dom.text "Captured "
+								Time.deltaText capture.get('timestamp')
+					else if capture.get('type') is "score"
+						teamId = capture.get('leading')
+						teamColor = Db.shared.peek('colors', teamId, 'hex')
+						teamName = Db.shared.peek('colors', teamId, 'name')
+						#log "print score: teamId; " + teamId
+						Dom.onTap !->
+							page.nav 'scores'							
+						Dom.div !->
+							Dom.style
+								width: '70px'
+								height: '70px'
+								marginRight: '10px'
+								background: teamColor+"url(#{Plugin.resourceUri('rank-switch.png')}) no-repeat 10px 10px" 
+								backgroundSize: '50px 50px'
+						Dom.div !->
+							Dom.style Flex: 1, fontSize: '100%'
+							Dom.text "Team " + teamName + " took the lead"
+							Dom.div !->
+								Dom.style fontSize: '75%', marginTop: '6px'
+								Dom.text "Captured "
+								Time.deltaText capture.get('timestamp')
+		, (capture) -> (-capture.get('timestamp'))
+		Ui.item !->
+			Dom.style
+				padding: '14px'
+			Dom.div !->
+				Dom.style
+					width: '70px'
+					height: '70px'
+					marginRight: '10px'
+					background: '#DDDDDD'
+					backgroundSize: 'cover'
+				Dom.div !->
+					Dom.style
+						borderLeft: '34px solid #FFFFFF'
+						borderTop: '20px solid transparent'
+						borderBottom: '20px solid transparent'
+						margin: '15px 0 0 20px'
+			Dom.div !->
+				Dom.style Flex: 1, fontSize: '16px'
+				Dom.text "The game has started!"
+				started = Db.shared.get 'game', 'startTime'
+				if started?
+					Dom.div !->
+						Dom.style fontSize: '75%', marginTop: '6px'
+						Dom.text 'Started '
+						Time.deltaText started
+# End game page
+endGameContent = ->
+	log "endGameContent()"
+	addBar()
+	renderMap()
+	renderBeacons()
+	#mModal.show("Team " + Db.shared.peek('colors', Db.shared.peek('game', 'winningTeam'), 'name') + " won the game!")
+	addEndGameBar()
 
 # ========== Map functions ==========
 # Render a map
@@ -739,7 +776,6 @@ renderMap = ->
 			toRemove.parentNode.removeChild(toRemove);
 	setupMap()
 	renderLocation();
-	
 loadOpenStreetMap = ->
 	log "loadOpenStreetMap()"
 	# Only insert these the first time
@@ -771,7 +807,6 @@ loadOpenStreetMap = ->
 		document.getElementsByTagName('head')[0].appendChild javascript
 	else 
 		log "OpenStreetMap files already loaded"
-
 # Initialize the map with tiles
 setupMap = ->
 	Obs.observe ->
@@ -786,8 +821,6 @@ setupMap = ->
 			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "Initialized MapBox map"
-
-
 limitToBounds = ->
 	Obs.observe ->
 		log "Map bounds and minzoom set"
@@ -817,7 +850,6 @@ zoomToBounds = ->
 			bounds = L.latLngBounds(loc1, loc2)
 			if loc1? and loc2? and bounds?
 				map.fitBounds(bounds.pad(0.05));
-
 # Add beacons to the map
 renderBeacons = ->
 	log "rendering beacons"
@@ -859,24 +891,17 @@ renderBeacons = ->
 					marker.on('dblclick', markerDelClick)
 					marker.on('contextmenu', markerDelClick)					
 				else
-					players = undefined;
-					Db.shared.iterate 'game', 'beacons' , beacon.key(), 'inRange', (user) !->
-						user.get()
-						if players?
-							players = players + ", " + Plugin.userName(user.key())
-						else 
-							players = Plugin.userName(user.key())
-
-					if players?
-						players = "Competitors: " + players
+					inrange = getInRange(beacon)
+					if inrange == "  "
+						inrange = "No players competing for this beacon"
 					else
-						players = "No players competing for this beacon"
+						inrange = "Competitors:" + inRange
 						
 					popup = L.popup()
 						.setLatLng(location)
 						.setContent("Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "." + 
 							"<br>Value: " + beacon.peek('captureValue') + " points!" +
-							"<br>"+ players)
+							"<br>"+ inrange)
 					marker.bindPopup(popup)
 					markerClick = () -> 
 						beaconMarkers[beacon.key()].togglePopup()		
@@ -917,8 +942,7 @@ renderBeacons = ->
 					map.removeLayer beaconCircles[beaconKey]
 					delete beaconCircles[beaconKey]
 	, (beacon) ->
-		-beacon.get()
-		
+		-beacon.get()		
 # Listener that checks for clicking the map
 addMarkerListener = (event) ->
 	log 'click: ', event
@@ -954,19 +978,15 @@ addMarkerListener = (event) ->
 
 indicationArrowListener = () ->
 	indicationArrowRedraw.incr()
-
 convertLatLng = (location) ->
 	return L.latLng(location.lat, location.lng)	
-	
 # Compare 2 locations to see if they are the same
 sameLocation = (location1, location2) ->
 	#log "sameLocation(), location1: ", location1, ", location2: ", location2
 	return location1? and location2? and location1.lat is location2.lat and location1.lng is location2.lng
-	
 # Check if the map can be used	
 mapReady = ->
 	return L? and map?
-	
 #Loop through all beacons see if they are still within boundaryRectangle
 checkAllBeacons = ->
 	if beaconCircles? and beaconMarkers? and locationOne? and locationTwo? and mapReady()
@@ -978,7 +998,6 @@ checkAllBeacons = ->
 				delete beaconCircles[key]
 				map.removeLayer beaconMarkers[key]
 				delete beaconMarkers[key]
-
 # Render the location of the user on the map (currently broken)
 renderLocation = ->
 	#Server.call 'log', Plugin.userId(), "[renderLocation()]"
@@ -1168,3 +1187,12 @@ hexToRGBA = (hex, opacity) ->
 	else
 		result += [0, 0, 0, 0.0]
 	return result+')'
+
+getInRange = (beacon) ->
+	ids = beacon.get('inRange')
+	log(ids + " Dit zijn de inrange users")
+	players = "  ";
+	for usr in ids
+		if usr?
+			players = players + plugin.userName(usr) + ", "
+	return players;

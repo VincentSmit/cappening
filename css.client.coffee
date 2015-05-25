@@ -147,7 +147,34 @@ Dom.css
 		borderBottom: "2px solid"
 		paddingBottom: "2px"
 		textTransform: "uppercase"
-		textShadow: "1px 1px 2px #000000"		
+		textShadow: "1px 1px 2px #000000"	
+
+# End game page
+	'.endGameBar':
+		height: "50px"
+		width: '100%'
+		position: 'absolute'
+		bottom: '0'
+		zIndex: '2000'
+		padding: '11px'
+		fontSize: '16px'
+		boxSizing: 'border-box'
+		color: 'white'
+		_display: 'flex'
+		_alignItems: 'center'
+		_textShadow: '0 0 5px #000000, 0 0 5px #000000'
+	'.endGameButton'
+		position: 'absolute'
+		right: '0'
+		width: '50px'
+		height: '50px'
+		lineHeight: '50px'
+		margin: '0 2px 2px 0'
+		fontSize: '25px'
+		textAlign: 'center'
+		color: 'white'
+		backgroundColor: '#ba1a6e'
+
 #Indication Arrow
 	'#indicationArrow':
 		width: '30px'
