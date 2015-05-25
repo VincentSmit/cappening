@@ -892,10 +892,10 @@ renderBeacons = ->
 					marker.on('contextmenu', markerDelClick)					
 				else
 					inrange = getInRange(beacon)
-					if inrange == "  "
-						inrange = "No players competing for this beacon"
-					else
+					if inrange?
 						inrange = "Competitors:" + inRange
+					else
+						inrange = "No players competing for this beacon"
 						
 					popup = L.popup()
 						.setLatLng(location)
@@ -1189,10 +1189,10 @@ hexToRGBA = (hex, opacity) ->
 	return result+')'
 
 getInRange = (beacon) ->
-	ids = beacon.get('inRange')
-	log(ids + " Dit zijn de inrange users")
-	players = "  ";
-	for usr in ids
-		if usr?
-			players = players + plugin.userName(usr) + ", "
+	players = undefined;
+	beacon.iterate 'inRange', (user) !->
+		if players?
+			players = players+', '+Plugin.userName(user.key())
+		else
+			players = Plugin.userName(user.key())
 	return players;
