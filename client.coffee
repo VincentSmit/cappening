@@ -893,7 +893,7 @@ renderBeacons = ->
 				else
 					inrange = getInRange(beacon)
 					if inrange?
-						inrange = "Competitors:" + inRange
+						inrange = "Competitors:" + inrange
 					else
 						inrange = "No players competing for this beacon"
 						
