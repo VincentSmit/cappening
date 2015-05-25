@@ -710,7 +710,7 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the capture area for this beacon. Double click or double tap to delete a beacon."
+					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the capture area for this beacon. Double tap or hold to delete a beacon. Be sure to place beacons in places you and other happening members visit often."
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
@@ -856,7 +856,8 @@ renderBeacons = ->
 						map.removeLayer circle
 						map.removeLayer marker
 						Server.send 'deleteBeacon', Plugin.userId(), e.latlng
-					marker.on('dblclick', markerDelClick)	
+					marker.on('dblclick', markerDelClick)
+					marker.on('contextmenu', markerDelClick)					
 				else
 					players = undefined;
 					Db.shared.iterate 'game', 'beacons' , beacon.key(), 'inRange', (user) !->
@@ -933,8 +934,7 @@ addMarkerListener = (event) ->
 				result = 'Beacon is placed too close to other beacon'
 	#Check if marker area is passing the game border
 	if !tooClose
-		circle = L.circle(event.latlng, beaconRadius)
-		outsideGame = !(boundaryRectangle.getBounds().contains(circle.getBounds()))
+		outsideGame = !boundaryRectangle.getBounds().contains(event.latlng)
 		if outsideGame
 			result = 'Beacon is outside the game border'
 		
