@@ -191,6 +191,9 @@ exports.client_startGame = ->
 		Db.shared.set 'game', 'teams', team.key(), 'neutralized', 0
 	updateTeamRankings()
 	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
+	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
+	Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
+	Db.shared.set 'game', 'eventlist', maxId, 'type', "start"
 	Event.create
     	unit: 'startGame'
     	text: "The game has started!"
@@ -327,7 +330,9 @@ exports.endGame = (args) ->
 	# End game and activate end game screen
 	Db.shared.modify 'gameState', (v) -> 2
 	log "[endGame()] The game ended! gameState: " + Db.shared.peek('gameState') + " args: " + args + " winningTeam: " + winningTeam + " Db: " + Db.shared.peek('game', 'winningTeam')
-	
+	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
+	Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
+	Db.shared.set 'game', 'eventlist', maxId, 'type', "end"
 	# Pushbericht winnaar en verliezer
 	pushToTeam(winningTeam, "Congratulations! Your team won the game!")
 	pushToRest(winningTeam, "You lost the game!")

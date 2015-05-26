@@ -715,32 +715,55 @@ logContent = ->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
 								Time.deltaText capture.get('timestamp')
+					else if capture.get('type') is "start"
+						Dom.style
+							padding: '14px'
+						Dom.div !->
+							Dom.style
+								width: '70px'
+								height: '70px'
+								marginRight: '10px'
+								background: '#DDDDDD'
+								backgroundSize: 'cover'
+							Dom.div !->
+								Dom.style
+									borderLeft: '34px solid #FFFFFF'
+									borderTop: '20px solid transparent'
+									borderBottom: '20px solid transparent'
+									margin: '15px 0 0 20px'
+						Dom.div !->
+							Dom.style Flex: 1, fontSize: '16px'
+							Dom.text "The game has started!"
+							started = Db.shared.get 'game', 'startTime'
+							if started?
+								Dom.div !->
+									Dom.style fontSize: '75%', marginTop: '6px'
+									Dom.text 'Started '
+									Time.deltaText started
+					else if capture.get('type') is "end"
+						teamId = Db.shared.peek('game', 'firstTeam')
+						teamColor = Db.shared.peek('colors', teamId, 'hex')
+						teamName = Db.shared.peek('colors', teamId, 'name')
+						Dom.style
+							padding: '14px'
+						Dom.div !->
+							Dom.style
+								width: '70px'
+								height: '70px'
+								marginRight: '10px'
+								background: teamColor + "url(#{Plugin.resourceUri('ranking.png')}) no-repeat 10px 10px"
+								backgroundSize: '50px 50px'
+						Dom.div !->
+							Dom.style Flex: 1, fontSize: '16px'
+							Dom.text "Team " + teamName + " won the game"
+							started = Db.shared.get 'game', 'startTime'
+							if started?
+								Dom.div !->
+									Dom.style fontSize: '75%', marginTop: '6px'
+									Dom.text 'Started '
+									Time.deltaText started
 		, (capture) -> (-capture.get('timestamp'))
-		Ui.item !->
-			Dom.style
-				padding: '14px'
-			Dom.div !->
-				Dom.style
-					width: '70px'
-					height: '70px'
-					marginRight: '10px'
-					background: '#DDDDDD'
-					backgroundSize: 'cover'
-				Dom.div !->
-					Dom.style
-						borderLeft: '34px solid #FFFFFF'
-						borderTop: '20px solid transparent'
-						borderBottom: '20px solid transparent'
-						margin: '15px 0 0 20px'
-			Dom.div !->
-				Dom.style Flex: 1, fontSize: '16px'
-				Dom.text "The game has started!"
-				started = Db.shared.get 'game', 'startTime'
-				if started?
-					Dom.div !->
-						Dom.style fontSize: '75%', marginTop: '6px'
-						Dom.text 'Started '
-						Time.deltaText started
+			
 # End game page
 endGameContent = ->
 	log "endGameContent()"
