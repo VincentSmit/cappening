@@ -476,9 +476,9 @@ updateTeamRankings = ->
 	teamScores = []
 	Db.shared.iterate 'game', 'teams', (team) !->
 		teamScores.push {team: team.key(), score: getTeamScore(team.key())}
-	log '[updateTeamRankings()] teamScores start: ', JSON.stringify(teamScores)
+	#log '[updateTeamRankings()] teamScores start: ', JSON.stringify(teamScores)
 	teamScores.sort((a, b) -> return parseInt(b.score)-parseInt(a.score))
-	log '[updateTeamRankings()] teamScores sorted: ', JSON.stringify(teamScores)
+	#log '[updateTeamRankings()] teamScores sorted: ', JSON.stringify(teamScores)
 	# Using same ranking number for multiple teams if scores are the same
 	ranking = 0
 	same = 0
@@ -617,12 +617,12 @@ checkNewLead = ->
 
 # Sends a push notification, message, to all team members
 pushToTeam = (teamId, message) ->
-	log "[pushToTeam()] teamId: " + teamId
-	log "[pushToTeam()] message: " + message
+	#log "[pushToTeam()] teamId: " + teamId
+	#log "[pushToTeam()] message: " + message
 	members = []
 	Db.shared.iterate 'game', 'teams', teamId, 'users', (teamMember) !->
 		members.push(teamMember.key())
-	log "[pushToTeam()] include: " + members[0]
+	#log "[pushToTeam()] include: " + members[0]
 	Event.create
     	unit: 'toTeam'
     	include: members
