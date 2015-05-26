@@ -100,6 +100,11 @@ exports.onJoin = (userId) ->
 		log '[onJoin()] Added to team ' + team
 
 #==================== Client calls ====================
+# Restarts game
+exports.client_restartGame = () ->
+	#TODO store old game in Db
+	initializeGame()
+
 # Add a beacon (during setup phase)
 exports.client_addMarker = (client, location) ->
 	if Db.shared.peek('gameState') isnt 0

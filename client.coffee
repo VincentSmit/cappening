@@ -274,8 +274,7 @@ addEndGameBar = ->
 				Dom.text "RESTART GAME"
 				if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
 					Dom.onTap !-> 
-						#TODO initialize game
-						#TODO game to history
+						Server.call 'restartGame'
 
 
 # ========== Page Contents ==========
