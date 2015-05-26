@@ -14,6 +14,7 @@ Icon = require 'icon'
 
 window.redraw = Obs.create(0) # For full redraw
 window.indicationArrowRedraw = Obs.create(0) # For indication arrow redraw
+window.updateRanking = Obs.create(0) # For updating the rankings of the score page (full page redraw)
 
 # ========== Events ==========
 exports.render = ->
@@ -60,7 +61,7 @@ exports.render = ->
 				end = Db.shared.peek('game', 'endTime')
 				if(nEnd isnt 0)
 					end = nEnd		
-				#make the subtitle black if the game is within 1 hour of ending
+				# Make the subtitle black if the game is within 1 hour of ending
 				Page.setTitle !->
 					if (end - Plugin.time()) < 3600
 						Dom.div !->
@@ -81,7 +82,7 @@ exports.render = ->
 				scoresContent()
 			else if page == 'log'
 				logContent()
-		else if gameState is 2 #Game ended
+		else if gameState is 2 # Game ended
 			page = Page.state.get(0)
 			page = "main" if not page?
 			Page.setTitle !->
@@ -184,7 +185,6 @@ addProgressBar = ->
 				if action == "capture"
 					nextPercentage=100
 					dbPercentage += (new Date() /1000 -actionStarted)/30 * 100
-					#dbPercentage -= 9.8
 					log "actionStarted = " + actionStarted
 					if dbPercentage > 100
 						dbPercentage = 100
@@ -236,9 +236,6 @@ addProgressBar = ->
 							filter: "progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#4d000000',GradientType=0 )"
 							backgroundColor: nextColor
 							zIndex: "10"
-							#_borderRadius: '12.5px'
-							#padding: '0 13px 0 13px'
-							#marginLeft: '-13px'
 						Dom._get().style.width = dbPercentage + "%"
 						log "dbPercentage after balancing = ", dbPercentage
 						Dom._get().style.transition = "width " + time + "ms linear"
@@ -599,6 +596,7 @@ scoresContent = ->
 			paddingLeft: "14px"
 		Dom.h1 "Teamscores"
 	Ui.list !->
+		updateRanking.get()
 		Dom.style
 			padding: '0'
 		Db.shared.iterate 'game', 'teams', (team) !->
@@ -608,12 +606,7 @@ scoresContent = ->
 			#position = position + 1
 			# list of teams and their scores
 			expanded = Obs.create(false)
-			Ui.item !->
-				position = 1;
-				item = Dom._get()
-				while((item = item.previousSibling) != null ) 
-					position++;
-				
+			Ui.item !->				
 				Dom.style
 					padding: '14px'
 					minHeight: '71px'
@@ -631,11 +624,11 @@ scoresContent = ->
 							paddingTop: "12px"
 							textAlign: "center"
 							color: "white"
-						Dom.text position
+						Dom.text team.get('ranking')
 				Dom.div !->
 					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '84px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
-					log 'users: ', Plugin.users, ', length: ', Plugin.users.count().peek()
+					#log 'users: ', Plugin.users, ', length: ', Plugin.users.count().peek()
 					# To Do expand voor scores
 					if expanded.get() || Plugin.users.count().peek() <= 6
 						team.iterate 'users', (user) !->
@@ -648,7 +641,7 @@ scoresContent = ->
 								Dom.div !->
 									Dom.br()
 									Dom.style fontSize: '75%', marginTop: '6px', marginRight: '6px', display: 'block', float: 'left', minWidth: '75px'
-									Dom.text Plugin.userName(user.n) + " has: "
+									Dom.text Plugin.userName(user.key()) + " has: "
 								Dom.div !->
 									Dom.style fontSize: '75%', marginTop: '6px', display: 'block', float: 'left'
 									Dom.text user.get('userScore') + " points"
@@ -664,7 +657,7 @@ scoresContent = ->
 				if Plugin.users.count().peek() > 6
 					Dom.onTap !->
 						expanded.set(!expanded.get())
-		, (team) -> [(-team.get('teamScore')), team.get('name')]
+		, (team) -> [team.get('ranking')]
 # Eventlog page
 logContent = ->
 	Dom.div !->
