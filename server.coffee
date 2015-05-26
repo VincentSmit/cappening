@@ -5,7 +5,7 @@ Event = require 'event'
 
 # Global constants, use global.<variable>
 global = {
-	pointsTime: 3600000
+	pointsTime: 60000
 }
 
 # ==================== Events ====================
@@ -551,8 +551,9 @@ refreshInrangeTimer = (client, device) ->
 
 # function called everytime scores are modified to check wheter there is a new leading team or not
 checkNewLead = ->
+	teamMax = getFirstTeam()
 	newLead = false
-	newLead = getFirstTeam() isnt Db.shared.peek('game', 'firstTeam')
+	newLead = teamMax isnt Db.shared.peek('game', 'firstTeam')
 	
 	log "[checkNewLead()] newLead: " + newLead + " "
 
@@ -563,7 +564,7 @@ checkNewLead = ->
 		Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
 		Db.shared.set 'game', 'eventlist', maxId, 'type', "score"
 		Db.shared.set 'game', 'eventlist', maxId, 'leading', teamMax
-		Db.shared.set 'game', 'winningTeam', teamMax
+		Db.shared.set 'game', 'firstTeam', teamMax # store firstTeam for next new team calculation
 		pushToTeam(teamMax, "Your team took the lead!") 
 		pushToRest(teamMax, "Team " + Db.shared.peek('colors', teamMax, 'name') + " took the lead!")
 

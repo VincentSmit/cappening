@@ -260,8 +260,8 @@ addEndGameBar = ->
 		Dom.div !->
 			Dom.cls 'endGameBar'
 			Dom.style
-				backgroundColor: hexToRGBA(Db.shared.peek('colors', Db.shared.peek('game', 'winningTeam'), 'hex'), 0.9)
-			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'winningTeam'), 'name') + " won the game!"
+				backgroundColor: hexToRGBA(Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'hex'), 0.9)
+			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'name') + " won the game!"
 			Dom.div !->
 				Dom.cls 'endGameButton'
 				Dom.text "Restart Game"
