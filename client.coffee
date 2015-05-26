@@ -14,7 +14,6 @@ Icon = require 'icon'
 
 window.redraw = Obs.create(0) # For full redraw
 window.indicationArrowRedraw = Obs.create(0) # For indication arrow redraw
-window.updateRanking = Obs.create(0) # For updating the rankings of the score page (full page redraw)
 
 # ========== Events ==========
 exports.render = ->
@@ -596,7 +595,6 @@ scoresContent = ->
 			paddingLeft: "14px"
 		Dom.h1 "Teamscores"
 	Ui.list !->
-		updateRanking.get()
 		Dom.style
 			padding: '0'
 		Db.shared.iterate 'game', 'teams', (team) !->
