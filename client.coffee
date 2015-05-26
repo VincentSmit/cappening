@@ -709,7 +709,7 @@ logContent = ->
 						teamName = Db.shared.peek('colors', teamId, 'name')
 						#log "print score: teamId; " + teamId
 						Dom.onTap !->
-							page.nav 'scores'							
+							Page.nav 'scores'							
 						Dom.div !->
 							Dom.style
 								width: '70px'
