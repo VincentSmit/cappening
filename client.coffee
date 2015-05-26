@@ -922,6 +922,7 @@ renderBeacons = ->
 						map.removeLayer marker
 						Server.send 'deleteBeacon', Plugin.userId(), circle.getLatLng()
 					circle.on('dblclick', circleDelClick)
+					circle.on('contextmenu', circleDelClick)
 				else
 					circleClick = () -> 
 						beaconMarkers[beacon.key()].togglePopup()		

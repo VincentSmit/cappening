@@ -59,13 +59,11 @@ exports.onGeoloc = (userId, geoloc) ->
 	#log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
 	recieved = new Date()/1000
 	if Db.shared.peek('gameState') is 1 and (recieved - (Db.shared.peek('lastNotification', userId) || 0))> 30*60
-		beacons = Db.shared.ref('game', 'beacons')
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
 		found=false;
 		#Check if user is in range of an enemy beacon, opening the app will capture the beacon
-		beacons.iterate (beacon) ->
-			if beacon.peek('owner') isnt getTeamOfUser(userId) and !found
-				#log distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+		Db.shared.iterate 'game', 'beacons', (beacon)!->
+			if (parseInt(beacon.peek('owner'),10) != parseInt(getTeamOfUser(userId),10)) and !found
 				if distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng')) < beaconRadius
 					#send notifcation
 					Event.create
@@ -73,18 +71,6 @@ exports.onGeoloc = (userId, geoloc) ->
 						include: userId
 						text: 'You are in range of an enemy beacon, capture it now!'
 					found=true;
-		#Check if user is nearby an enemy beacon.
-		if !found
-			beacons.iterate (beacon) ->
-				if beacon.peek('owner') isnt getTeamOfUser(userId) and !found
-					dist = distance(geoloc.latitude, geoloc.longitude, beacon.peek('location','lat'), beacon.peek('location','lng'))
-					if dist < beaconRadius *2.5
-						#send notifcation
-						Event.create
-							unit: 'nearby'
-							include: userId
-							text: 'You are ' + parseInt(dist,10)+ ' m away from an enemy beacon, capture it now!'
-						found=true;	
 		#Last notification send, so that the user will not be spammed with notifications
 		if found
 			Db.shared.set('lastNotification', userId, recieved)
