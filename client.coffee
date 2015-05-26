@@ -661,7 +661,7 @@ scoresContent = ->
 						Dom.div !->
 							Dom.style fontSize: '75%', marginTop: '6px'
 							Dom.text "Tap for details"
-				if Plugin.users.count().peek() > 1
+				if Plugin.users.count().peek() > 6
 					Dom.onTap !->
 						expanded.set(!expanded.get())
 		, (team) -> [(-team.get('teamScore')), team.get('name')]
