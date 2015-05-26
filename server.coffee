@@ -8,6 +8,7 @@ global = {
 	pointsTime: 3600000
 }
 
+
 # ==================== Events ====================
 # Game install
 exports.onInstall = ->
@@ -26,7 +27,7 @@ exports.onUpgrade = ->
 	newVersion = version
 	if not version?
 		version = 0
-	# Version checking
+	# Version checking (TODO remove all entries before release, but keep max number)
 	if version < 1 # Initialize deviceId, fixes inRange system
 		newVersion = 1
 		Db.shared.set 'maxDeviceId', 0
@@ -43,6 +44,12 @@ exports.onUpgrade = ->
 		newVersion = 4
 		Db.shared.iterate 'game', 'beacons', (beacon) !->
 			beacon.remove 'inRange'
+	if version < 5
+		newVersion = 5
+		if Db.shared.peek('gameState') is 1
+			updateTeamRankings()
+
+
 	# Write new version to the database
 	if newVersion isnt version
 		log '[onUpgrade] Upgraded from version '+version+' to '+newVersion+'.'
@@ -98,6 +105,8 @@ exports.onJoin = (userId) ->
 		Db.shared.set 'game', 'teams', team, 'users', userId, 'neutralized', 0
 		Db.shared.set 'game', 'teams', team, 'users', userId, 'userName', Plugin.userName(userId)
 		log '[onJoin()] Added to team ' + team
+
+
 
 #==================== Client calls ====================
 # Restarts game
@@ -180,6 +189,7 @@ exports.client_startGame = ->
 		Db.shared.set 'game', 'teams', team.key(), 'teamScore', 0
 		Db.shared.set 'game', 'teams', team.key(), 'captured', 0
 		Db.shared.set 'game', 'teams', team.key(), 'neutralized', 0
+	updateTeamRankings()
 	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
 	Event.create
     	unit: 'startGame'
@@ -215,14 +225,14 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 					updateBeaconStatus(beacon, removed)
 					# Start takeover
 				else
-					inRangeValue = beacon.peek('inRange', client)
-					if inRangeValue == 'true' || inRangeValue == device
+					inRangeDevice = beacon.peek('inRange', client, 'device')
+					if inRangeDevice == device
 						log '[checkinLocation()] Removed from inRange: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device
 						# clean takeover
 						beacon.remove 'inRange', client
 						removed = client
 					else
-						log '[checkinLocation()] Denied removing from inRange, deviceId does not match: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device, ', inRangeValue=' + inRangeValue
+						log '[checkinLocation()] Denied removing from inRange, deviceId does not match: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device, ', inRangeDevice=' + inRangeDevice
 				#log 'removed=', removed	
 			else
 				refreshInrangeTimer(client, device)
@@ -298,6 +308,8 @@ updateBeaconStatus = (beacon, removed) ->
 			log '[checkinLocation()] Capture of beacon ', beacon.key(), ' on hold, competing teams: ', competing
 		else
 			log '[checkinLocation()] Capture of beacon ', beacon.key(), ' stopped, left the area'
+
+
 
 #==================== Functions called by timers ====================
 #Function called when the game ends
@@ -429,6 +441,8 @@ exports.inRangeTimeout = (args) ->
 	Db.shared.remove 'game', 'beacons', args.beacon, 'inRange', args.client
 	updateBeaconStatus(Db.shared.ref('game', 'beacons', args.beacon), -999)
 
+
+
 # ==================== Functions ====================
 # Get a string of the players that are inRange of a beacon
 getInrangePlayers = (beacon) ->
@@ -457,11 +471,38 @@ getInrangePlayersOfTeamArray = (beacon, team) ->
 			players.push(player.key())
 	return players
 
+# Update the rankings of teams depending on their score
+updateTeamRankings = ->
+	teamScores = []
+	Db.shared.iterate 'game', 'teams', (team) !->
+		teamScores.push {team: team.key(), score: getTeamScore(team.key())}
+	log '[updateTeamRankings()] teamScores start: ', JSON.stringify(teamScores)
+	teamScores.sort((a, b) -> return parseInt(b.score)-parseInt(a.score))
+	log '[updateTeamRankings()] teamScores sorted: ', JSON.stringify(teamScores)
+	# Using same ranking number for multiple teams if scores are the same
+	ranking = 0
+	same = 0
+	lastScore = -1
+	for teamObject in teamScores
+		if lastScore == teamObject.score
+			same++
+		else
+			ranking+=same
+			ranking++
+		Db.shared.set 'game', 'teams', teamObject.team, 'ranking', ranking
+		lastScore = teamObject.score
+
+getTeamScore = (team) ->
+	result = Db.shared.peek 'game', 'teams', team, 'teamScore'
+	Db.shared.iterate 'game', 'teams', team, 'users', (user) !->
+		result+=user.peek('userScore')
+	return result
+
 # Setup an empty game
 initializeGame = ->
 	# Stop all timers from the previous game
 	Timer.cancel 'endGame', {}
-	Db.shared.iterate 'game', 'beacons', (beacon) ->
+	Db.shared.iterate 'game', 'beacons', (beacon) !->
 		Timer.cancel 'onCapture', {beacon: beacon.key()}
 		Timer.cancel 'onNeutralize', {beacon: beacon.key()}
 		Timer.cancel 'overtimeScore', {beacon: beacon.key()}
@@ -542,6 +583,7 @@ modifyScore = (client, points) ->
 	Db.shared.modify 'game', 'teams', teamClient, 'users', client, 'userScore', (v) -> v + points
 	Db.shared.modify 'game', 'teams', teamClient, 'teamScore', (v) -> v + points
 	# new lead check
+	updateTeamRankings()
 	checkNewLead(teamClient)
 
 refreshInrangeTimer = (client, device) ->
