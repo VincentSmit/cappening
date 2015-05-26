@@ -151,12 +151,13 @@ addBar = ->
 		# Button to scores page
 		Dom.div !->
 			#Icon.render data: 'ranking.svg', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
-			Dom.img !->
-				Dom.prop src: Plugin.resourceUri("ranking.png")
+			Dom.div !->
 				Dom.style 
 					width: '30px'
 					height: '30px'
 					verticalAlign: 'middle'
+					display: 'inline-block'
+					background: "url(#{Plugin.resourceUri('ranking.png')}) no-repeat 0 0 / 30px 30px"
 			Dom.div !->
 				Dom.text 'Ranking'
 				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
@@ -601,7 +602,6 @@ scoresContent = ->
 			teamColor = Db.shared.peek('colors', team.key(), 'hex')
 			teamName = Db.shared.peek('colors', team.key(), 'name')
 			teamScore = Db.shared.get('game', 'teams', team.key(), 'teamScore')
-			#position = position + 1
 			# list of teams and their scores
 			expanded = Obs.create(false)
 			Ui.item !->				
