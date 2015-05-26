@@ -5,7 +5,7 @@ Event = require 'event'
 
 # Global constants, use global.<variable>
 global = {
-	pointsTime: 60000
+	pointsTime: 3600000
 }
 
 # ==================== Events ====================

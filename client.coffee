@@ -263,8 +263,15 @@ addEndGameBar = ->
 				backgroundColor: hexToRGBA(Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'hex'), 0.9)
 			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'name') + " won the game!"
 			Dom.div !->
-				Dom.cls 'endGameButton'
-				Dom.text "Restart Game"
+				Dom.style
+					float: 'right'
+					backgroundColor: '#ba1a6e'
+					minheight: '50px'
+					padding: '8px'
+					textAlign: 'center'
+					color: 'white'
+					_boxShadow: '0 0 3px rgba(0,0,0,0.5)'
+				Dom.text "RESTART GAME"
 				if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
 					Dom.onTap !-> 
 						#TODO initialize game

@@ -154,7 +154,7 @@ Dom.css
 		height: "50px"
 		width: '100%'
 		position: 'absolute'
-		bottom: '0'
+		bottom: '15'
 		zIndex: '2000'
 		padding: '11px'
 		fontSize: '16px'
@@ -163,17 +163,6 @@ Dom.css
 		_display: 'flex'
 		_alignItems: 'center'
 		_textShadow: '0 0 5px #000000, 0 0 5px #000000'
-	'.endGameButton'
-		position: 'absolute'
-		right: '0'
-		width: '50px'
-		height: '50px'
-		lineHeight: '50px'
-		margin: '0 2px 2px 0'
-		fontSize: '25px'
-		textAlign: 'center'
-		color: 'white'
-		backgroundColor: '#ba1a6e'
 
 #Indication Arrow
 	'#indicationArrow':
