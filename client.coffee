@@ -57,18 +57,19 @@ exports.render = ->
 			page = "main" if not page?   
 			Obs.observe ->
 				nEnd = Db.shared.get('game', 'newEndTime')
-				end = Db.shared.peek('game', 'endTime')
-				if(nEnd isnt 0)
+				end = Db.shared.get('game', 'endTime')
+				if nEnd? and nEnd isnt 0
 					end = nEnd		
 				# Make the subtitle black if the game is within 1 hour of ending
+				log 'title end='+end+', nEdn='+nEnd
 				Page.setTitle !->
 					if (end - Plugin.time()) < 3600
-						Dom.div !->
-							Dom.style
-								color: "#000000"
-								fontWeight: 'bold'
-							Dom.text "Game ends "
-							Time.deltaText end
+						Dom.style
+							color: "#000000"
+							fontWeight: 'bold'
+						Dom.text "Game ends "
+						Time.deltaText end
+						Dom.text "!"
 					else
 						Dom.text "Game ends "
 						Time.deltaText end

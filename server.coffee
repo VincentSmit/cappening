@@ -331,7 +331,7 @@ exports.endGame = (args) ->
 	log "[endGame()]"
 	Db.shared.set('game', 'firstTeam', winningTeam)
 	# End game and activate end game screen
-	Db.shared.modify 'gameState', (v) -> 2
+	Db.shared.set 'gameState', 2
 	log "[endGame()] The game ended! gameState: " + Db.shared.peek('gameState') + " args: " + args + " winningTeam: " + winningTeam + " Db: " + Db.shared.peek('game', 'winningTeam')
 	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
 	Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
@@ -414,7 +414,7 @@ exports.onNeutralize = (args) ->
 	
 	#Call the timer to reset the time in the correct endtime in the database
 	end = Db.shared.peek 'game', 'endTime'
-	Db.shared.modify 'game', 'newEndTime', (v) -> 0
+	Db.shared.remove 'game', 'newEndTime'
 	Timer.cancel 'endGame', {}
 	Timer.set (end-Plugin.time())*1000, 'endGame', {}
 
