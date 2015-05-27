@@ -1117,7 +1117,7 @@ renderLocation = ->
 											arrowDiv.style.msTransform = "rotate(" +angle + "rad)"
 											arrowDiv.style.oTransform = "rotate(" +angle + "rad)"
 											distanceToPlayfield = latLngObj.distanceTo(center)
-											if distanceToPlayfield < 1000
+											if distanceToPlayfield <= 1000
 												distanceToPlayfield = Math.round(distanceToPlayfield) + "m"
 											if distanceToPlayfield > 1000
 												distanceToPlayfield = Math.round(distanceToPlayfield/1000) + "km"
