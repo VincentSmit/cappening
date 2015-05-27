@@ -58,6 +58,7 @@ exports.onUpgrade = ->
 # Config changes (by admin or plugin adder)
 exports.onConfig = (config) ->
 	if config.restart
+		moveData()
 		log '[onConfig()] Restarting game'
 		initializeGame()
 
@@ -111,7 +112,9 @@ exports.onJoin = (userId) ->
 #==================== Client calls ====================
 # Restarts game
 exports.client_restartGame = () ->
-	#TODO store old game in Db
+	#Store old game data in history
+	moveData()
+	#Reset game database
 	initializeGame()
 
 # Add a beacon (during setup phase)
@@ -603,7 +606,7 @@ refreshInrangeTimer = (client, device) ->
 # function called everytime scores are modified to check wheter there is a new leading team or not
 checkNewLead = ->
 	teamMax = getFirstTeam()
-	newLead = false
+	newLead = false;
 	newLead = teamMax isnt Db.shared.peek('game', 'firstTeam')
 	
 	log "[checkNewLead()] newLead: " + newLead + " "
@@ -644,3 +647,12 @@ pushToRest = (teamId, message) ->
     	unit: 'toRest'
     	exclude: members
     	text: message
+
+#Move all data to history tab
+moveData = ->
+	current = Db.shared.peek('gameNumber')
+	Db.shared.set 'history', current,'game', Db.shared.peek('game')
+	Db.shared.set 'history', current, 'gameState', Db.shared.peek('gameState')
+
+
+		
