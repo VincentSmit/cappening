@@ -588,7 +588,6 @@ modifyScore = (client, points) ->
 	Db.shared.modify 'game', 'teams', teamClient, 'users', client, 'userScore', (v) -> v + points
 	Db.shared.modify 'game', 'teams', teamClient, 'teamScore', (v) -> v + points
 	# new lead check
-	updateTeamRankings()
 	checkNewLead(teamClient)
 
 refreshInrangeTimer = (client, device) ->
@@ -619,6 +618,9 @@ checkNewLead = ->
 		Db.shared.set 'game', 'firstTeam', teamMax # store firstTeam for next new team calculation
 		pushToTeam(teamMax, "Your team took the lead!") 
 		pushToRest(teamMax, "Team " + Db.shared.peek('colors', teamMax, 'name') + " took the lead!")
+	# Update rankings
+	updateTeamRankings()
+
 
 # Sends a push notification, message, to all team members
 pushToTeam = (teamId, message) ->
