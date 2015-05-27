@@ -1088,9 +1088,13 @@ renderLocation = ->
 										# The arrow has to be inside the map element to get it rendered in the proper place, therefore plain javascript is required
 										arrowDiv = document.createElement "div"
 										arrowDiv.setAttribute 'id', 'indicationArrow'
+										arrowDivText = document.createElement "div"
+										arrowDivText.setAttribute 'id', 'indicationArrowText'
+										arrowDivText.className = 'arrowDivText'
 										mainElement = document.getElementById("OpenStreetMap")
 										if mainElement?
 											mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
+											mainElement.insertBefore(arrowDivText, null)
 											center= map.getCenter()
 											
 											difLat = Math.abs(latLngObj.lat - map.getCenter().lat)
@@ -1112,6 +1116,13 @@ renderLocation = ->
 											arrowDiv.style.mozTransform = "rotate(" +angle + "rad)"
 											arrowDiv.style.msTransform = "rotate(" +angle + "rad)"
 											arrowDiv.style.oTransform = "rotate(" +angle + "rad)"
+											distanceToPlayfield = latLngObj.distanceTo(center)
+											if distanceToPlayfield < 1000
+												distanceToPlayfield = Math.round(distanceToPlayfield) + "m"
+											if distanceToPlayfield > 1000
+												distanceToPlayfield = Math.round(distanceToPlayfield/1000) + "km"
+											arrowDivText.innerHTML = "You're " + distanceToPlayfield + " away"
+												
 							Obs.onClean ->
 								# Deregister move/zoom listeners to update indication arrow
 								if mapReady()
@@ -1120,6 +1131,9 @@ renderLocation = ->
 								toRemove = document.getElementById('indicationArrow');
 								if toRemove?
 									toRemove.parentNode.removeChild(toRemove);
+								toRemoveText = document.getElementById('indicationArrowText');
+								if toRemoveText?
+									toRemoveText.parentNode.removeChild(toRemoveText);
 						# Checking if users are capable of taking over beacons
 						Obs.observe ->
 							if Db.shared.peek('gameState') is 1 # Only when the game is running, do something

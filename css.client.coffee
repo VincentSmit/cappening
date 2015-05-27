@@ -194,5 +194,12 @@ Dom.css
 		borderRight: 'solid 8px transparent'
 		position: 'absolute'
 	'.indicationArrowSW':
-		bottom: '0'
-		left: '0'
+		bottom: '10px'
+		left: '10px'
+	'.arrowDivText':
+		fontSize: '12px'
+		color: '#fff'
+		bottom: '5px'
+		left: '50px'
+		height: '30px'
+		position: 'absolute'
