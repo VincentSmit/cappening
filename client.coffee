@@ -1081,7 +1081,7 @@ renderLocation = ->
 						Obs.observe ->
 							indicationArrowRedraw.get()
 							if mapReady()
-								if Db.shared.peek('gameState') isnt 0 and map.getBounds()?
+								if Db.shared.peek('gameState') is 1 and map.getBounds()?
 									map.on('moveend', indicationArrowListener)
 									# Render an arrow that points to your location if you do not have it on your screen already
 									if !(map.getBounds().contains(latLngObj))
@@ -1096,10 +1096,10 @@ renderLocation = ->
 										if mainElement?
 											mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
 											mainElement.insertBefore(arrowDivText, null)
-											center= map.getCenter()
+											center= map.getBounds().getSouthWest()
 											
-											difLat = Math.abs(latLngObj.lat - map.getCenter().lat)
-											difLng = Math.abs(latLngObj.lng - map.getCenter().lng)
+											difLat = Math.abs(latLngObj.lat - center.lat)
+											difLng = Math.abs(latLngObj.lng - center.lng)
 											angle = 0
 											if latLngObj.lng > center.lng and latLngObj.lat > center.lat
 												angle = Math.atan(difLng/difLat) 
