@@ -430,9 +430,15 @@ exports.onNeutralize = (args) ->
 	
 	#Call the timer to reset the time in the correct endtime in the database
 	end = Db.shared.peek 'game', 'endTime'
-	Db.shared.remove 'game', 'newEndTime'
-	Timer.cancel 'endGame', {}
-	Timer.set (end-Plugin.time())*1000, 'endGame', {}
+	if Bd.shared.peek('game', 'newEndTime') isnt 0
+		Db.shared.remove 'game', 'newEndTime'
+		Timer.cancel 'endGame', {}
+		Timer.set (end-Plugin.time())*1000, 'endGame', {}
+		# Cancel event
+		addEvent {
+			timestamp: new Date()/1000
+			type: "cancel"
+		}
 
 	# Increment neutralizes per team and per capturer
 	for player in inRangeOfTeam
@@ -643,9 +649,10 @@ checkNewLead = ->
 
 # Adds event to the eventlist
 addEvent = (eventArgs) ->
-	Db.shared.modify 'game', 'eventlist', 'maxId', (v) -> v + 1
-	log "[addEvent()] Event: " + eventArgs.type + " id: " + Db.shared.peek('game', 'eventlist', 'maxId')
-	Db.shared.set 'game', 'eventlist', Db.shared.peek('game', 'eventlist', 'maxId'), eventArgs
+	maxId = Db.shared.peek 'game', 'eventlist', 'maxId'
+	log "[addEvent()] Event: " + eventArgs.type + " id: " + maxId
+	Db.shared.set 'game', 'eventlist', maxId, eventArgs
+	Db.shared.set 'game', 'eventlist', 'maxId', (maxId + 1)
 
 # Sends a push notification, message, to all team members
 pushToTeam = (teamId, message) ->

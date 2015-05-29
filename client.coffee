@@ -739,6 +739,25 @@ logContent = ->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
 								Time.deltaText capture.peek('timestamp')
+					else if capture.peek('type') is "cancel"
+						Dom.style
+							padding: '14px'
+						Dom.div !->
+							Dom.style
+								width: '70px'
+								height: '70px'
+								marginRight: '10px'
+								background: '#DDDDDD'
+								backgroundSize: 'cover'
+						Dom.div !->
+							Dom.style Flex: 1, fontSize: '16px'
+							Dom.text "No longer are all beacons owned by one team"
+							started = Db.shared.peek 'game', 'startTime'
+							if started?
+								Dom.div !->
+									Dom.style fontSize: '75%', marginTop: '6px'
+									Dom.text 'Started '
+									Time.deltaText started
 					else if capture.peek('type') is "start"
 						Dom.style
 							padding: '14px'
