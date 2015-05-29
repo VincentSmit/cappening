@@ -335,6 +335,7 @@ exports.endGame = (args) ->
 		# End game and activate end game screen
 		Db.shared.set 'gameState', 2
 		log "[endGame()] The game ended! gameState: " + Db.shared.peek('gameState') + " args: " + args + " winningTeam: " + winningTeam + " Db: " + Db.shared.peek('game', 'firstTeam')
+		# Event 
 		addEvent {
 			timestamp: new Date()/1000
 			type: "end"
@@ -361,14 +362,6 @@ exports.onCapture = (args) ->
 	log '[onCapture()] pointsTime: '+global.pointsTime						
 	Timer.set global.pointsTime, 'overtimeScore', {beacon: beacon.key()}
 
-	# Add event log entrie(s)
-	addEvent {
-		timestamp: new Date()/1000
-		type: "capture"
-		beacon: beacon.key()
-		conqueror: nextOwner
-	}
-
 	# The game will end in 1 hour if all the beacons are captured by one team
 	capOwner = Db.shared.peek('game', 'beacons', '0', 'owner')
 	log 'capOwner', capOwner
@@ -388,9 +381,26 @@ exports.onCapture = (args) ->
 		Db.shared.set 'game', 'newEndTime', end
 		Timer.cancel 'endGame', {}
 		Timer.set global.pointsTime, 'endGame', {}
+
+		# Add event log entrie(s)
+		addEvent {
+			timestamp: new Date()/1000
+			type: "captureAll"
+			beacon: beacon.key()
+			conqueror: nextOwner
+		}
+		# Notifications
 		pushToTeam(nextOwner, "Your team captured all beacons! Hold for one hour and you will win this game!")
 		pushToRest(nextOwner, "Team " + Db.shared.peek('colors', nextOwner, 'name') + " has captured all beacons, you have 1 hour to conquer a beacon!")
 	else
+		# Add event log entrie(s)
+		addEvent {
+			timestamp: new Date()/1000
+			type: "capture"
+			beacon: beacon.key()
+			conqueror: nextOwner
+		}
+		# Notifications
 		pushToTeam(nextOwner, "Your team captured a beacon!")
 		pushToRest(nextOwner, "Team " + Db.shared.peek('colors', nextOwner , 'name') + " captured a beacon")
 

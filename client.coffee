@@ -694,6 +694,29 @@ logContent = ->
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
+								Time.deltaText capture.peek('timestamp')if capture.peek('type') is "capture" and mapReady()
+					else if capture.peek('type') is "captureAll"
+						beaconId = capture.peek('beacon')
+						teamId = capture.peek('conqueror')
+						teamColor = Db.shared.peek('colors', teamId, 'hex')
+						teamName = Db.shared.peek('colors', teamId, 'name')
+						log "print capture: teamId; " + teamId
+						Dom.onTap !->
+							Page.nav 'main'
+							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
+						Dom.div !->
+							Dom.style
+								width: '70px'
+								height: '70px'
+								marginRight: '10px'
+								background: teamColor+" url(#{Plugin.resourceUri('marker-plain.png')}) no-repeat 10px 10px" 
+								backgroundSize: '50px 50px'
+						Dom.div !->
+							Dom.style Flex: 1, fontSize: '100%'
+							Dom.text "Team " + teamName + " team captured all beacons"
+							Dom.div !->
+								Dom.style fontSize: '75%', marginTop: '6px'
+								Dom.text "Captured "
 								Time.deltaText capture.peek('timestamp')
 					else if capture.peek('type') is "score"
 						teamId = capture.peek('leading')
