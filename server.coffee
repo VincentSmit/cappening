@@ -204,7 +204,7 @@ exports.client_startGame = ->
 
 # Checkin location for capturing a beacon		
 exports.client_checkinLocation = (client, location, device, accuracy) ->
-	if Db.shared.peek 'gameState' is not 1
+	if Db.shared.peek('gameState') isnt 1
 		log '[checkinLocation()] Client ', client, ' (', Plugin.userName(client), ') tried to capture beacon while game is not running!'
 	else
 		#log '[checkinLocation()] client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
@@ -310,10 +310,11 @@ updateBeaconStatus = (beacon, removed) ->
 	else
 		# No progess, stand-off
 		beacon.set 'actionStarted', new Date()/1000
-		beacon.set 'action', 'none'
 		if competing.length > 1
+			beacon.set 'action', 'competing'
 			log '[checkinLocation()] Capture of beacon ', beacon.key(), ' on hold, competing teams: ', competing
 		else
+			beacon.set 'action', 'none'
 			log '[checkinLocation()] Capture of beacon ', beacon.key(), ' stopped, left the area'
 
 
@@ -430,7 +431,7 @@ exports.onNeutralize = (args) ->
 	
 	#Call the timer to reset the time in the correct endtime in the database
 	end = Db.shared.peek 'game', 'endTime'
-	if Bd.shared.peek('game', 'newEndTime') isnt 0
+	if Db.shared.peek('game', 'newEndTime') isnt 0
 		Db.shared.remove 'game', 'newEndTime'
 		Timer.cancel 'endGame', {}
 		Timer.set (end-Plugin.time())*1000, 'endGame', {}

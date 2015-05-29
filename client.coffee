@@ -14,6 +14,7 @@ Icon = require 'icon'
 
 window.redraw = Obs.create(0) # For full redraw
 window.indicationArrowRedraw = Obs.create(0) # For indication arrow redraw
+window.checkinLocationFunction = undefined
 
 # ========== Events ==========
 exports.render = ->
@@ -51,6 +52,9 @@ exports.render = ->
 		gameState = Db.shared.get('gameState')
 		if gameState is 0 # Setting up game by user that added plugin
 			setupContent()
+			if checkinLocationFunction?
+				clearInterval(checkinLocationFunction)
+				checkinLocationFunction = null
 		else if gameState is 1 # Game is running
 			# Set page title
 			page = Page.state.get(0)
@@ -99,6 +103,9 @@ exports.render = ->
 				scoresContent()
 			else if page == 'log'
 				logContent()
+			if checkinLocationFunction?
+				clearInterval(checkinLocationFunction)
+				checkinLocationFunction = null
 						
 	Obs.observe ->
 		deviceId = Db.local.peek 'deviceId'
@@ -151,7 +158,6 @@ addBar = ->
 				Page.nav 'log'
 		# Button to scores page
 		Dom.div !->
-			#Icon.render data: 'ranking.svg', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
 			Dom.div !->
 				Dom.style 
 					width: '30px'
@@ -202,17 +208,37 @@ addProgressBar = ->
 						dbPercentage = 100
 					nextColor = Db.shared.peek('colors', owner, 'hex')
 					barText = "Neutralizing..."
+				else if action == "competing"
+					fromOtherTeams = 0
+					ownTeam = getTeamOfUser(Plugin.userId())
+					nextPercentage = dbPercentage
+					beacon.iterate 'inRange', (player) ->
+						if getTeamOfUser(player.key()) isnt ownTeam
+							fromOtherTeams++
+					if dbPercentage == 100 and owner == nextOwner
+						if parseInt(ownTeam) is parseInt(owner)
+							if fromOtherTeams > 1
+								barText = "Captured, but an enemy in range!"
+							else
+								barText = "Captured, but enemies in range!"
+						else
+							if fromOtherTeams > 1
+								barText = "Enemies are blocking the neutralize!"
+							else
+								barText = "An enemy is blocking the neutralize!"
+					else
+						if fromOtherTeams > 1
+							barText = "Competing with enemies!"
+						else
+							barText = "Competing with an enemy!"
 				else
 					nextPercentage = dbPercentage
 					if owner == -1
 						nextColor = Db.shared.peek('colors', nextOwner, 'hex')
 					else
 						nextColor = Db.shared.peek('colors', owner, 'hex')
-					barText = "Competing with others..."
-				if dbPercentage == 100 and owner == nextOwner
-					barText = "Captured"
+					barText = "Captured"						
 				time = 0
-
 				if nextPercentage != dbPercentage
 					time = Math.abs(dbPercentage-nextPercentage) * 300
 				log "nextPercentage = ", nextPercentage, ", dbPercentage = ", dbPercentage, ", time = ", time, ", action = ", action
@@ -806,7 +832,7 @@ logContent = ->
 									Dom.text 'Started '
 									Time.deltaText started
 		, (capture) -> (-capture.key())
-			
+
 # End game page
 endGameContent = ->
 	log "endGameContent()"
@@ -815,6 +841,7 @@ endGameContent = ->
 	renderBeacons()
 	#mModal.show("Team " + Db.shared.peek('colors', Db.shared.peek('game', 'winningTeam'), 'name') + " won the game!")
 	addEndGameBar()
+
 
 # ========== Map functions ==========
 # Render a map
@@ -826,14 +853,16 @@ renderMap = ->
 			# use it again
 			mainElement = document.getElementsByTagName("main")[0]
 			mainElement.insertBefore(mapElement, mainElement.childNodes[0])  # Inserts the element at the start
-			map.invalidateSize(true)
+			if mapReady()
+				map.invalidateSize(true)
 			log "Reused html element for map"
 		else
 			window.mapElement = document.createElement "div"
 			mapElement.setAttribute 'id', 'OpenStreetMap'
 			mainElement = document.getElementsByTagName("main")[0]
 			mainElement.insertBefore(mapElement, mainElement.childNodes[0])  # Inserts the element at the start
-			map.invalidateSize(true)
+			if mapReady()
+				map.invalidateSize(true)
 			log "Created html element for map"
 		Obs.onClean ->
 			log "Removed html element for map (stored for later)"
@@ -958,7 +987,7 @@ renderBeacons = ->
 				else
 					inrange = getInRange(beacon)
 					if inrange?
-						inrange = "Competitors:" + inrange
+						inrange = "Competitors: " + inrange
 					else
 						inrange = "No players competing for this beacon"
 						
@@ -1225,11 +1254,13 @@ renderLocation = ->
 													if not inRangeCheckinRunning[Plugin.groupId()]
 														checkinLocation()
 														setInterval(checkinLocation, 30*1000)
+														checkinLocationFunction = checkinLocation
 														window.inRangeCheckinRunning[Plugin.groupId()] = true
 												else
 													log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 													checkinLocation()
 													setInterval(checkinLocation, 30*1000)
+													checkinLocationFunction = checkinLocation
 													window.inRangeCheckinRunning[Plugin.groupId()] = true
 										else if (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
 											log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
