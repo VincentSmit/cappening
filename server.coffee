@@ -320,25 +320,28 @@ updateBeaconStatus = (beacon, removed) ->
 #==================== Functions called by timers ====================
 #Function called when the game ends
 exports.endGame = (args) ->
-	# Cancel timers
-	Timer.cancel 'endGame', {}
-	Db.shared.iterate 'game', 'beacons', (beacon) ->
-		Timer.cancel 'onCapture', {beacon: beacon.key()}
-		Timer.cancel 'onNeutralize', {beacon: beacon.key()}
-		Timer.cancel 'overtimeScore', {beacon: beacon.key()}
-	# Set winning team
-	winningTeam = getFirstTeam()
-	log "[endGame()]"
-	Db.shared.set('game', 'firstTeam', winningTeam)
-	# End game and activate end game screen
-	Db.shared.set 'gameState', 2
-	log "[endGame()] The game ended! gameState: " + Db.shared.peek('gameState') + " args: " + args + " winningTeam: " + winningTeam + " Db: " + Db.shared.peek('game', 'winningTeam')
-	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
-	Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
-	Db.shared.set 'game', 'eventlist', maxId, 'type', "end"
-	# Pushbericht winnaar en verliezer
-	pushToTeam(winningTeam, "Congratulations! Your team won the game!")
-	pushToRest(winningTeam, "You lost the game!")
+	if gameState is 1
+		# Cancel timers
+		Timer.cancel 'endGame', {}
+		Db.shared.iterate 'game', 'beacons', (beacon) ->
+			Timer.cancel 'onCapture', {beacon: beacon.key()}
+			Timer.cancel 'onNeutralize', {beacon: beacon.key()}
+			Timer.cancel 'overtimeScore', {beacon: beacon.key()}
+		# Set winning team
+		winningTeam = getFirstTeam()
+		log "[endGame()]"
+		Db.shared.set('game', 'firstTeam', winningTeam)
+		# End game and activate end game screen
+		Db.shared.set 'gameState', 2
+		log "[endGame()] The game ended! gameState: " + Db.shared.peek('gameState') + " args: " + args + " winningTeam: " + winningTeam + " Db: " + Db.shared.peek('game', 'firstTeam')
+		maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
+		Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
+		Db.shared.set 'game', 'eventlist', maxId, 'type', "end"
+		# Pushbericht winnaar en verliezer
+		pushToTeam(winningTeam, "Congratulations! Your team won the game!")
+		pushToRest(winningTeam, "You lost the game!")
+	else
+		log "[endGame()] called in gameState no 1"
 
 # Called by the beacon capture timer
 # args.beacon: beacon key
@@ -381,7 +384,7 @@ exports.onCapture = (args) ->
 		# log 'end', end
 		Db.shared.set 'game', 'newEndTime', end
 		Timer.cancel 'endGame', {}
-		Timer.set global.pointsTime, 'endGame', {winningTeam: Db.shared.peek('colors', nextOwner , 'name')}
+		Timer.set global.pointsTime, 'endGame', {}
 		pushToTeam(nextOwner, "Your team captured all beacons! Hold for one hour and you will win this game!")
 		pushToRest(nextOwner, "Team " + Db.shared.peek('colors', nextOwner, 'name') + " has captured all beacons, you have 1 hour to conquer a beacon!")
 	else
@@ -522,7 +525,7 @@ initializeGame = ->
 	Db.shared.set 'game', 'roundTimeUnit', 'Days'
 	Db.shared.set 'game', 'roundTimeNumber', 7
 	Db.shared.set 'game', 'eventlist', 'maxId', 0
-	Db.shared.set 'game', 'winningTeam', -1
+	Db.shared.set 'game', 'firstTeam', -1
 
 	Db.shared.set 'gameState', 0
 	Db.shared.modify 'gameNumber', (v) -> (0||v)+1
