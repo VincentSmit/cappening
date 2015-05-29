@@ -680,7 +680,7 @@ logContent = ->
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
 							Page.nav 'main'
-							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
+							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
 						Dom.div !->
 							Dom.style
 								width: '70px'
@@ -703,7 +703,7 @@ logContent = ->
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
 							Page.nav 'main'
-							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng'), 18))
+							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
 						Dom.div !->
 							Dom.style
 								width: '70px'
@@ -805,7 +805,7 @@ logContent = ->
 									Dom.style fontSize: '75%', marginTop: '6px'
 									Dom.text 'Started '
 									Time.deltaText started
-		, (capture) -> (-capture.peek('timestamp'))
+		, (capture) -> (-capture.key())
 			
 # End game page
 endGameContent = ->
@@ -826,12 +826,14 @@ renderMap = ->
 			# use it again
 			mainElement = document.getElementsByTagName("main")[0]
 			mainElement.insertBefore(mapElement, mainElement.childNodes[0])  # Inserts the element at the start
+			map.invalidateSize(true)
 			log "Reused html element for map"
 		else
 			window.mapElement = document.createElement "div"
 			mapElement.setAttribute 'id', 'OpenStreetMap'
 			mainElement = document.getElementsByTagName("main")[0]
 			mainElement.insertBefore(mapElement, mainElement.childNodes[0])  # Inserts the element at the start
+			map.invalidateSize(true)
 			log "Created html element for map"
 		Obs.onClean ->
 			log "Removed html element for map (stored for later)"
