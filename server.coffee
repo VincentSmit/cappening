@@ -321,7 +321,7 @@ updateBeaconStatus = (beacon, removed) ->
 #==================== Functions called by timers ====================
 #Function called when the game ends
 exports.endGame = (args) ->
-	if gameState is 1
+	if Db.shared.peek 'gameState' is 1
 		# Cancel timers
 		Timer.cancel 'endGame', {}
 		Db.shared.iterate 'game', 'beacons', (beacon) ->
@@ -634,6 +634,7 @@ checkNewLead = ->
 # Adds event to the eventlist
 addEvent = (eventArgs) ->
 	Db.shared.modify 'game', 'eventlist', 'maxId', (v) -> v + 1
+	log "[addEvent()] Event: " + eventArgs.type + " id: " + Db.shared.peek('game', 'eventlist', 'maxId')
 	Db.shared.set 'game', 'eventlist', Db.shared.peek('game', 'eventlist', 'maxId'), eventArgs
 
 # Sends a push notification, message, to all team members
