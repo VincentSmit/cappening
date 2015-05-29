@@ -194,9 +194,10 @@ exports.client_startGame = ->
 		Db.shared.set 'game', 'teams', team.key(), 'neutralized', 0
 	updateTeamRankings()
 	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
-	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
-	Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
-	Db.shared.set 'game', 'eventlist', maxId, 'type', "start"
+	addEvent {
+		timestamp: new Date()/1000
+		type: "start"
+	}
 	Event.create
     	unit: 'startGame'
     	text: "The game has started!"
@@ -334,9 +335,10 @@ exports.endGame = (args) ->
 		# End game and activate end game screen
 		Db.shared.set 'gameState', 2
 		log "[endGame()] The game ended! gameState: " + Db.shared.peek('gameState') + " args: " + args + " winningTeam: " + winningTeam + " Db: " + Db.shared.peek('game', 'firstTeam')
-		maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
-		Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
-		Db.shared.set 'game', 'eventlist', maxId, 'type', "end"
+		addEvent {
+			timestamp: new Date()/1000
+			type: "end"
+		}
 		# Pushbericht winnaar en verliezer
 		pushToTeam(winningTeam, "Congratulations! Your team won the game!")
 		pushToRest(winningTeam, "You lost the game!")
@@ -360,11 +362,12 @@ exports.onCapture = (args) ->
 	Timer.set global.pointsTime, 'overtimeScore', {beacon: beacon.key()}
 
 	# Add event log entrie(s)
-	maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
-	Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
-	Db.shared.set 'game', 'eventlist', maxId, 'type', "capture"
-	Db.shared.set 'game', 'eventlist', maxId, 'beacon', beacon.key()
-	Db.shared.set 'game', 'eventlist', maxId, 'conqueror', nextOwner
+	addEvent {
+		timestamp: new Date()/1000
+		type: "capture"
+		beacon: beacon.key()
+		conqueror: nextOwner
+	}
 
 	# The game will end in 1 hour if all the beacons are captured by one team
 	capOwner = Db.shared.peek('game', 'beacons', '0', 'owner')
@@ -617,16 +620,21 @@ checkNewLead = ->
 	# create score event
 	# To Do: personalize for team members or dubed players
 	if newLead
-		maxId = Db.shared.ref('game', 'eventlist').incr 'maxId'
-		Db.shared.set 'game', 'eventlist', maxId, 'timestamp', new Date()/1000
-		Db.shared.set 'game', 'eventlist', maxId, 'type', "score"
-		Db.shared.set 'game', 'eventlist', maxId, 'leading', teamMax
+		addEvent {
+			timestamp: new Date()/1000
+			type: "score"
+			leading: teamMax 
+		}
 		Db.shared.set 'game', 'firstTeam', teamMax # store firstTeam for next new team calculation
 		pushToTeam(teamMax, "Your team took the lead!") 
 		pushToRest(teamMax, "Team " + Db.shared.peek('colors', teamMax, 'name') + " took the lead!")
 	# Update rankings
 	updateTeamRankings()
 
+# Adds event to the eventlist
+addEvent = (eventArgs) ->
+	Db.shared.modify 'game', 'eventlist', 'maxId', (v) -> v + 1
+	Db.shared.set 'game', 'eventlist', Db.shared.peek('game', 'eventlist', 'maxId'), eventArgs
 
 # Sends a push notification, message, to all team members
 pushToTeam = (teamId, message) ->
