@@ -672,9 +672,9 @@ logContent = ->
 				Ui.item !->
 					Dom.style
 						padding: '14px'
-					if capture.get('type') is "capture" and mapReady()
-						beaconId = capture.get('beacon')
-						teamId = capture.get('conqueror')
+					if capture.peek('type') is "capture" and mapReady()
+						beaconId = capture.peek('beacon')
+						teamId = capture.peek('conqueror')
 						teamColor = Db.shared.peek('colors', teamId, 'hex')
 						teamName = Db.shared.peek('colors', teamId, 'name')
 						log "print capture: teamId; " + teamId
@@ -686,7 +686,7 @@ logContent = ->
 								width: '70px'
 								height: '70px'
 								marginRight: '10px'
-								background: teamColor+"url(#{Plugin.resourceUri('marker-plain.png')}) no-repeat 10px 10px" 
+								background: teamColor+" url(#{Plugin.resourceUri('marker-plain.png')}) no-repeat 10px 10px" 
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '100%'
@@ -694,20 +694,20 @@ logContent = ->
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
-								Time.deltaText capture.get('timestamp')
-					else if capture.get('type') is "score"
-						teamId = capture.get('leading')
+								Time.deltaText capture.peek('timestamp')
+					else if capture.peek('type') is "score"
+						teamId = capture.peek('leading')
 						teamColor = Db.shared.peek('colors', teamId, 'hex')
 						teamName = Db.shared.peek('colors', teamId, 'name')
 						#log "print score: teamId; " + teamId
 						Dom.onTap !->
-							Page.nav 'scores'							
+							Page.nav 'scores'
 						Dom.div !->
 							Dom.style
 								width: '70px'
 								height: '70px'
 								marginRight: '10px'
-								background: teamColor+"url(#{Plugin.resourceUri('rank-switch.png')}) no-repeat 10px 10px" 
+								background: teamColor+" url(#{Plugin.resourceUri('rank-switch.png')}) no-repeat 10px 10px" 
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '100%'
@@ -715,8 +715,8 @@ logContent = ->
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
-								Time.deltaText capture.get('timestamp')
-					else if capture.get('type') is "start"
+								Time.deltaText capture.peek('timestamp')
+					else if capture.peek('type') is "start"
 						Dom.style
 							padding: '14px'
 						Dom.div !->
@@ -735,13 +735,13 @@ logContent = ->
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '16px'
 							Dom.text "The game has started!"
-							started = Db.shared.get 'game', 'startTime'
+							started = Db.shared.peek 'game', 'startTime'
 							if started?
 								Dom.div !->
 									Dom.style fontSize: '75%', marginTop: '6px'
 									Dom.text 'Started '
 									Time.deltaText started
-					else if capture.get('type') is "end"
+					else if capture.peek('type') is "end"
 						teamId = Db.shared.peek('game', 'firstTeam')
 						teamColor = Db.shared.peek('colors', teamId, 'hex')
 						teamName = Db.shared.peek('colors', teamId, 'name')
@@ -752,18 +752,18 @@ logContent = ->
 								width: '70px'
 								height: '70px'
 								marginRight: '10px'
-								background: teamColor + "url(#{Plugin.resourceUri('ranking.png')}) no-repeat 10px 10px"
+								background: teamColor + " url(#{Plugin.resourceUri('ranking.png')}) no-repeat 10px 10px"
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '16px'
 							Dom.text "Team " + teamName + " won the game"
-							started = Db.shared.get 'game', 'startTime'
+							started = Db.shared.peek 'game', 'startTime'
 							if started?
 								Dom.div !->
 									Dom.style fontSize: '75%', marginTop: '6px'
 									Dom.text 'Started '
 									Time.deltaText started
-		, (capture) -> (-capture.get('timestamp'))
+		, (capture) -> (-capture.peek('timestamp'))
 			
 # End game page
 endGameContent = ->
