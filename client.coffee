@@ -796,8 +796,8 @@ logContent = ->
 								width: '70px'
 								height: '70px'
 								marginRight: '10px'
-								background: '#DDDDDD'
-								backgroundSize: 'cover'
+								background: "#DDDDDD url(#{Plugin.resourceUri('markers-cancel-plain.png')}) no-repeat 10px 10px" 
+								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '16px'
 							Dom.text "No longer are all beacons owned by one team"
@@ -805,7 +805,7 @@ logContent = ->
 							if started?
 								Dom.div !->
 									Dom.style fontSize: '75%', marginTop: '6px'
-									Dom.text 'Started '
+									Dom.text 'Happened '
 									Time.deltaText started
 					else if capture.peek('type') is "start"
 						Dom.style
