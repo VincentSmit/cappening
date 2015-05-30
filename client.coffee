@@ -758,7 +758,7 @@ logContent = ->
 								width: '70px'
 								height: '70px'
 								marginRight: '10px'
-								background: teamColor+" url(#{Plugin.resourceUri('marker-plain.png')}) no-repeat 10px 10px" 
+								background: teamColor+" url(#{Plugin.resourceUri('markers-plain.png')}) no-repeat 10px 10px" 
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '100%'
