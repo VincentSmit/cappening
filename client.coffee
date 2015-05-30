@@ -1009,8 +1009,12 @@ renderBeacons = ->
 					marker.on('contextmenu', markerDelClick)					
 				else					
 					popupString = ""
-					popupString += "Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "."
+					if parseInt(beacon.peek('owner')) is parseInt(getTeamOfUser(Plugin.userId()))
+						popupString += "Beacon owned by your team, scoring 1 point per hour while kept."
+					else
+						popupString += "Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "."
 					popupString += "<br>Next capture gives " + beacon.peek('captureValue') + " points."
+
 					selfInRange = false
 					beacon.iterate 'inRange', (player) !->
 						if parseInt(player.key()) is parseInt(Plugin.userId())
