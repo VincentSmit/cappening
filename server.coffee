@@ -193,11 +193,11 @@ exports.client_startGame = ->
 		Db.shared.set 'game', 'teams', team.key(), 'captured', 0
 		Db.shared.set 'game', 'teams', team.key(), 'neutralized', 0
 	updateTeamRankings()
-	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
 	addEvent {
 		timestamp: new Date()/1000
 		type: "start"
 	}
+	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
 	Event.create
     	unit: 'startGame'
     	text: "The game has started!"
@@ -322,9 +322,8 @@ updateBeaconStatus = (beacon, removed) ->
 #==================== Functions called by timers ====================
 #Function called when the game ends
 exports.endGame = (args) ->
-	if Db.shared.peek 'gameState' is 1
+	if Db.shared.peek('gameState') is 1
 		# Cancel timers
-		Timer.cancel 'endGame', {}
 		Db.shared.iterate 'game', 'beacons', (beacon) ->
 			Timer.cancel 'onCapture', {beacon: beacon.key()}
 			Timer.cancel 'onNeutralize', {beacon: beacon.key()}
