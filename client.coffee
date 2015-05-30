@@ -18,8 +18,8 @@ window.checkinLocationFunction = undefined
 
 # ========== Events ==========
 exports.render = ->
-	log Db.shared
 	log 'FULL RENDER'
+	log 'NEW VERSION 6'
 	if not window.inRangeCheckinRunning?
 		window.inRangeCheckinRunning = {}
 	if not inRangeCheckinRunning[Plugin.groupId()]?
@@ -65,7 +65,7 @@ exports.render = ->
 				if nEnd? and nEnd isnt 0
 					end = nEnd		
 				# Make the subtitle black if the game is within 1 hour of ending
-				log 'title end='+end+', nEdn='+nEnd
+				#log 'title end='+end+', nEdn='+nEnd
 				Page.setTitle !->
 					if (end - Plugin.time()) < 3600
 						Dom.style
@@ -209,8 +209,13 @@ addProgressBar = ->
 					nextColor = Db.shared.peek('colors', owner, 'hex')
 					barText = "Neutralizing..."
 				else if action == "competing"
+					if owner == -1
+						nextColor = Db.shared.peek('colors', nextOwner, 'hex')
+					else
+						nextColor = Db.shared.peek('colors', owner, 'hex')
 					fromOtherTeams = 0
 					ownTeam = getTeamOfUser(Plugin.userId())
+					log 'fromOtherTeams='+fromOtherTeams+', nextPercentage='+nextPercentage+', dbPercentage='+dbPercentage
 					nextPercentage = dbPercentage
 					beacon.iterate 'inRange', (player) ->
 						if getTeamOfUser(player.key()) isnt ownTeam
@@ -227,10 +232,28 @@ addProgressBar = ->
 							else
 								barText = "An enemy is blocking the neutralize!"
 					else
-						if fromOtherTeams > 1
-							barText = "Competing with enemies!"
+						if parseInt(owner) isnt -1
+							if parseInt(ownTeam) is parseInt(owner)
+								if fromOtherTeams > 1
+									barText = "Preventing neutralize by the enemies!"
+								else
+									barText = "Preventing neutralize by an enemy!"
+							else
+								if fromOtherTeams > 1
+									barText = "Enemies are preventing the neutralize!"
+								else
+									barText = "An enemy is preventing the neutralize!"
 						else
-							barText = "Competing with an enemy!"
+							if parseInt(ownTeam) is parseInt(nextOwner)
+								if fromOtherTeams > 1
+									barText = "Enemies are preventing the capture!"
+								else
+									barText = "An enemy is preventing the capture!"
+							else
+								if fromOtherTeams > 1
+									barText = "Preventing capture by the enemies!"
+								else
+									barText = "Preventing capture by an enemy!"
 				else
 					nextPercentage = dbPercentage
 					if owner == -1
@@ -984,18 +1007,22 @@ renderBeacons = ->
 						Server.send 'deleteBeacon', Plugin.userId(), e.latlng
 					marker.on('dblclick', markerDelClick)
 					marker.on('contextmenu', markerDelClick)					
-				else
-					inrange = getInRange(beacon)
-					if inrange?
-						inrange = "Competitors: " + inrange
-					else
-						inrange = "No players competing for this beacon"
-						
+				else					
+					popupString = ""
+					popupString += "Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "."
+					popupString += "<br>Next capture gives " + beacon.peek('captureValue') + " points."
+					selfInRange = false
+					beacon.iterate 'inRange', (player) !->
+						if parseInt(player.key()) is parseInt(Plugin.userId())
+							selfInRange = true
+					if selfInRange
+						inrange = getInRange(beacon)
+						if inrange?
+							popupString += "<br>In range players: " + inrange
+
 					popup = L.popup()
 						.setLatLng(location)
-						.setContent("Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "." + 
-							"<br>Value: " + beacon.peek('captureValue') + " points!" +
-							"<br>"+ inrange)
+						.setContent(popupString)
 					marker.bindPopup(popup)
 					markerClick = () -> 
 						beaconMarkers[beacon.key()].togglePopup()		

@@ -210,7 +210,7 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 		#log '[checkinLocation()] client: ', client, ', location: lat=', location.lat, ', lng=', location.lng
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
 		Db.shared.iterate 'game', 'beacons', (beacon) ->
-			current = beacon.peek('inRange', client)?
+			current = beacon.peek('inRange', client, 'device')?
 			beaconDistance = distance(location.lat, location.lng, beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
 			newStatus = beaconDistance < beaconRadius
 			if newStatus != current
@@ -229,8 +229,6 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 					log '[checkinLocation()] Added to inRange: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device
 					beacon.set 'inRange', client, 'device', device
 					refreshInrangeTimer(client, device)
-					updateBeaconStatus(beacon, removed)
-					# Start takeover
 				else
 					inRangeDevice = beacon.peek('inRange', client, 'device')
 					if inRangeDevice == device
@@ -241,6 +239,7 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 					else
 						log '[checkinLocation()] Denied removing from inRange, deviceId does not match: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device, ', inRangeDevice=' + inRangeDevice
 				#log 'removed=', removed	
+				updateBeaconStatus(beacon, removed)
 			else
 				refreshInrangeTimer(client, device)
 
@@ -306,6 +305,8 @@ updateBeaconStatus = (beacon, removed) ->
 				beacon.set 'action', 'neutralize'
 				Timer.set percentage*10*30, 'onNeutralize', {beacon: beacon.key()}
 		else
+			beacon.set 'actionStarted', new Date()/1000
+			beacon.set 'action', 'none'
 			#log '[checkinLocation()] Active team already has the beacon, ', activeTeam, '=', owner
 	else
 		# No progess, stand-off
