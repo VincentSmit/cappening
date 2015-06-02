@@ -16,7 +16,8 @@ exports.onInstall = ->
 	initializeGame()
 
 # Game update 
-exports.onUpgrade = ->	
+exports.onUpgrade = ->
+	log '[onUpgrade()] at '+new Date()
 	# Check if the color array is defined correctly
 	if not Db.shared.peek('colors', '-1', 'name')?
 		log 'Initialized colors again'
@@ -83,27 +84,46 @@ exports.onGeoloc = (userId, geoloc) ->
 
 # Handle new users joining the happening
 exports.onJoin = (userId) ->
-	log '[onJoin()] Player ' + Plugin.userName(userId) + ' is joining the Happening'
-	if Db.shared.peek 'gameState' == 1
-		# Find teams with lowest number of members
-		min = 99999
-		lowest = []
-		Db.shared.iterate 'game', 'teams', (team) !->
-			if team.count() < min
-				min = team.count()
+	log '[onJoin()] userId='+userId+', users='+Plugin.userIds()
+	for player in Plugin.userIds()
+		isInTeam = false
+		if not (getTeamOfUser(player)?)
+			log '[onJoin()] Player ' + Plugin.userName(player) + ' joined the Happening'
+			if parseInt(Db.shared.peek('gameState')) == 1
+				# Find teams with lowest number of members
+				min = 99999
 				lowest = []
-				lowest.push team.key()
-			else if team.count() == min
-				lowest.push team.key()
-		# Draw a random team from those
-		randomNumber = Math.floor(Math.random() * lowest.length)
-		team = lowest[randomNumber]
-		# Add player to team
-		Db.shared.set 'game', 'teams', team, 'users', userId, 'userScore', 0
-		Db.shared.set 'game', 'teams', team, 'users', userId, 'captured', 0
-		Db.shared.set 'game', 'teams', team, 'users', userId, 'neutralized', 0
-		Db.shared.set 'game', 'teams', team, 'users', userId, 'userName', Plugin.userName(userId)
-		log '[onJoin()] Added to team ' + team
+				teamCount = 0
+				Db.shared.iterate 'game', 'teams', (team) !->
+					teamCount++
+					count = 0
+					Db.shared.iterate 'game', 'teams', team.key(), 'users', (user) !->
+						count++
+					if count < min
+						min = count
+						lowest = []
+						lowest.push team.key()
+					else if team.count() == min
+						lowest.push team.key()
+				# Draw a random team from those
+				randomNumber = Math.floor(Math.random() * lowest.length)
+				team = lowest[randomNumber]
+				if teamCount == 1 # Handle case that you started a game on your own, with 2 teams (one being empty)
+					team = 1
+					Db.shared.set 'game', 'teams', team, {
+						teamScore: 0
+						captured: 0
+						neutralized: 0
+					}
+					updateTeamRankings()
+				# Add player to team
+				Db.shared.set 'game', 'teams', team, 'users', player, {
+					userScore: 0
+					captured: 0
+					neutralized: 0
+					userName: Plugin.userName(player)
+				}
+				log '[onJoin()] Added to team ' + team
 
 
 

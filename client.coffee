@@ -18,8 +18,7 @@ window.checkinLocationFunction = undefined
 
 # ========== Events ==========
 exports.render = ->
-	log 'FULL RENDER'
-	log 'NEW VERSION 6'
+	log '8: FULL RENDER'
 	if not window.inRangeCheckinRunning?
 		window.inRangeCheckinRunning = {}
 	if not inRangeCheckinRunning[Plugin.groupId()]?
@@ -966,6 +965,7 @@ renderBeacons = ->
 	log "rendering beacons"
 	Db.shared.iterate 'game', 'beacons', (beacon) !->
 		beaconKey = beacon.key() # save the key for the onClean
+		markerDelClick = undefined
 		if mapReady() and map?
 			# Add the marker to the map
 			if not window.beaconMarkers?
@@ -994,14 +994,14 @@ renderBeacons = ->
 					fillOpacity: 0.3
 					weight: 2
 				});
-				if Db.shared.peek('gameState') == 0
+				if Db.shared.peek('gameState') == 0 and Db.local.get('currentSetupPage') == 'setup2' 
 					markerDelClick = (e) ->
 						map.removeLayer circle
 						map.removeLayer marker
 						Server.send 'deleteBeacon', Plugin.userId(), e.latlng
 					marker.on('dblclick', markerDelClick)
 					marker.on('contextmenu', markerDelClick)					
-				else					
+				else if Db.shared.peek('gameState') != 0				
 					popupString = ""
 					if parseInt(beacon.peek('owner')) is parseInt(getTeamOfUser(Plugin.userId()))
 						popupString += "Beacon owned by your team, scoring 1 point per hour while kept."
@@ -1035,14 +1035,14 @@ renderBeacons = ->
 					window.beaconCircles = {}
 
 				# Open the popup of the marker
-				if Db.shared.peek('gameState') == 0
+				if Db.shared.peek('gameState') == 0 and Db.local.get('currentSetupPage') == 'setup2'
 					circleDelClick = () ->
 						map.removeLayer circle
 						map.removeLayer marker
 						Server.send 'deleteBeacon', Plugin.userId(), circle.getLatLng()
 					circle.on('dblclick', circleDelClick)
 					circle.on('contextmenu', circleDelClick)
-				else
+				else if Db.shared.peek('gameState') != 0
 					circleClick = () -> 
 						beaconMarkers[beacon.key()].togglePopup()		
 					circle.on('contextmenu', circleClick)
@@ -1054,6 +1054,9 @@ renderBeacons = ->
 			log "map not ready yet"
 		Obs.onClean ->
 			if beaconMarkers? and map?
+				if markerDelClick?
+					marker.off('dblclick', markerDelClick)
+					marker.off('contextmenu', markerDelClick)
 				log 'onClean() beacon+circle'
 				if beaconMarkers[beaconKey]?
 					map.removeLayer beaconMarkers[beaconKey]
@@ -1086,15 +1089,11 @@ addMarkerListener = (event) ->
 		Modal.show(result)		
 	else
 		Server.sync 'addMarker', Plugin.userId(), event.latlng, !->
-			# TODO: fix, creates duplicates because prediction is not cleaned up correctly, onClean not called
-			###
 			Obs.observe ->
 				log 'Prediction add marker'
 				number = Math.floor((Math.random() * 10000) + 200)
 				Db.shared.set 'game', 'beacons', number, {location: {lat: event.latlng.lat, lng: event.latlng.lng}, owner: -1}
-				Obs.onClean ->
-					log 'clean'
-			###
+	
 
 indicationArrowListener = () ->
 	indicationArrowRedraw.incr()
