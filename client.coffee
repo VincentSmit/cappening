@@ -81,7 +81,7 @@ exports.render = ->
 			if page == 'main'
 				mainContent()
 			else if page == 'help'
-				helpContent(false)
+				helpContent()
 			else if page == 'scores'
 				scoresContent()
 			else if page == 'log'
@@ -98,7 +98,7 @@ exports.render = ->
 			if page == 'main'
 				endGameContent()
 			else if page == 'help'
-				helpContent(false)
+				helpContent()
 			else if page == 'scores'
 				scoresContent()
 			else if page == 'log'
@@ -119,14 +119,18 @@ exports.render = ->
 				else
 					log 'Did not get deviceId from server'
 
+					
+exports.renderInfo = !->
+	helpContent()
+							
 # Method that is called when admin changes settings (only restart game for now)
 exports.renderSettings = !->
 	if Db.shared
 		Form.check
 			name: 'restart'
 			text: tr 'Restart'
-			sub: tr 'Check this to destroy the current game and start a new one.'	
-		
+			sub: tr 'Check this to destroy the current game and start a new one.'
+
 # ========== Content fuctions ==========
 addBar = ->
 	Dom.div !->
@@ -137,7 +141,8 @@ addBar = ->
 			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
 			backgroundColor: hexToRGBA(Db.shared.peek('colors', getTeamOfUser(Plugin.userId()), 'hex'), 0.9)
 			_textShadow: '0 0 5px #000000, 0 0 5px #000000' 
-        # Button to help page
+        # Removed help button moved to top of page, should be rewritten to history tab
+		### 
 		Dom.div !->
 			Icon.render data: 'info', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
 			Dom.div !->
@@ -146,6 +151,7 @@ addBar = ->
 			Dom.cls 'bar-button'                
 			Dom.onTap !->
 				Page.nav 'help' 
+		###
         # Button to event log
 		Dom.div !->
 			Icon.render data: 'clipboard', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
@@ -444,13 +450,9 @@ setupContent = ->
 						renderTimeButton 'Days'
 						renderTimeButton 'Months'
 				# Gameinfo setup page:
-				expanded = Obs.create(false)
 				Dom.div !->
-					Dom.style margin: '-8px'
-					Ui.button tr('Game information'), !->
-						expanded.set(!expanded.get())
-					if expanded.get()
-						helpContent(true)
+					Dom.h2 "Game information"
+					Dom.text "For game information, click the gear or information icon on the top of the page"
 		else if currentPage is 'setup1' # Setup map boundaries
 			# Bar to indicate the setup progress
 			Dom.div !->
@@ -605,39 +607,31 @@ mainContent = ->
 	renderMap()
 	renderBeacons()
 # Help page 
-helpContent = (setup)->
-	Dom.div !->
-		Dom.cls 'container'
-		if(!setup)
-			Dom.h1 "Game information"
-			Dom.text "On this page you find all the information about the game! "
-			Dom.br()
-			Dom.br()
-		Dom.h2 "General info"
-		if(!setup)
-			Dom.text "You are playing this game with " + Plugin.users.count().get() + " users that are randomly divided over " + Db.shared.peek('game','numberOfTeams') + " teams"
-			Dom.br()
-			Dom.br()
-		Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
-		Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
-		Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
-		Dom.text "A neutral beacon will take 30 seconds to conquer, but an occupied beacon will take one minute. You first need to drain the opponents' color, before you can fill it with yours! "
-		Dom.br()
-		Dom.br()
-		Dom.h2 "Rules"
-		Dom.text "You gain 10 points for being the first team to conquer a certain beacon. "
-		Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
-		Dom.text "Every hour the beacon is in your posession, it will generate a number of points. "
-		Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
-		Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 10 to 9, 8 all the way to 1. "
-		Dom.text "The team with the highest score at the end of the game wins. "
-		Dom.br()
-		Dom.br()
-		Dom.h2 "Use of Map & Tabs"
-		Dom.text "To find locations of beacons you can navigate over the map by swiping. To obtain a more precise location you can zoom in and out by pinching. "
-		Dom.br()
-		Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
-		Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
+helpContent = ()->
+	Dom.text "On this page you find all the information about the game! "
+	Dom.br()
+	Dom.br()
+	Dom.h2 "General info"
+	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
+	Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
+	Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
+	Dom.text "A neutral beacon will take 30 seconds to conquer, but an occupied beacon will take one minute. You first need to drain the opponents' color, before you can fill it with yours! "
+	Dom.br()
+	Dom.br()
+	Dom.h2 "Rules"
+	Dom.text "You gain 10 points for being the first team to conquer a certain beacon. "
+	Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
+	Dom.text "Every hour the beacon is in your posession, it will generate a number of points. "
+	Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
+	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 10 to 9, 8 all the way to 1. "
+	Dom.text "The team with the highest score at the end of the game wins. "
+	Dom.br()
+	Dom.br()
+	Dom.h2 "Use of Map & Tabs"
+	Dom.text "To find locations of beacons you can navigate over the map by swiping. To obtain a more precise location you can zoom in and out by pinching. "
+	Dom.br()
+	Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
+	Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
 # Scores page
 scoresContent = ->
 	#position = 0
