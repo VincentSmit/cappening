@@ -1146,13 +1146,21 @@ renderLocation = ->
 							iconAnchor:   [20, 40], 
 							popupAnchor:  [0, -40]
 						});
-						marker = L.marker(latLngObj, {icon: locationIcon})
-						marker.bindPopup("This is your current location." + "<br>Accuracy: " + state.get('accuracy') + 'm')
-						markerClick = () -> 
-							marker.togglePopup()		
-						marker.on('contextmenu', markerClick)
-						marker.addTo(map)
-						window.beaconCurrentLocation = marker
+						if not (beaconCurrentLocation?)
+							window.beaconCurrentLocation = L.marker(latLngObj, {icon: locationIcon})
+							markerClick = () -> 
+								beaconCurrentLocation.togglePopup()	
+							beaconCurrentLocation.on('contextmenu', markerClick)
+							beaconCurrentLocation.bindPopup("This is your current location." + "<br>Accuracy: " + accuracy, {closeOnClick: true, closeButton: false})						
+							beaconCurrentLocation.addTo(map)
+						beaconCurrentLocation.setLatLng(latLngObj)
+						accuracy = undefined
+						if state.get('accuracy') < 1000
+							accuracy = Math.round(state.get('accuracy')) + 'm'
+						else
+							accuracy = Math.round(state.get('accuracy')/1000) + 'km'
+						beaconCurrentLocation.setPopupContent("This is your current location." + "<br>Accuracy: " + accuracy)
+						
 						# Info bar (testing purposes)
 						###
 						Dom.div !->
@@ -1291,11 +1299,11 @@ renderLocation = ->
 											checkinLocation()
 				else
 					log 'Location could not be found'
-				Obs.onClean ->
-					if mapReady() and beaconCurrentLocation?
-						# Remove the location marker
-						map.removeLayer beaconCurrentLocation
-						window.beaconCurrentLocation = null;
+				#Obs.onClean ->
+				#	if mapReady() and beaconCurrentLocation?
+				#		# Remove the location marker
+				#		map.removeLayer beaconCurrentLocation
+				#		window.beaconCurrentLocation = null;
 		Obs.onClean ->
 			#Server.call 'log', Plugin.userId(), "Untrack location"
 
