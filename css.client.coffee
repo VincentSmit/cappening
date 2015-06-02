@@ -7,7 +7,7 @@ Dom.css
 # Main content page
 	'.bar-button':
 		height: "100%"
-		width: "33%"
+		width: "50%"
 		float: "left"
 		color: "white"
 		lineHeight: "50px"

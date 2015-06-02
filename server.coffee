@@ -58,9 +58,7 @@ exports.onUpgrade = ->
 # Config changes (by admin or plugin adder)
 exports.onConfig = (config) ->
 	if config.restart
-		moveData()
-		log '[onConfig()] Restarting game'
-		initializeGame()
+		restartGame()
 
 # Get background location from player.
 exports.onGeoloc = (userId, geoloc) ->
@@ -111,7 +109,7 @@ exports.onJoin = (userId) ->
 
 #==================== Client calls ====================
 # Restarts game
-exports.client_restartGame = () ->
+exports.client_restartGame = restartGame =  () ->
 	#Store old game data in history
 	moveData()
 	#Reset game database
