@@ -483,10 +483,9 @@ setupContent = ->
 					markerDragged = ->
 						if mapReady()
 							Server.sync 'setBounds', window.locationOne.getLatLng(), window.locationTwo.getLatLng(), !->
-								# TODO: fix prediction, does not work yet
-								#log 'predicting bounds change'
-								#Db.shared.set 'game', 'bounds', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
-								#log 'predicted bounds: ', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
+								log 'predicting bounds change'
+								Db.shared.set 'game', 'bounds', {one: {lat: window.locationOne.getLatLng().lat, lng: window.locationOne.getLatLng().lng}, two: {lat: window.locationTwo.getLatLng().lat, lng: window.locationTwo.getLatLng().lng}}
+								log 'predicted bounds: ', {one: {lat: window.locationOne.getLatLng().lat, lng: window.locationOne.getLatLng().lng}, two: {lat: window.locationTwo.getLatLng().lat, lng: window.locationTwo.getLatLng().lng}}
 							checkAllBeacons()
 					# Corner 1
 					lat1 = Db.shared.get('game', 'bounds', 'one', 'lat')
@@ -1136,11 +1135,10 @@ renderLocation = ->
 						if not (Db.shared.peek('game', 'bounds', 'one', 'lat')?)
 							one = L.latLng(latLngObj.lat+0.01,latLngObj.lng-0.02)
 							two = L.latLng(latLngObj.lat-0.01,latLngObj.lng+0.02)
-							Server.sync 'setBounds', one, two,  !->
-								# TODO: fix prediction, does not work yet
-								#log 'predicting bounds change'
-								#Db.shared.set 'game', 'bounds', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
-								#log 'predicted bounds: ', {one: window.locationOne.getLatLng(), two: window.locationTwo.getLatLng()}
+							Server.sync 'setBounds', one, two, !->
+								log 'predicting bounds change'
+								Db.shared.set 'game', 'bounds', {one: {lat: window.locationOne.getLatLng().lat, lng: window.locationOne.getLatLng().lng}, two: {lat: window.locationTwo.getLatLng().lat, lng: window.locationTwo.getLatLng().lng}}
+								log 'predicted bounds: ', {one: {lat: window.locationOne.getLatLng().lat, lng: window.locationOne.getLatLng().lng}, two: {lat: window.locationTwo.getLatLng().lat, lng: window.locationTwo.getLatLng().lng}}
 							map.setView(latLngObj)
 						locationIcon = L.icon({
 							iconUrl: Plugin.resourceUri('location.png'),
