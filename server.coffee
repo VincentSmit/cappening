@@ -455,7 +455,7 @@ exports.onNeutralize = (args) ->
 	#Call the timer to reset the time in the correct endtime in the database
 	end = Db.shared.peek 'game', 'endTime'
 	if Db.shared.peek('game', 'newEndTime') isnt 0
-		Db.shared.modify 'game', 'newEndTime', (v) -> 0
+		Db.shared.set 'game', 'newEndTime', 0
 		Timer.cancel 'endGame', {}
 		Timer.set (end-Plugin.time())*1000, 'endGame', {}
 		# Cancel event
