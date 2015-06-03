@@ -49,7 +49,10 @@ exports.onUpgrade = ->
 		newVersion = 5
 		if Db.shared.peek('gameState') is 1
 			updateTeamRankings()
-
+	if version < 6
+		newVersion = 6
+		if not(Db.shared.peek('game', 'eventlist', 'maxId')?)
+			Db.shared.set 'game', 'eventlist', 'maxId', 0
 
 	# Write new version to the database
 	if newVersion isnt version
@@ -671,7 +674,7 @@ addEvent = (eventArgs) ->
 	maxId = Db.shared.peek 'game', 'eventlist', 'maxId'
 	log "[addEvent()] Event: " + eventArgs.type + " id: " + maxId
 	Db.shared.set 'game', 'eventlist', maxId, eventArgs
-	Db.shared.set 'game', 'eventlist', 'maxId', (maxId + 1)
+	Db.shared.modify 'game', 'eventlist', 'maxId', (v) -> v + 1
 
 # Sends a push notification, message, to all team members
 pushToTeam = (teamId, message) ->
