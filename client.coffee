@@ -165,11 +165,11 @@ addBar = ->
 		Dom.div !->
 			Dom.div !->
 				Dom.style 
-					width: '30px'
+					width: '29px'
 					height: '30px'
 					verticalAlign: 'middle'
 					display: 'inline-block'
-					background: "url(#{Plugin.resourceUri('ranking.png')}) no-repeat 0 0 / 30px 30px"
+					background: "url(#{Plugin.resourceUri('ranking.png')}) no-repeat 0 0 / 26px 26px"
 			Dom.div !->
 				Dom.text 'Ranking'
 				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
@@ -835,7 +835,7 @@ logContent = ->
 								width: '70px'
 								height: '70px'
 								marginRight: '10px'
-								background: teamColor + " url(#{Plugin.resourceUri('ranking.png')}) no-repeat 10px 10px"
+								background: teamColor + " url(#{Plugin.resourceUri('ranking-plain.png')}) no-repeat 10px 10px"
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '16px'
