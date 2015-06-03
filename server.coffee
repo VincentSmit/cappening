@@ -632,9 +632,12 @@ getFirstTeam = ->
 
 # Modify user and team scores by adding "points" to the current value
 modifyScore = (client, points) ->
-	log "[modifyScore()] client: " + client + " team: " + getTeamOfUser(client) + " points: " + points
-	# modify user- and team scores
 	teamClient = getTeamOfUser(client)
+	log "[modifyScore()] client: " + client + " team: " + teamClient + " points: " + points
+	if not(teamClient?) or parseInt(teamClient) == -1
+		log "WARNING: team is undefined/-1! Stopping modifyScore()"
+		return
+	# modify user- and team scores
 	Db.shared.modify 'game', 'teams', teamClient, 'users', client, 'userScore', (v) -> v + points
 	Db.shared.modify 'game', 'teams', teamClient, 'teamScore', (v) -> v + points
 	# new lead check
