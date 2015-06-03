@@ -15,14 +15,14 @@ exports.onInstall = ->
 	initializeColors()
 	initializeGame()
 
-# Game update 
+# Game update
 exports.onUpgrade = ->
 	log '[onUpgrade()] at '+new Date()
 	# Check if the color array is defined correctly
 	if not Db.shared.peek('colors', '-1', 'name')?
 		log 'Initialized colors again'
 		initializeColors()
-	
+
 	# Check version number and upgrade if required
 	version = Db.shared.peek('version')
 	newVersion = version
@@ -151,13 +151,13 @@ exports.client_addMarker = (client, location) ->
 			nextNumber++
 
 		Db.shared.set 'game', 'beacons', nextNumber, {location: location}
-		Db.shared.set 'game', 'beacons', nextNumber, 'owner', -1 
+		Db.shared.set 'game', 'beacons', nextNumber, 'owner', -1
 		Db.shared.set 'game', 'beacons', nextNumber, 'nextOwner', -1
 		Db.shared.set 'game', 'beacons', nextNumber, 'percentage', 0
 		Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', 10
 		Db.shared.set 'game', 'beacons', nextNumber, 'action', "none"
 
-exports.client_deleteBeacon = (client, location) ->	
+exports.client_deleteBeacon = (client, location) ->
 	#Finding the right beacon
 	if Db.shared.peek('gameState') isnt 0
 		log '[deleteBeacon()] '+Plugin.userName(client), ' (id=', client, ') tried to delete a beacon while game is not in setup phase!'
@@ -184,7 +184,7 @@ exports.client_setBounds = (one, two) ->
 
 # Get clients ingame user ID
 # exports.client_getIngameUserId = (client) ->
-# 	client.reply 
+# 	client.reply
 exports.client_getNewDeviceId = (client, result) ->
 	newId = (Db.shared.peek('maxDeviceId'))+1
 	log '[getDeviceId()] newId ' + newId + ' send to ' + Plugin.userName(client) + " (" + client + ")"
@@ -207,7 +207,7 @@ exports.client_startGame = ->
 		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'captured', 0
 		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'neutralized', 0
 		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userName', Plugin.userName(userIds[randomNumber])
-		log '[startGame()] Team', team, 'has player', Plugin.userName(userIds[randomNumber]) 
+		log '[startGame()] Team', team, 'has player', Plugin.userName(userIds[randomNumber])
 		userIds.splice(randomNumber,1)
 		team++
 		team = 0 if team >= teams
@@ -225,7 +225,7 @@ exports.client_startGame = ->
     	unit: 'startGame'
     	text: "The game has started!"
 
-# Checkin location for capturing a beacon		
+# Checkin location for capturing a beacon
 exports.client_checkinLocation = (client, location, device, accuracy) ->
 	if Db.shared.peek('gameState') isnt 1
 		log '[checkinLocation()] Client ', client, ' (', Plugin.userName(client), ') tried to capture beacon while game is not running!'
@@ -244,7 +244,7 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 				owner = beacon.peek 'owner'
 				if newStatus
 					if not device? # Deal with old clients by denying them to be added to inRange
-						log '[checkinLocation()] Denied adding to inRange, no deviceId provided: id=' + client + ', name=' + Plugin.userName(client) 
+						log '[checkinLocation()] Denied adding to inRange, no deviceId provided: id=' + client + ', name=' + Plugin.userName(client)
 						return
 					if accuracy > beaconRadius
 						log '[checkinLocation()] Denied adding to inRange of '+Plugin.userName(client)+' ('+client+'), accuracy too low: '+accuracy+'m'
@@ -261,7 +261,7 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 						removed = client
 					else
 						log '[checkinLocation()] Denied removing from inRange, deviceId does not match: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device, ', inRangeDevice=' + inRangeDevice
-				#log 'removed=', removed	
+				#log 'removed=', removed
 				updateBeaconStatus(beacon, removed)
 			else
 				refreshInrangeTimer(client, device)
@@ -291,7 +291,7 @@ updateBeaconStatus = (beacon, removed) ->
 		if parseInt(player.key(), 10) != parseInt(removed, 10)
 			team = getTeamOfUser(player.key())
 			teamMembers[team] = teamMembers[team]+1
-	#log 'teamMembers count: ', teamMembers	
+	#log 'teamMembers count: ', teamMembers
 
 	# Determine who is competing
 	max = 0
@@ -359,7 +359,7 @@ exports.endGame = (args) ->
 		# End game and activate end game screen
 		Db.shared.set 'gameState', 2
 		log "[endGame()] The game ended! gameState: " + Db.shared.peek('gameState') + " args: " + args + " winningTeam: " + winningTeam + " Db: " + Db.shared.peek('game', 'firstTeam')
-		# Event 
+		# Event
 		addEvent {
 			timestamp: new Date()/1000
 			type: "end"
@@ -381,9 +381,9 @@ exports.onCapture = (args) ->
 	beacon.set 'owner', nextOwner
 	beacon.set 'actionStarted', new Date()/1000
 	beacon.set 'action', 'none'
-	
+
 	# Set a timer to gain teamscore overtime
-	log '[onCapture()] pointsTime: '+global.pointsTime						
+	log '[onCapture()] pointsTime: '+global.pointsTime
 	Timer.set global.pointsTime, 'overtimeScore', {beacon: beacon.key()}
 
 	# The game will end in 1 hour if all the beacons are captured by one team
@@ -448,14 +448,14 @@ exports.onNeutralize = (args) ->
 	log '[onNeutralize()] Team ', neutralizer, ' has neutralized beacon ', beacon.key(), ', players: '+inRangeOfTeam
 	beacon.set 'percentage', 0
 	beacon.set 'owner', -1
-	
+
 	#cancel gain teamscore overtime
 	Timer.cancel 'overtimeScore', {beacon: beacon.key()}
-	
+
 	#Call the timer to reset the time in the correct endtime in the database
 	end = Db.shared.peek 'game', 'endTime'
 	if Db.shared.peek('game', 'newEndTime') isnt 0
-		Db.shared.remove 'game', 'newEndTime'
+		Db.shared.modify 'game', 'newEndTime', (v) -> 0
 		Timer.cancel 'endGame', {}
 		Timer.set (end-Plugin.time())*1000, 'endGame', {}
 		# Cancel event
@@ -479,7 +479,7 @@ exports.onNeutralize = (args) ->
 	# Set timer for capturing
 	Timer.set (100-percentage)*10*30, 'onCapture', args
 
-# Modify teamscore for possessing a beacon for a certain amount of time	
+# Modify teamscore for possessing a beacon for a certain amount of time
 # args.beacon: beacon that is getting points
 exports.overtimeScore = (args) ->
 	owner = Db.shared.peek 'game', 'beacons',  args.beacon, 'owner'
@@ -575,7 +575,7 @@ initializeGame = ->
 
 # initialize team colors
 initializeColors = ->
-	Db.shared.set 'colors', 
+	Db.shared.set 'colors',
 		{
 			'-1': {name: 'neutral', capitalizedName: 'Neutral', hex: '#999999'},
 			0:    {name: 'blue',    capitalizedName: 'Blue',    hex: '#3882b6'},
@@ -596,6 +596,7 @@ setTimer = ->
 		seconds = Db.shared.peek('game', 'roundTimeNumber')*3600
 	end = Plugin.time()+seconds #in seconds
 	Db.shared.set 'game', 'endTime', end
+	Db.shared.set 'game', 'newEndTime', 0
 	Timer.cancel 'endGame', {}
 	Timer.set seconds*1000, 'endGame', {} #endGame is the function called when the timer ends
 
@@ -654,7 +655,7 @@ checkNewLead = ->
 	teamMax = getFirstTeam()
 	newLead = false;
 	newLead = teamMax isnt Db.shared.peek('game', 'firstTeam')
-	
+
 	log "[checkNewLead()] newLead: " + newLead + " "
 
 	# create score event
@@ -663,10 +664,10 @@ checkNewLead = ->
 		addEvent {
 			timestamp: new Date()/1000
 			type: "score"
-			leading: teamMax 
+			leading: teamMax
 		}
 		Db.shared.set 'game', 'firstTeam', teamMax # store firstTeam for next new team calculation
-		pushToTeam(teamMax, "Your team took the lead!") 
+		pushToTeam(teamMax, "Your team took the lead!")
 		pushToRest(teamMax, "Team " + Db.shared.peek('colors', teamMax, 'name') + " took the lead!")
 	# Update rankings
 	updateTeamRankings()
@@ -706,6 +707,3 @@ moveData = ->
 	current = Db.shared.peek('gameNumber')
 	Db.backend.set 'history', current,'game', Db.shared.peek('game')
 	Db.backend.set 'history', current, 'gameState', Db.shared.peek('gameState')
-
-
-		
