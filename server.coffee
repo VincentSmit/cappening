@@ -53,7 +53,9 @@ exports.onUpgrade = ->
 		newVersion = 6
 		if not(Db.shared.peek('game', 'eventlist', 'maxId')?)
 			Db.shared.set 'game', 'eventlist', 'maxId', 0
-
+	if version < 7
+		newVersion=7
+		Db.shared.remove 'history'
 	# Write new version to the database
 	if newVersion isnt version
 		log '[onUpgrade] Upgraded from version '+version+' to '+newVersion+'.'
@@ -702,8 +704,8 @@ pushToRest = (teamId, message) ->
 #Move all data to history tab
 moveData = ->
 	current = Db.shared.peek('gameNumber')
-	Db.shared.set 'history', current,'game', Db.shared.peek('game')
-	Db.shared.set 'history', current, 'gameState', Db.shared.peek('gameState')
+	Db.backend.set 'history', current,'game', Db.shared.peek('game')
+	Db.backend.set 'history', current, 'gameState', Db.shared.peek('gameState')
 
 
 		
