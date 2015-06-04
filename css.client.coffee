@@ -169,15 +169,16 @@ Dom.css
 		_textShadow: '0 0 5px #000000, 0 0 5px #000000'
 
 #Indication Arrow
-	'#indicationArrow':
+	'.indicationArrow':
 		width: '30px'
 		height: '30px'
-		backgroundColor: '#3882B6'
+		bottom: '10px'
+		left: '10px'
 		position: 'absolute'
 		borderRadius: '15px'
 		zIndex: '10'
 		_boxShadow: '0 0 3px rgba(0,0,0,0.5)'
-	'#indicationArrow:before':
+	'.indicationArrow:before':
 		content: '""'
 		display: 'block'
 		position: 'absolute'
@@ -186,7 +187,7 @@ Dom.css
 		top: '15px'
 		left: '12px'
 		height: '7px'
-	'#indicationArrow:after':
+	'.indicationArrow:after':
 		content: '""'
 		display: 'block'
 		width: '0'
@@ -197,13 +198,10 @@ Dom.css
 		borderLeft: 'solid 8px transparent'
 		borderRight: 'solid 8px transparent'
 		position: 'absolute'
-	'.indicationArrowSW':
-		bottom: '10px'
-		left: '10px'
 	'.arrowDivText':
 		fontSize: '12px'
 		color: '#fff'
-		bottom: '5px'
+		bottom: '2px'
 		left: '50px'
 		height: '30px'
 		position: 'absolute'

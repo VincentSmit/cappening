@@ -29,7 +29,6 @@ exports.render = ->
 	#Server.call 'log', Plugin.userId(), "FULL RENDER"
 	loadOpenStreetMap()
 
-
 	Obs.observe ->
 		# Check if cleanup from last game is required
 		local = Db.local.peek 'gameNumber'
@@ -48,7 +47,6 @@ exports.render = ->
 	Obs.observe ->
 		mainElement = document.getElementsByTagName("main")[0]
 		mainElement.setAttribute 'id', 'main'
-
 		redraw.get();
 		limitToBounds()
 		gameState = Db.shared.get('gameState')
@@ -107,8 +105,7 @@ exports.render = ->
 				logContent()
 			if checkinLocationFunction?
 				clearInterval(checkinLocationFunction)
-				checkinLocationFunction = null
-						
+				checkinLocationFunction = null						
 	Obs.observe ->
 		deviceId = Db.local.peek 'deviceId'
 		if not deviceId?
@@ -121,7 +118,7 @@ exports.render = ->
 				else
 					log 'Did not get deviceId from server'
 
-					
+# Render info page (gear/info icon in top bar)
 exports.renderInfo = !->
 	helpContent()
 							
@@ -132,6 +129,7 @@ exports.renderSettings = !->
 			name: 'restart'
 			text: tr 'Restart'
 			sub: tr 'Check this to destroy the current game and start a new one.'
+
 
 # ========== Content fuctions ==========
 addBar = ->
@@ -606,6 +604,7 @@ setupContent = ->
 	else
 		Dom.text tr("Admin/plugin owner is setting up the game")
 		# Show map and current settings
+
 # Home page with map
 mainContent = ->
 	log "mainContent()"
@@ -626,8 +625,6 @@ mainContent = ->
 			ok= undefined;
 		,['ok', tr("Got it")]
 	
-
-
 # Help page 
 helpContent = ()->
 	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
@@ -648,6 +645,7 @@ helpContent = ()->
 	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will decrease with "+config.beaconValueDecrease+" until a minimum of "+config.beaconValueMinimum+". "
 	Dom.text "The team with the highest score at the end of the game wins. "
 	Dom.text "If a team captures all beacons, the game will end quickly if the other teams stay inactive. "
+
 # Scores page
 scoresContent = ->
 	#position = 0
@@ -716,6 +714,7 @@ scoresContent = ->
 					Dom.onTap !->
 						expanded.set(!expanded.get())
 		, (team) -> [team.get('ranking')]
+
 # Eventlog page
 logContent = ->
 	Dom.div !->
@@ -903,6 +902,7 @@ renderMap = ->
 			toRemove.parentNode.removeChild(toRemove);
 	setupMap()
 	renderLocation();
+
 loadOpenStreetMap = ->
 	log "loadOpenStreetMap()"
 	# Only insert these the first time
@@ -934,6 +934,7 @@ loadOpenStreetMap = ->
 		document.getElementsByTagName('head')[0].appendChild javascript
 	else 
 		log "OpenStreetMap files already loaded"
+
 # Initialize the map with tiles
 setupMap = ->
 	Obs.observe ->
@@ -948,6 +949,8 @@ setupMap = ->
 			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "Initialized MapBox map"
+
+# Setup map bounds
 limitToBounds = ->
 	Obs.observe ->
 		log "Map bounds and minzoom set"
@@ -967,6 +970,8 @@ limitToBounds = ->
 					log "  Map bounds and minzoom reset"
 					map.setMaxBounds()
 					map._layersMinZoom = 0
+
+# Zoom to fit map bounds
 zoomToBounds = ->
 	Obs.observe ->
 		log "Zoomed to bounds"
@@ -977,6 +982,7 @@ zoomToBounds = ->
 			bounds = L.latLngBounds(loc1, loc2)
 			if loc1? and loc2? and bounds?
 				map.fitBounds(bounds.pad(0.05));
+
 # Add beacons to the map
 renderBeacons = ->
 	log "rendering beacons"
@@ -1086,7 +1092,8 @@ renderBeacons = ->
 					map.removeLayer beaconCircles[beaconKey]
 					delete beaconCircles[beaconKey]
 	, (beacon) ->
-		-beacon.get()		
+		-beacon.get()	
+
 # Listener that checks for clicking the map
 addMarkerListener = (event) ->
 	log 'click: ', event
@@ -1115,18 +1122,23 @@ addMarkerListener = (event) ->
 				number = Math.floor((Math.random() * 10000) + 200)
 				Db.shared.set 'game', 'beacons', number, {location: {lat: event.latlng.lat, lng: event.latlng.lng}, owner: -1}
 	
-
+# Listener for updating your location indicator
 indicationArrowListener = () ->
 	indicationArrowRedraw.incr()
+
+# Convert a location to a LatLng object
 convertLatLng = (location) ->
 	return L.latLng(location.lat, location.lng)	
+
 # Compare 2 locations to see if they are the same
 sameLocation = (location1, location2) ->
 	#log "sameLocation(), location1: ", location1, ", location2: ", location2
 	return location1? and location2? and location1.lat is location2.lat and location1.lng is location2.lng
+
 # Check if the map can be used	
 mapReady = ->
 	return L? and map?
+
 #Loop through all beacons see if they are still within boundaryRectangle
 checkAllBeacons = ->
 	if beaconCircles? and beaconMarkers? and locationOne? and locationTwo? and mapReady()
@@ -1138,6 +1150,7 @@ checkAllBeacons = ->
 				delete beaconCircles[key]
 				map.removeLayer beaconMarkers[key]
 				delete beaconMarkers[key]
+
 # Render the location of the user on the map (currently broken)
 renderLocation = ->
 	#Server.call 'log', Plugin.userId(), "[renderLocation()]"
@@ -1183,7 +1196,7 @@ renderLocation = ->
 							accuracy = Math.round(state.get('accuracy')/1000) + 'km'
 						beaconCurrentLocation.setPopupContent("This is your current location." + "<br>Accuracy: " + accuracy)
 						
-						# Info bar (testing purposes)
+						# GeoLocation information bar (testing purposes)
 						###
 						Dom.div !->
 							Dom.cls 'infobar'
@@ -1211,55 +1224,42 @@ renderLocation = ->
 									# Render an arrow that points to your location if you do not have it on your screen already
 									if !(map.getBounds().contains(latLngObj))
 										#log 'Your location is outside your viewport, rendering indication arrow'
-										# The arrow has to be inside the map element to get it rendered in the proper place, therefore plain javascript is required
-										arrowDiv = document.createElement "div"
-										arrowDiv.setAttribute 'id', 'indicationArrow'
-										arrowDivText = document.createElement "div"
-										arrowDivText.setAttribute 'id', 'indicationArrowText'
-										arrowDivText.className = 'arrowDivText'
-										mainElement = document.getElementById("OpenStreetMap")
-										if mainElement?
-											mainElement.insertBefore(arrowDiv, null)  # Inserts the element at the end
-											mainElement.insertBefore(arrowDivText, null)
-											center= map.getBounds().getSouthWest()
-											
-											difLat = Math.abs(latLngObj.lat - center.lat)
-											difLng = Math.abs(latLngObj.lng - center.lng)
-											angle = 0
-											if latLngObj.lng > center.lng and latLngObj.lat > center.lat
-												angle = Math.atan(difLng/difLat) 
-											else if latLngObj.lng > center.lng and latLngObj.lat <= center.lat
-												angle = Math.atan(difLat/difLng)+ Math.PI/2 
-											else if latLngObj.lng <= center.lng and latLngObj.lat <= center.lat
-												angle = Math.atan(difLng/difLat)+ Math.PI
-											else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
-												angle = (Math.PI-Math.atan(difLng/difLat)) + Math.PI
-											angleDeg = 	angle*180/Math.PI		
-											arrowDiv.className = 'indicationArrowSW'
-											#log 'angleDeg=', angleDeg
-											arrowDiv.style.transform = "rotate(" +angle + "rad)"
-											arrowDiv.style.webkitTransform = "rotate(" +angle + "rad)"
-											arrowDiv.style.mozTransform = "rotate(" +angle + "rad)"
-											arrowDiv.style.msTransform = "rotate(" +angle + "rad)"
-											arrowDiv.style.oTransform = "rotate(" +angle + "rad)"
-											distanceToPlayfield = latLngObj.distanceTo(center)
-											if distanceToPlayfield <= 1000
-												distanceToPlayfield = Math.round(distanceToPlayfield) + "m"
-											if distanceToPlayfield > 1000
-												distanceToPlayfield = Math.round(distanceToPlayfield/1000) + "km"
-											arrowDivText.innerHTML = "You're " + distanceToPlayfield + " away"
-												
+										center= map.getBounds().getSouthWest()										
+										difLat = Math.abs(latLngObj.lat - center.lat)
+										difLng = Math.abs(latLngObj.lng - center.lng)
+										angle = 0
+										if latLngObj.lng > center.lng and latLngObj.lat > center.lat
+											angle = Math.atan(difLng/difLat) 
+										else if latLngObj.lng > center.lng and latLngObj.lat <= center.lat
+											angle = Math.atan(difLat/difLng)+ Math.PI/2 
+										else if latLngObj.lng <= center.lng and latLngObj.lat <= center.lat
+											angle = Math.atan(difLng/difLat)+ Math.PI
+										else if latLngObj.lng <= center.lng and latLngObj.lat > center.lat
+											angle = (Math.PI-Math.atan(difLng/difLat)) + Math.PI
+										angleDeg = 	angle*180/Math.PI
+										#log 'angleDeg=', angleDeg
+										t = "rotate(" +angle + "rad)"
+										distanceToPlayfield = latLngObj.distanceTo(center)
+										if distanceToPlayfield <= 1000
+											distanceToPlayfield = Math.round(distanceToPlayfield) + "m"
+										if distanceToPlayfield > 1000
+											distanceToPlayfield = Math.round(distanceToPlayfield/1000) + "km"
+										Dom.div !->
+											Dom.cls 'indicationArrow'
+											Dom.style
+												mozTransform: t
+												msTransform: t
+												oTransform: t
+												webkitTransform: t
+												transform: t
+												backgroundColor: Db.shared.peek('colors', getTeamOfUser(Plugin.userId()), 'hex')
+										Dom.div !->
+											Dom.cls 'arrowDivText'
+											Dom.text "You're " + distanceToPlayfield + " away"											
 							Obs.onClean ->
 								# Deregister move/zoom listeners to update indication arrow
 								if mapReady()
 									map.off('moveend', indicationArrowListener)
-								# Remove the indication arrow
-								toRemove = document.getElementById('indicationArrow');
-								if toRemove?
-									toRemove.parentNode.removeChild(toRemove);
-								toRemoveText = document.getElementById('indicationArrowText');
-								if toRemoveText?
-									toRemoveText.parentNode.removeChild(toRemoveText);
 						# Checking if users are capable of taking over beacons
 						Obs.observe ->
 							if Db.shared.peek('gameState') is 1 # Only when the game is running, do something
