@@ -1040,9 +1040,9 @@ renderBeacons = ->
 					if parseInt(beacon.peek('owner')) is parseInt(getTeamOfUser(Plugin.userId()))
 						popupString += "Beacon owned by your team."
 						if config.beaconHoldScore == 1
-							popupString += "<br>Scoring "+config.beaconHoldScore+" point per hour while kept."
+							popupString += "<br>Scoring "+config.beaconHoldScore+" point per hour while held."
 						else
-							popupString += "<br>Scoring "+config.beaconHoldScore+" points per hour while kept."
+							popupString += "<br>Scoring "+config.beaconHoldScore+" points per hour while held."
 					else
 						popupString += "Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "."
 					popupString += "<br>Next capture gives " + beacon.peek('captureValue') + " points."
