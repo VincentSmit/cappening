@@ -59,7 +59,7 @@ exports.onUpgrade = ->
 
 	# Write new version to the database
 	if newVersion isnt version
-		log '[onUpgrade] Upgraded from version '+version+' to '+newVersion+'.'
+		log '[onUpgrade()] Upgraded from version '+version+' to '+newVersion+'.'
 		Db.shared.set 'version', newVersion
 
 # Config changes (by admin or plugin adder)

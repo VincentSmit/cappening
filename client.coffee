@@ -652,7 +652,7 @@ scoresContent = ->
 	Dom.div !->
 		Dom.style
 			paddingLeft: "14px"
-		Dom.h1 "Teamscores"
+		Dom.h1 "Teams ranking"
 	Ui.list !->
 		Dom.style
 			padding: '0'
@@ -674,13 +674,24 @@ scoresContent = ->
 						background: teamColor
 						backgroundSize: 'cover'
 						position: 'absolute'
+						_textShadow: '0 0 3px rgba(0,0,0,0.8)'
 					Dom.div !->
+						rank = team.get('ranking')
 						Dom.style
 							fontSize: "40px"
 							paddingTop: "12px"
 							textAlign: "center"
 							color: "white"
-						Dom.text team.get('ranking')
+							paddingRight: if rank==1 then '10px' else '15px'
+						Dom.text rank
+						rankingSuffix = {1: "st", 2: "nd", 3: "rd", 4: "th", 5: "th", 6: "th"}
+						Dom.div !->
+							Dom.text rankingSuffix[rank]
+							Dom.style
+							    position: 'absolute'
+							    fontSize: '17px'
+							    left: if rank==1 then '38px' else '40px'
+							    top: '15px'
 				Dom.div !->
 					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '84px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
