@@ -319,15 +319,18 @@ addEndGameBar = ->
 			Dom.cls 'endGameBar'
 			Dom.style
 				backgroundColor: hexToRGBA(Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'hex'), 0.9)
+				paddingRight: '145px'
 			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'name') + " won the game!"
 			Dom.div !->
 				Dom.style
-					float: 'right'
+					position: 'absolute'
+					right: '6px'
+					top: '7px'
 					backgroundColor: '#ba1a6e'
-					minheight: '50px'
 					padding: '8px'
 					textAlign: 'center'
 					color: 'white'
+					lineHeight: '20px'
 					_boxShadow: '0 0 3px rgba(0,0,0,0.5)'
 				Dom.text "RESTART GAME"
 				if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
