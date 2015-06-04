@@ -68,25 +68,29 @@ exports.onConfig = (config) ->
 
 # Get background location from player.
 exports.onGeoloc = (userId, geoloc) ->
-	#log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
+	log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
+	#Store lat and lng for other uses
+	Db.personal(userId).set 'location', 'latitude', geoloc.latitude
+	Db.personal(userId).set 'location', 'longitude', geoloc.longitude
 	recieved = new Date()/1000
-	if Db.shared.peek('gameState') is 1 and (recieved - (Db.shared.peek('lastNotification', userId) || 0))> 30*60
+	if Db.shared.peek('gameState') is 1 and (recieved - (Db.personal(userId).peek('lastNotification', 'recieved') || 0))> 60*60
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
-		found=false;
+		found= false;
 		#Check if user is in range of an enemy beacon, opening the app will capture the beacon
 		Db.shared.iterate 'game', 'beacons', (beacon)!->
 			if (parseInt(beacon.peek('owner'),10) != parseInt(getTeamOfUser(userId),10)) and !found
 				if distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng')) < beaconRadius
-					#send notifcation
-					Event.create
-						unit: 'inRange'
-						include: userId
-						text: 'You are in range of an enemy beacon, capture it now!'
-					found=true;
-		#Last notification send, so that the user will not be spammed with notifications
-		if found
-			Db.shared.set('lastNotification', userId, recieved)
-
+					found= true;
+					log 'beacon comparison: ', beacon.key() is Db.personal(userId).peek('lastNotification', 'beaconNumber')
+					if beacon.key() isnt Db.personal(userId).peek('lastNotification', 'beaconNumber')
+						#send notifcation
+						Event.create
+							unit: 'inRange'
+							include: userId
+							text: 'You are in range of an enemy beacon, capture it now!'
+						#Last notification send, so that the user will not be spammed with notifications
+						Db.personal(userId).set('lastNotification', 'recieved', recieved)
+						Db.personal(userId).set('lastNotification', 'beaconNumber', beacon.key())
 # Handle new users joining the happening
 exports.onJoin = (userId) ->
 	log '[onJoin()] userId='+userId+', users='+Plugin.userIds()
