@@ -42,17 +42,21 @@ exports.onUpgrade = ->
 		newVersion = 4
 		Db.shared.iterate 'game', 'beacons', (beacon) !->
 			beacon.remove 'inRange'
-	if version < 5
+	if version < 5 # Fix team rankings
 		newVersion = 5
 		if Db.shared.peek('gameState') is 1
 			updateTeamRankings()
-	if version < 6
+	if version < 6 # Fix event list
 		newVersion = 6
 		if not(Db.shared.peek('game', 'eventlist', 'maxId')?)
 			Db.shared.set 'game', 'eventlist', 'maxId', 0
-	if version < 7
+	if version < 7 # Move history to a different place (removes data from old spot)
 		newVersion=7
 		Db.shared.remove 'history'
+	if version < 8 # Colors changed
+		newVersion = 8
+		initializeColors()
+
 	# Write new version to the database
 	if newVersion isnt version
 		log '[onUpgrade] Upgraded from version '+version+' to '+newVersion+'.'
@@ -587,11 +591,11 @@ initializeColors = ->
 		{
 			'-1': {name: 'neutral', capitalizedName: 'Neutral', hex: '#999999'},
 			0:    {name: 'blue',    capitalizedName: 'Blue',    hex: '#3882b6'},
-			1:    {name: 'red',     capitalizedName: 'Red',     hex: '#FF3C00'},
-			2:    {name: 'green',   capitalizedName: 'Green',   hex: '#009F22'},
-			3:    {name: 'yellow',  capitalizedName: 'Yellow',  hex: '#E8E03F'},
-			4:    {name: 'orange',  capitalizedName: 'Orange',  hex: '#FFB400'},
-			5:    {name: 'purple',  capitalizedName: 'Purple',  hex: '#E700D4'}
+			1:    {name: 'green',   capitalizedName: 'Green',   hex: '#009F22'},
+			2:    {name: 'orange',  capitalizedName: 'Orange',  hex: '#FFA200'},
+			3:    {name: 'red',     capitalizedName: 'Red',     hex: '#E41B1B'},
+			4:    {name: 'yellow',  capitalizedName: 'Yellow',  hex: '#F2DB0D'},
+			5:    {name: 'purple',  capitalizedName: 'Purple',  hex: '#E637D8'}
 		}
 
 # Game timer
