@@ -11,6 +11,9 @@ CSS = require 'css'
 Geoloc = require 'geoloc'
 Form = require 'form'
 Icon = require 'icon'
+# Get config values, access with 'config.<property>' (check 'config.common.coffee')
+CommonConfig = require 'config'
+config = CommonConfig.getConfig()
 
 window.redraw = Obs.create(0) # For full redraw
 window.indicationArrowRedraw = Obs.create(0) # For indication arrow redraw
@@ -169,7 +172,10 @@ addBar = ->
 					height: '30px'
 					verticalAlign: 'middle'
 					display: 'inline-block'
-					background: "url(#{Plugin.resourceUri('ranking.png')}) no-repeat 0 0 / 26px 26px"
+					background: "url(#{Plugin.resourceUri('ranking.png')})"
+					backgroundRepeat: "no-repeat"
+					backgroundPosition: "0 0"
+					backgroundSize: "26px 26px"
 			Dom.div !->
 				Dom.text 'Ranking'
 				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
@@ -610,8 +616,9 @@ mainContent = ->
 	if undefined is tutorial
 		Server.send 'updateTutorialState', userId, 'mainContent'
 		Modal.show tr("Are you ready to capture your first beacon?"), !->
-			Dom.div tr("Walk towards the indicated area's on the map")
-			Dom.div tr("Capturing a beacon for your team will give you and your points")
+			Dom.div tr("Walk towards the indicated area's on the map to capture a beacon.")
+			Dom.div tr("You will be awarded points for capturing a beacon, and for holding it.")
+			Dom.div tr("Tip: Capture all beacons with your team and win in one hour!")
 		, (ok)->
 			ok= undefined;
 		,['ok', tr("Got it")]
@@ -620,30 +627,24 @@ mainContent = ->
 
 # Help page 
 helpContent = ()->
-	Dom.text "On this page you find all the information about the game! "
-	Dom.br()
-	Dom.br()
-	Dom.h2 "General info"
 	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
 	Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
 	Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
 	Dom.text "A neutral beacon will take 30 seconds to conquer, but an occupied beacon will take one minute. You first need to drain the opponents' color, before you can fill it with yours! "
 	Dom.br()
 	Dom.br()
-	Dom.h2 "Rules"
-	Dom.text "You gain 10 points for being the first team to conquer a certain beacon. "
-	Dom.text "Beacons that are in possession of your team, will gain a circle around it in your team color! "
-	Dom.text "Every hour the beacon is in your posession, it will generate a number of points. "
+	Dom.h2 "Rewards and winning"
+	Dom.text "You gain "+config.beaconValueInitial+" "
+	if config.beaconValueInitial==1 then Dom.text "point" else Dom.text "points"
+	Dom.text " for being the first team to conquer a certain beacon. "
+	Dom.text "Beacons that are in possession of your team, will have a circle around it in your team color. "
+	Dom.text "Every hour the beacon is in your posession, it will generate "+config.beaconHoldScore+" "
+	if config.beaconValueInitial==1 then Dom.text "point" else Dom.text "points"
+	Dom.text ". "
 	Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
-	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will drop from 10 to 9, 8 all the way to 1. "
+	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will decrease with "+config.beaconValueDecrease+" until a minimum of "+config.beaconValueMinimum+". "
 	Dom.text "The team with the highest score at the end of the game wins. "
-	Dom.br()
-	Dom.br()
-	Dom.h2 "Use of Map & Tabs"
-	Dom.text "To find locations of beacons you can navigate over the map by swiping. To obtain a more precise location you can zoom in and out by pinching. "
-	Dom.br()
-	Dom.text "The score tab (that you can reach from the main screen) shows all individual and team scores. The Event Log tab shows all actions that have happened during the game (E.G. conquering a beacon). "
-	Dom.text "This way you can keep track of what is going on in the game and how certain teams or individuals are performing. "
+	Dom.text "If a team captures all beacons, the game will end quickly if the other teams stay inactive. "
 # Scores page
 scoresContent = ->
 	#position = 0
@@ -1017,7 +1018,11 @@ renderBeacons = ->
 				else if Db.shared.peek('gameState') != 0				
 					popupString = ""
 					if parseInt(beacon.peek('owner')) is parseInt(getTeamOfUser(Plugin.userId()))
-						popupString += "Beacon owned by your team, scoring 1 point per hour while kept."
+						popupString += "Beacon owned by your team."
+						if config.beaconHoldScore == 1
+							popupString += "<br>Scoring "+config.beaconHoldScore+" point per hour while kept."
+						else
+							popupString += "<br>Scoring "+config.beaconHoldScore+" points per hour while kept."
 					else
 						popupString += "Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "."
 					popupString += "<br>Next capture gives " + beacon.peek('captureValue') + " points."

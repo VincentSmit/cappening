@@ -2,12 +2,9 @@ Db = require 'db'
 Plugin = require 'plugin'
 Timer = require 'timer'
 Event = require 'event'
-
-# Global constants, use global.<variable>
-global = {
-	pointsTime: 3600000
-}
-
+# Get config values, access with 'config.<property>' (check 'config.common.coffee')
+CommonConfig = require 'config'
+config = CommonConfig.getConfig()
 
 # ==================== Events ====================
 # Game install
@@ -157,7 +154,7 @@ exports.client_addMarker = (client, location) ->
 		Db.shared.set 'game', 'beacons', nextNumber, 'owner', -1
 		Db.shared.set 'game', 'beacons', nextNumber, 'nextOwner', -1
 		Db.shared.set 'game', 'beacons', nextNumber, 'percentage', 0
-		Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', 10
+		Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', config.beaconValueInitial
 		Db.shared.set 'game', 'beacons', nextNumber, 'action', "none"
 
 exports.client_deleteBeacon = (client, location) ->
@@ -391,8 +388,8 @@ exports.onCapture = (args) ->
 	beacon.set 'action', 'none'
 
 	# Set a timer to gain teamscore overtime
-	log '[onCapture()] pointsTime: '+global.pointsTime
-	Timer.set global.pointsTime, 'overtimeScore', {beacon: beacon.key()}
+	log '[onCapture()] pointsTime: '+config.beaconPointsTime
+	Timer.set config.beaconPointsTime, 'overtimeScore', {beacon: beacon.key()}
 
 	# The game will end in 1 hour if all the beacons are captured by one team
 	capOwner = Db.shared.peek('game', 'beacons', '0', 'owner')
@@ -407,12 +404,12 @@ exports.onCapture = (args) ->
 	endTime = Db.shared.peek('game', 'endTime')
 
 	# Handle push notifications and modify endTime, if needed
-	if allBeaconsCaptured and endTime-Plugin.time()>(global.pointsTime/1000)
-		end = Plugin.time() + global.pointsTime/1000 #in seconds
+	if allBeaconsCaptured and endTime-Plugin.time()>(config.beaconPointsTime/1000)
+		end = Plugin.time() + config.beaconPointsTime/1000 #in seconds
 		# log 'end', end
 		Db.shared.set 'game', 'newEndTime', end
 		Timer.cancel 'endGame', {}
-		Timer.set global.pointsTime, 'endGame', {}
+		Timer.set config.beaconPointsTime, 'endGame', {}
 
 		# Add event log entrie(s)
 		addEvent {
@@ -445,8 +442,11 @@ exports.onCapture = (args) ->
 		#log player + " from team " + getTeamOfUser(player) + " captured " + Db.shared.peek('game', 'teams', getTeamOfUser(player), 'users', player, 'captured') + " beacons"
 	Db.shared.modify 'game', 'teams', nextOwner, 'captured', (v) -> v+1
     # Modify beacon value
-	beacon.modify 'captureValue', (v) -> v - 1 if beacon.peek('captureValue') > 1
-
+	beacon.modify 'captureValue', (v) -> 
+		if (v - config.beaconValueDecrease)>=config.beaconValueMinimum
+			return v - config.beaconValueDecrease
+		else
+			return config.beaconValueMinimum
 # Called by the beacon neutralize timer
 # args.beacon: beacon that is neutralized
 exports.onNeutralize = (args) ->
@@ -491,9 +491,9 @@ exports.onNeutralize = (args) ->
 # args.beacon: beacon that is getting points
 exports.overtimeScore = (args) ->
 	owner = Db.shared.peek 'game', 'beacons',  args.beacon, 'owner'
-	Db.shared.modify 'game', 'teams', owner, 'teamScore', (v) -> v + 1
+	Db.shared.modify 'game', 'teams', owner, 'teamScore', (v) -> v + config.beaconHoldScore
 	checkNewLead() # check for a new leading team
-	Timer.set global.pointsTime, 'overtimeScore', args # Every hour
+	Timer.set config.beaconPointsTime, 'overtimeScore', args # Every hour
 
 # Called when an inRange players did not checkin quickly enough
 # args.beacon: beacon id
