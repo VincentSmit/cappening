@@ -17,6 +17,10 @@ Dom.css
 		backgroundColor: 'transparent'
 	'.bar-button:last-of-type':
 		borderRight: '0 none'
+	'.bar-button:hover':
+		backgroundColor:'rgba(0, 0, 0, 0.1)'	
+	'.bar-button:active':
+		backgroundColor: 'rgba(0,0,0,0.2) !important'
 	'.mapbox-logo':
 		display: "none"
 # Map element

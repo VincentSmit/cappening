@@ -332,7 +332,7 @@ addEndGameBar = ->
 # ========== Page Contents ==========
 # Setup pages
 setupContent = ->
-	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId() or 'true' # TODO remove (debugging purposes)
+	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
 		currentPage = Db.local.get('currentSetupPage')
 		currentPage = 'setup0' if not currentPage?
 		log ' currentPage =', currentPage
@@ -604,6 +604,20 @@ mainContent = ->
 	addProgressBar()
 	renderMap()
 	renderBeacons()
+	#Tutorial for playing this game the first time
+	userId = Plugin.userId()
+	tutorial = Db.personal.peek('tutorialState', 'mainContent')
+	if undefined is tutorial
+		Server.send 'updateTutorialState', userId, 'mainContent'
+		Modal.show tr("Are you ready to capture your first beacon?"), !->
+			Dom.div tr("Walk towards the indicated area's on the map")
+			Dom.div tr("Capturing a beacon for your team will give you and your points")
+		, (ok)->
+			ok= undefined;
+		,['ok', tr("Got it")]
+	
+
+
 # Help page 
 helpContent = ()->
 	Dom.text "On this page you find all the information about the game! "

@@ -269,6 +269,11 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 			else
 				refreshInrangeTimer(client, device)
 
+#Update tutorial state
+exports.client_updateTutorialState = (userId, content) ->
+	Db.personal(userId).set 'tutorialState',content, 1
+
+			
 # Update the takeover percentage of a beacon depening on current action and the passed time
 updateBeaconPercentage = (beacon) ->
 	currentPercentage = beacon.peek 'percentage'
