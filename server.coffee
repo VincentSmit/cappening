@@ -68,7 +68,7 @@ exports.onConfig = (config) ->
 
 # Get background location from player.
 exports.onGeoloc = (userId, geoloc) ->
-	log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
+	#log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
 	#Store lat and lng for other uses
 	Db.personal(userId).set 'location', 'latitude', geoloc.latitude
 	Db.personal(userId).set 'location', 'longitude', geoloc.longitude
@@ -81,7 +81,6 @@ exports.onGeoloc = (userId, geoloc) ->
 			if (parseInt(beacon.peek('owner'),10) != parseInt(getTeamOfUser(userId),10)) and !found
 				if distance(geoloc.latitude, geoloc.longitude, beacon.peek('location', 'lat'), beacon.peek('location', 'lng')) < beaconRadius
 					found= true;
-					log 'beacon comparison: ', beacon.key() is Db.personal(userId).peek('lastNotification', 'beaconNumber')
 					if beacon.key() isnt Db.personal(userId).peek('lastNotification', 'beaconNumber')
 						#send notifcation
 						Event.create
@@ -631,7 +630,7 @@ getFirstTeam = ->
 		if maxScore < team.peek('teamScore')
 			teamMax = team.key()
 			maxScore = team.peek('teamScore')
-	log "[getFirstTeam()] teamMax: " + teamMax
+	#log "[getFirstTeam()] teamMax: " + teamMax
 	return teamMax
 
 # Modify user and team scores by adding "points" to the current value
@@ -662,12 +661,10 @@ checkNewLead = ->
 	teamMax = getFirstTeam()
 	newLead = false;
 	newLead = teamMax isnt Db.shared.peek('game', 'firstTeam')
-
-	log "[checkNewLead()] newLead: " + newLead + " "
-
 	# create score event
 	# To Do: personalize for team members or dubed players
 	if newLead
+		log "[checkNewLead()] newLead: " + newLead + " "
 		addEvent {
 			timestamp: new Date()/1000
 			type: "score"
