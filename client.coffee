@@ -639,7 +639,7 @@ helpContent = ()->
 	Dom.text " for being the first team to conquer a certain beacon. "
 	Dom.text "Beacons that are in possession of your team, will have a circle around it in your team color. "
 	Dom.text "Every hour the beacon is in your posession, it will generate "+config.beaconHoldScore+" "
-	if config.beaconValueInitial==1 then Dom.text "point" else Dom.text "points"
+	if config.beaconHoldScore==1 then Dom.text "point" else Dom.text "points"
 	Dom.text ". "
 	Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
 	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will decrease with "+config.beaconValueDecrease+" until a minimum of "+config.beaconValueMinimum+". "
