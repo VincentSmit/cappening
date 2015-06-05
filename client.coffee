@@ -472,7 +472,7 @@ setupContent = ->
 						Db.local.set('currentSetupPage', 'setup0')
 				# Middle block
 				Dom.div !->
-					Dom.text tr("Select playarea")
+					Dom.text tr("Select gamearea")
 					Dom.cls 'stepbar-middle'
 				# Right button
 				Dom.div !->
@@ -541,7 +541,7 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Drag the corners of the rectangle to define the game area. Choose this area wisely, this is where the map will be limited to."
+					Dom.text "Drag the corners of the rectangle to define the gamearea. Choose this area wisely, this is where the map will be limited to."
 
 		else if currentPage is 'setup2' # Setup beacons
 			# Bar to indicate the setup progress
@@ -845,7 +845,7 @@ logContent = ->
 									margin: '15px 0 0 20px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '16px'
-							Dom.text "The game has started!"
+							Dom.text "Start of the game!"
 							started = Db.shared.peek 'game', 'startTime'
 							if started?
 								Dom.div !->

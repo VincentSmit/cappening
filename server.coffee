@@ -227,7 +227,7 @@ exports.client_startGame = ->
 	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
 	Event.create
     	unit: 'startGame'
-    	text: "The game has started!"
+    	text: "A new game of Conquest has started!"
 
 # Checkin location for capturing a beacon
 exports.client_checkinLocation = (client, location, device, accuracy) ->
