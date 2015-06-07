@@ -320,9 +320,9 @@ updateBeaconStatus = (beacon, removed) ->
 	if competing.length == 1
 		# Team will capture the flag
 		activeTeam = competing[0]
+		percentage = beacon.peek 'percentage'
 		if activeTeam != owner
-			beacon.set 'nextOwner', activeTeam
-			percentage = beacon.peek 'percentage'
+			beacon.set 'nextOwner', activeTeam			
 			if owner == -1
 				# Capturing
 				log '[checkinLocation()] Team ', activeTeam, ' is capturing beacon ', beacon.key()
@@ -336,6 +336,14 @@ updateBeaconStatus = (beacon, removed) ->
 				beacon.set 'actionStarted', new Date()/1000
 				beacon.set 'action', 'neutralize'
 				Timer.set percentage*10*30, 'onNeutralize', {beacon: beacon.key()}
+		else if parseInt(percentage) isnt 100 and parseInt(activeTeam) is parseInt(owner)
+			# Re-capture (get percentage back to 100)
+			log '[checkinLocation()] Team ', activeTeam, ' is recapturing beacon ', beacon.key()
+			beacon.set 'nextOwner', activeTeam
+			beacon.set 'actionStarted', new Date()/1000
+			beacon.set 'action', 'recapture'
+			# Set timer for capturing
+			Timer.set (100-percentage)*10*30, 'onReCapture', {beacon: beacon.key()}
 		else
 			beacon.set 'actionStarted', new Date()/1000
 			beacon.set 'action', 'none'
@@ -451,6 +459,17 @@ exports.onCapture = (args) ->
 			return v - config.beaconValueDecrease
 		else
 			return config.beaconValueMinimum
+
+# Called by the beacon recapture timer
+# args.beacon: beacon key
+exports.onReCapture = (args) ->
+	beacon = Db.shared.ref 'game', 'beacons', args.beacon
+	inRangeOfTeam = getInrangePlayersOfTeamArray(args.beacon, beacon.peek('owner'))
+	log '[onCapture()] Team ', beacon.peek('owner'), ' has recaptured beacon ', beacon.key(), ', inRange players of team: '+ inRangeOfTeam
+	beacon.set 'percentage', 100
+	beacon.set 'actionStarted', new Date()/1000
+	beacon.set 'action', 'none'
+
 # Called by the beacon neutralize timer
 # args.beacon: beacon that is neutralized
 exports.onNeutralize = (args) ->

@@ -58,7 +58,7 @@ exports.render = ->
 		else if gameState is 1 # Game is running
 			# Set page title
 			page = Page.state.get(0)
-			page = "main" if not page?   
+			page = "main" if (not page? or page == '')
 			Obs.observe ->
 				nEnd = Db.shared.get('game', 'newEndTime')
 				end = Db.shared.get('game', 'endTime')
@@ -86,7 +86,7 @@ exports.render = ->
 				logContent()
 		else if gameState is 2 # Game ended
 			page = Page.state.get(0)
-			page = "main" if not page?
+			page = "main" if (not page? or page == '')
 			Page.setTitle !->
 				Dom.div !->
 					if Db.shared.peek( 'game', 'firstTeam') is getTeamOfUser(Plugin.userId())
@@ -211,22 +211,33 @@ addProgressBar = ->
 					log 'Cleaned progress bar...'
 				dbPercentage = beacon.peek("percentage")
 				nextPercentage = -1
+				ownTeam = getTeamOfUser(Plugin.userId())
 				nextColor = ""
 				owner = beacon.peek('owner')
 				nextOwner = beacon.peek('nextOwner')
 				actionStarted = beacon.peek("actionStarted")
-				log 'Action started ', new Date()/1000-actionStarted, ' seconds ago'
 				barText = ""
 				if action == "capture"
 					nextPercentage=100
 					dbPercentage += (new Date() /1000 -actionStarted)/30 * 100
-					log "actionStarted = " + actionStarted
 					if dbPercentage > 100
 						dbPercentage = 100
 					if dbPercentage < 0
 						dbPercentage = 0
 					nextColor = Db.shared.peek('colors', nextOwner, 'hex')
 					barText = "Capturing..."
+				else if action == "recapture"
+					nextPercentage=100
+					dbPercentage += (new Date() /1000 -actionStarted)/30 * 100
+					if dbPercentage > 100
+						dbPercentage = 100
+					if dbPercentage < 0
+						dbPercentage = 0
+					nextColor = Db.shared.peek('colors', owner, 'hex')
+					if parseInt(ownTeam) is parseInt(owner)
+						barText = "Recapturing..."
+					else
+						barText = "Enemy is recapturing..."
 				else if action == "neutralize"
 					nextPercentage=0
 					dbPercentage -= (new Date() /1000 -actionStarted)/30 * 100
@@ -242,7 +253,6 @@ addProgressBar = ->
 					else
 						nextColor = Db.shared.peek('colors', owner, 'hex')
 					fromOtherTeams = 0
-					ownTeam = getTeamOfUser(Plugin.userId())
 					log 'fromOtherTeams='+fromOtherTeams+', nextPercentage='+nextPercentage+', dbPercentage='+dbPercentage
 					nextPercentage = dbPercentage
 					beacon.iterate 'inRange', (player) ->
@@ -292,15 +302,16 @@ addProgressBar = ->
 				time = 0
 				if nextPercentage != dbPercentage
 					time = Math.abs(dbPercentage-nextPercentage) * 300
-				log "nextPercentage = ", nextPercentage, ", dbPercentage = ", dbPercentage, ", time = ", time, ", action = ", action
+				log "nextPercentage = ", nextPercentage, ", dbPercentage = ", dbPercentage, ", time = ", time, ", action = ", action, "actionStarted=", actionStarted
 				Dom.div !->
 					Dom.style
 						height: "25px"
 						width: "100%"
 						position: 'absolute'
-						marginTop: '50px'
+						left: '0'
+						top: '50px'
 						backgroundColor: "rgba(243,243,243,0.3)"
-						border: 0
+						border: '0'
 						boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
 					Dom.div !->
 						Dom.style
@@ -738,7 +749,7 @@ logContent = ->
 						teamName = Db.shared.peek('colors', teamId, 'name')
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
-							Page.nav 'main'
+							Page.nav ''
 							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
 						Dom.div !->
 							Dom.style
@@ -761,7 +772,7 @@ logContent = ->
 						teamName = Db.shared.peek('colors', teamId, 'name')
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
-							Page.nav 'main'
+							Page.nav ''
 							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
 						Dom.div !->
 							Dom.style
