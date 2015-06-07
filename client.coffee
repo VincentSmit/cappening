@@ -623,8 +623,8 @@ setupContent = ->
 						_flexShrink: '1'
 					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the capture area for this beacon. Double tap or hold to delete a beacon. Be sure to place beacons in places you and other happening members visit often."
 	else
-		Dom.text tr("Admin/plugin owner is setting up the game")
-		# Show map and current settings
+		renderMap()
+		Modal.show("Admin/plugin owner is setting up the game")
 
 # Home page with map
 mainContent = ->
@@ -1184,7 +1184,7 @@ renderLocation = ->
 					if mapReady()
 						# Show the player's location on the map
 						latLngObj= L.latLng(location[0], location[1])
-						if not (Db.shared.peek('game', 'bounds', 'one', 'lat')?)
+						if not (Db.shared.peek('game', 'bounds', 'one', 'lat')?) and window.locationOne?
 							one = L.latLng(latLngObj.lat+0.01,latLngObj.lng-0.02)
 							two = L.latLng(latLngObj.lat-0.01,latLngObj.lng+0.02)
 							Server.sync 'setBounds', one, two, !->
@@ -1236,7 +1236,7 @@ renderLocation = ->
 						Obs.observe ->
 							indicationArrowRedraw.get()
 							if mapReady()
-								if Db.shared.peek('gameState') is 1 and map.getBounds()?
+								if (Db.shared.peek('gameState') is 1 or (Db.shared.peek('gameState') is 0 and (!Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()))) and map.getBounds()?
 									map.on('moveend', indicationArrowListener)
 									# Render an arrow that points to your location if you do not have it on your screen already
 									if !(map.getBounds().contains(latLngObj))

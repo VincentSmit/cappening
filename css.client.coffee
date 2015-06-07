@@ -221,3 +221,4 @@ Dom.css
 		left: '50px'
 		height: '30px'
 		position: 'absolute'
+		zIndex: '10'
