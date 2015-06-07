@@ -11,9 +11,9 @@ CSS = require 'css'
 Geoloc = require 'geoloc'
 Form = require 'form'
 Icon = require 'icon'
-# Get config values, access with 'config.<property>' (check 'config.common.coffee')
+# Get config values, access with 'Config.<property>' (check 'config.common.coffee')
 CommonConfig = require 'config'
-config = CommonConfig.getConfig()
+Config = CommonConfig.getConfig()
 
 window.redraw = Obs.create(0) # For full redraw
 window.indicationArrowRedraw = Obs.create(0) # For indication arrow redraw
@@ -26,6 +26,8 @@ exports.render = ->
 		window.inRangeCheckinRunning = {}
 	if not inRangeCheckinRunning[Plugin.groupId()]?
 		inRangeCheckinRunning[Plugin.groupId()] = false
+	window.restoreMapLocation = true
+	log 'restoreMapLocation='+restoreMapLocation
 	#Server.call 'log', Plugin.userId(), "FULL RENDER"
 	loadOpenStreetMap()
 
@@ -122,15 +124,15 @@ exports.renderInfo = !->
 	Dom.br()
 	Dom.br()
 	Dom.h2 "Rewards and winning"
-	Dom.text "You gain "+config.beaconValueInitial+" "
-	if config.beaconValueInitial==1 then Dom.text "point" else Dom.text "points"
+	Dom.text "You gain "+Config.beaconValueInitial+" "
+	if Config.beaconValueInitial==1 then Dom.text "point" else Dom.text "points"
 	Dom.text " for being the first team to conquer a certain beacon. "
 	Dom.text "Beacons that are in possession of your team, will have a circle around it in your team color. "
-	Dom.text "Every hour the beacon is in your posession, it will generate "+config.beaconHoldScore+" "
-	if config.beaconHoldScore==1 then Dom.text "point" else Dom.text "points"
+	Dom.text "Every hour the beacon is in your posession, it will generate "+Config.beaconHoldScore+" "
+	if Config.beaconHoldScore==1 then Dom.text "point" else Dom.text "points"
 	Dom.text ". "
 	Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
-	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will decrease with "+config.beaconValueDecrease+" until a minimum of "+config.beaconValueMinimum+". "
+	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will decrease with "+Config.beaconValueDecrease+" until a minimum of "+Config.beaconValueMinimum+". "
 	Dom.text "The team with the highest score at the end of the game wins. "
 	Dom.text "If a team captures all beacons, the game will end quickly if the other teams stay inactive. "
 	Dom.h2 "Bugs and help"
@@ -345,12 +347,12 @@ addEndGameBar = ->
 		Dom.cls 'endGameBar'
 		Dom.style
 			backgroundColor: hexToRGBA(Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'hex'), 0.9)
-			paddingRight: '145px'
 		if parseInt(Db.shared.peek('game', 'firstTeam')) is parseInt(getTeamOfUser(Plugin.userId()))
 			Dom.text "Your team won the game!"
 		else
 			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'name') + " won the game, good luck next round!"
 		if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
+			Dom.style paddingRight: '145px'
 			Dom.div !->
 				Dom.cls 'restartButton'
 				Dom.text "RESTART GAME"
@@ -624,7 +626,8 @@ setupContent = ->
 					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the capture area for this beacon. Double tap or hold to delete a beacon. Be sure to place beacons in places you and other happening members visit often."
 	else
 		renderMap()
-		Modal.show("Admin/plugin owner is setting up the game")
+		renderBeacons()
+		Modal.show("Admin/plugin owner is setting up a new game.")
 
 # Home page with map
 mainContent = ->
@@ -837,16 +840,17 @@ logContent = ->
 						Dom.div !->
 							Dom.style
 								width: '70px'
-								height: '70px'
+								height: '55px'
 								marginRight: '10px'
 								background: '#DDDDDD'
 								backgroundSize: 'cover'
+								paddingTop: '15px'
 							Dom.div !->
 								Dom.style
+									margin: '0 0 0 20px'
 									borderLeft: '34px solid #FFFFFF'
 									borderTop: '20px solid transparent'
 									borderBottom: '20px solid transparent'
-									margin: '15px 0 0 20px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '16px'
 							Dom.text "Start of the game!"
@@ -954,9 +958,15 @@ loadOpenStreetMap = ->
 setupMap = ->
 	Obs.observe ->
 		log "setupMap()"
+		saveMapLocation = () ->
+			Db.local.set('mapLocation', 'lat', map.getCenter().lat)
+			Db.local.set('mapLocation', 'lng', map.getCenter().lng)
+			Db.local.set('mapLocation', 'zoom', map.getZoom())
 		if map?
 			log "map already initialized"
 			limitToBounds()
+			map.on('moveend', saveMapLocation)
+			restoreMapLocationNow()
 		else if not L?
 			log "javascript not yet loaded"
 		else
@@ -966,6 +976,11 @@ setupMap = ->
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "Initialized MapBox map"
 			limitToBounds()
+			map.on('moveend', saveMapLocation)
+			restoreMapLocationNow()
+		Obs.onClean ->
+			if mapReady()
+				map.off('moveend', saveMapLocation)
 
 # Setup map bounds
 limitToBounds = ->
@@ -1003,6 +1018,15 @@ zoomToBounds = ->
 			bounds = L.latLngBounds(loc1, loc2)
 			if loc1? and loc2? and bounds?
 				map.fitBounds(bounds.pad(0.05));
+
+restoreMapLocationNow = ->
+	log 'restoreMapLocationNow() called, restoreMapLocation='+window.restoreMapLocation+', mapLocation='+JSON.stringify(Db.local.peek('mapLocation'))
+	if mapReady() and Db.local.peek('mapLocation')? and window.restoreMapLocation? and window.restoreMapLocation
+		location = convertLatLng(Db.local.peek('mapLocation'))
+		zoom = Db.local.peek('mapLocation', 'zoom')
+		log '  restoring: location='+location+', zoom='+zoom
+		map.setView(location, zoom)
+	window.restoreMapLocation = false
 
 # Add beacons to the map
 renderBeacons = ->
@@ -1049,10 +1073,10 @@ renderBeacons = ->
 					popupString = ""
 					if parseInt(beacon.peek('owner')) is parseInt(getTeamOfUser(Plugin.userId()))
 						popupString += "Beacon owned by your team."
-						if config.beaconHoldScore == 1
-							popupString += "<br>Scoring "+config.beaconHoldScore+" point per hour while held."
+						if Config.beaconHoldScore == 1
+							popupString += "<br>Scoring "+Config.beaconHoldScore+" point per hour while held."
 						else
-							popupString += "<br>Scoring "+config.beaconHoldScore+" points per hour while held."
+							popupString += "<br>Scoring "+Config.beaconHoldScore+" points per hour while held."
 					else
 						popupString += "Beacon owned by team " + Db.shared.peek('colors', beacon.peek('owner'), 'name') + "."
 					popupString += "<br>Next capture gives " + beacon.peek('captureValue') + " points."
@@ -1188,6 +1212,12 @@ renderLocation = ->
 					if mapReady()
 						# Show the player's location on the map
 						latLngObj= L.latLng(location[0], location[1])
+						if not (Db.local.peek('mapLocation')?)
+							window.restoreMapLocation = true
+							Db.local.set('mapLocation', 'lat', latLngObj.lat)
+							Db.local.set('mapLocation', 'lng', latLngObj.lng)
+							Db.local.set('mapLocation', 'zoom', 16)
+							restoreMapLocationNow()
 						if not (Db.shared.peek('game', 'bounds', 'one', 'lat')?) and window.locationOne?
 							one = L.latLng(latLngObj.lat+0.01,latLngObj.lng-0.02)
 							two = L.latLng(latLngObj.lat-0.01,latLngObj.lng+0.02)

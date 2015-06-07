@@ -2,9 +2,9 @@ Db = require 'db'
 Plugin = require 'plugin'
 Timer = require 'timer'
 Event = require 'event'
-# Get config values, access with 'config.<property>' (check 'config.common.coffee')
+# Get config values, access with 'Config.<property>' (check 'config.common.coffee')
 CommonConfig = require 'config'
-config = CommonConfig.getConfig()
+Config = CommonConfig.getConfig()
 
 # ==================== Events ====================
 # Game install
@@ -25,37 +25,12 @@ exports.onUpgrade = ->
 	newVersion = version
 	if not version?
 		version = 0
-	# Version checking (TODO remove all entries before release, but keep max number)
-	if version < 1 # Initialize deviceId, fixes inRange system
-		newVersion = 1
-		Db.shared.set 'maxDeviceId', 0
-	if version < 2 # Clean team neutral from the scores list and clean event about team neutral (got there because of a bug)
-		newVersion = 2
-		Db.shared.remove 'game', 'teams', -1
-		Db.shared.iterate 'game', 'eventlist', (e) ->
-			if (e.peek('conqueror')? and e.peek('conqueror') == -1) or (e.peek('leading')? and e.peek('leading') == -1)
-				Db.shared.remove 'game', 'eventlist', e.key()
-	if version < 3 # Change yellow color
-		newVersion = 3
-		initializeColors()
-	if version < 4 # Remove everyone from inRange, change to new layout of database section
-		newVersion = 4
-		Db.shared.iterate 'game', 'beacons', (beacon) !->
-			beacon.remove 'inRange'
-	if version < 5 # Fix team rankings
-		newVersion = 5
-		if Db.shared.peek('gameState') is 1
-			updateTeamRankings()
-	if version < 6 # Fix event list
-		newVersion = 6
-		if not(Db.shared.peek('game', 'eventlist', 'maxId')?)
-			Db.shared.set 'game', 'eventlist', 'maxId', 0
-	if version < 7 # Move history to a different place (removes data from old spot)
-		newVersion=7
-		Db.shared.remove 'history'
-	if version < 8 # Colors changed
-		newVersion = 8
-		initializeColors()
+	# Version checking
+	###
+	if version < 9
+		newVersion = 9
+		<Do stuff>
+	###
 
 	# Write new version to the database
 	if newVersion isnt version
@@ -88,6 +63,7 @@ exports.onGeoloc = (userId, geoloc) ->
 						#Last notification send, so that the user will not be spammed with notifications
 						Db.personal(userId).set('lastNotification', 'recieved', recieved)
 						Db.personal(userId).set('lastNotification', 'beaconNumber', beacon.key())
+						
 # Handle new users joining the happening
 exports.onJoin = (userId) ->
 	log '[onJoin()] userId='+userId+', users='+Plugin.userIds()
@@ -397,8 +373,8 @@ exports.onCapture = (args) ->
 	beacon.set 'action', 'none'
 
 	# Set a timer to gain teamscore overtime
-	log '[onCapture()] pointsTime: '+config.beaconPointsTime
-	Timer.set config.beaconPointsTime, 'overtimeScore', {beacon: beacon.key()}
+	log '[onCapture()] pointsTime: '+Config.beaconPointsTime
+	Timer.set Config.beaconPointsTime, 'overtimeScore', {beacon: beacon.key()}
 
 	# The game will end in 1 hour if all the beacons are captured by one team
 	capOwner = Db.shared.peek('game', 'beacons', '0', 'owner')
@@ -413,12 +389,12 @@ exports.onCapture = (args) ->
 	endTime = Db.shared.peek('game', 'endTime')
 
 	# Handle push notifications and modify endTime, if needed
-	if allBeaconsCaptured and endTime-Plugin.time()>(config.beaconPointsTime/1000)
-		end = Plugin.time() + config.beaconPointsTime/1000 #in seconds
+	if allBeaconsCaptured and endTime-Plugin.time()>(Config.beaconPointsTime/1000)
+		end = Plugin.time() + Config.beaconPointsTime/1000 #in seconds
 		# log 'end', end
 		Db.shared.set 'game', 'newEndTime', end
 		Timer.cancel 'endGame', {}
-		Timer.set config.beaconPointsTime, 'endGame', {}
+		Timer.set Config.beaconPointsTime, 'endGame', {}
 
 		# Add event log entrie(s)
 		addEvent {
@@ -452,10 +428,10 @@ exports.onCapture = (args) ->
 	Db.shared.modify 'game', 'teams', nextOwner, 'captured', (v) -> v+1
     # Modify beacon value
 	beacon.modify 'captureValue', (v) -> 
-		if (v - config.beaconValueDecrease)>=config.beaconValueMinimum
-			return v - config.beaconValueDecrease
+		if (v - Config.beaconValueDecrease)>=Config.beaconValueMinimum
+			return v - Config.beaconValueDecrease
 		else
-			return config.beaconValueMinimum
+			return Config.beaconValueMinimum
 
 # Called by the beacon recapture timer
 # args.beacon: beacon key
@@ -511,9 +487,9 @@ exports.onNeutralize = (args) ->
 # args.beacon: beacon that is getting points
 exports.overtimeScore = (args) ->
 	owner = Db.shared.peek 'game', 'beacons',  args.beacon, 'owner'
-	Db.shared.modify 'game', 'teams', owner, 'teamScore', (v) -> v + config.beaconHoldScore
+	Db.shared.modify 'game', 'teams', owner, 'teamScore', (v) -> v + Config.beaconHoldScore
 	checkNewLead() # check for a new leading team
-	Timer.set config.beaconPointsTime, 'overtimeScore', args # Every hour
+	Timer.set Config.beaconPointsTime, 'overtimeScore', args # Every hour
 
 # Called when an inRange players did not checkin quickly enough
 # args.beacon: beacon id
