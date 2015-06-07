@@ -695,11 +695,15 @@ scoresContent = ->
 				Dom.div !->
 					Dom.style Flex: 1, fontSize: '100%', paddingLeft: '84px'
 					Dom.text "Team " + teamName + " scored " + teamScore + " points"
+					if parseInt(team.key()) is parseInt(getTeamOfUser(Plugin.userId()))
+						Dom.style fontWeight: 'bold'
 					#log 'users: ', Plugin.users, ', length: ', Plugin.users.count().peek()
 					# To Do expand voor scores
 					if expanded.get() || Plugin.users.count().peek() <= 6
 						team.iterate 'users', (user) !->
 							Dom.div !->
+								if parseInt(user.key())  isnt Plugin.userId()
+									Dom.style fontWeight: 'normal'
 								Dom.style clear: 'both'
 								Ui.avatar Plugin.userAvatar(user.key()),
 									style: margin: '6px 10px 0 0', float: 'left'
