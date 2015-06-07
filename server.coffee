@@ -70,9 +70,6 @@ exports.onConfig = (config) ->
 # Get background location from player.
 exports.onGeoloc = (userId, geoloc) ->
 	#log '[onGeoloc()] Geoloc from ' + Plugin.userName(userId) + '('+userId+'): ', JSON.stringify(geoloc)
-	#Store lat and lng for other uses
-	Db.personal(userId).set 'location', 'latitude', geoloc.latitude
-	Db.personal(userId).set 'location', 'longitude', geoloc.longitude
 	recieved = new Date()/1000
 	if Db.shared.peek('gameState') is 1 and (recieved - (Db.personal(userId).peek('lastNotification', 'recieved') || 0))> 60*60
 		beaconRadius = Db.shared.peek('game', 'beaconRadius')
