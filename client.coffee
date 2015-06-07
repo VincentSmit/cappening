@@ -312,28 +312,21 @@ addProgressBar = ->
 							_textShadow: '0 0 5px #000000, 0 0 5px #000000' # Double for extra visibility
 
 addEndGameBar = ->
-	if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
-		Dom.div !->
-			Dom.cls 'endGameBar'
-			Dom.style
-				backgroundColor: hexToRGBA(Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'hex'), 0.9)
-				paddingRight: '145px'
-			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'name') + " won the game!"
+	Dom.div !->
+		Dom.cls 'endGameBar'
+		Dom.style
+			backgroundColor: hexToRGBA(Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'hex'), 0.9)
+			paddingRight: '145px'
+		if parseInt(Db.shared.peek('game', 'firstTeam')) is parseInt(getTeamOfUser(Plugin.userId()))
+			Dom.text "Your team won the game!"
+		else
+			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'name') + " won the game, good luck next round!"
+		if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
 			Dom.div !->
-				Dom.style
-					position: 'absolute'
-					right: '6px'
-					top: '7px'
-					backgroundColor: '#ba1a6e'
-					padding: '8px'
-					textAlign: 'center'
-					color: 'white'
-					lineHeight: '20px'
-					_boxShadow: '0 0 3px rgba(0,0,0,0.5)'
+				Dom.cls 'restartButton'
 				Dom.text "RESTART GAME"
-				if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
-					Dom.onTap !-> 
-						Server.call 'restartGame'
+				Dom.onTap !-> 
+					Server.call 'restartGame'
 
 
 # ========== Page Contents ==========
@@ -1288,8 +1281,11 @@ renderLocation = ->
 										inRangeValue = beacon.peek('inRange', Plugin.userId(), 'device')
 										accuracy = state.get('accuracy')
 										checkinLocation = ->
-											log 'checkinLocation: user='+Plugin.userName(Plugin.userId())+' ('+Plugin.userId()+'), deviceId='+deviceId+', accuracy='+accuracy
-											Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
+											if parseInt(Db.shared.peek('gameState')) is 1
+												log 'checkinLocation: user='+Plugin.userName(Plugin.userId())+' ('+Plugin.userId()+'), deviceId='+deviceId+', accuracy='+accuracy
+												Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
+											else
+												clearInterval(checkinLocation)
 										if within
 											log 'accuracy='+accuracy+', beaconRadius='+beaconRadius
 											if accuracy > beaconRadius # Deny capturing with low accuracy
@@ -1302,7 +1298,7 @@ renderLocation = ->
 														Dom.div !->
 															Dom.style
 																float: 'left'
-																marginRight: '10px'
+																marginRight: '10px' 
 																width: '30px'
 																_flexGrow: '0'
 																_flexShrink: '0'

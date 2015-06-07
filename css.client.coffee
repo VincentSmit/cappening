@@ -167,6 +167,21 @@ Dom.css
 		_display: 'flex'
 		_alignItems: 'center'
 		_textShadow: '0 0 5px #000000, 0 0 5px #000000'
+	'.restartButton':
+		position: 'absolute'
+		right: '6px'
+		top: '7px'
+		backgroundColor: '#ba1a6e'
+		padding: '8px'
+		textAlign: 'center'
+		color: 'white'
+		lineHeight: '20px'
+		_boxShadow: '0 0 3px rgba(0,0,0,0.5)'
+	'.restartButton:hover':
+		backgroundColor: '#A71963 !important' 
+	'.restartButton:active':
+		backgroundColor: '#80134C !important'
+
 
 #Indication Arrow
 	'.indicationArrow':
