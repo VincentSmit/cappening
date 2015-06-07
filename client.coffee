@@ -154,6 +154,8 @@ addBar = ->
 		Dom.style
 			height: "50px"
 			width: '100%'
+			top: '0'
+			left: '0'
 			position: 'absolute'
 			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
 			backgroundColor: hexToRGBA(Db.shared.peek('colors', getTeamOfUser(Plugin.userId()), 'hex'), 0.9)
@@ -361,7 +363,6 @@ setupContent = ->
 			# Bar to indicate the setup progress
 			Dom.div !->
 				Dom.cls 'stepbar'
-				Dom.style position: 'initial'
 				# Left button
 				Dom.div !->
 					Dom.text tr("Prev")
@@ -382,7 +383,7 @@ setupContent = ->
 						Server.send 'setRoundTime', roundTimeNumber.get(), roundTimeUnit.get()
 						Db.local.set('currentSetupPage', 'setup1')
 			Dom.div !->
-				Dom.style padding: '8px'
+				Dom.style paddingTop: '50px'
 				# Not enough players warning
 				if Plugin.users.count().get() <= 1
 					Dom.h2 "Warning"

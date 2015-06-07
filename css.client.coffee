@@ -1,9 +1,7 @@
 Dom.css
-# Main element
-	'#main':
-		padding: '0 !important'
-	'.container':
-		padding: '14px'
+# Fix headings
+	'H1':
+		margin: '0 5px 5px -12px' 
 # Main content page
 	'.bar-button':
 		height: "100%"
@@ -44,6 +42,7 @@ Dom.css
 		boxSizing: 'border-box'
 		position: 'absolute'
 		width: '100%'
+		margin: '-8px -8px 0 -8px'
 	'.stepbar-middle': # The middle section
 		textOverflow: 'ellipsis'
 		whiteSpace: 'nowrap'
@@ -136,6 +135,7 @@ Dom.css
 		width: '100%'
 		position: 'absolute'
 		bottom: '0'
+		left: '0'
 		zIndex: '2000'
 		padding: '11px'
 		fontSize: '16px'
@@ -157,6 +157,7 @@ Dom.css
 	'.endGameBar':
 		height: "50px"
 		width: '100%'
+		left: '0'
 		position: 'absolute'
 		bottom: '15'
 		zIndex: '2000'
