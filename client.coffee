@@ -48,7 +48,6 @@ exports.render = ->
 		mainElement = document.getElementsByTagName("main")[0]
 		mainElement.setAttribute 'id', 'main'
 		redraw.get();
-		limitToBounds()
 		gameState = Db.shared.get('gameState')
 		if gameState is 0 # Setting up game by user that added plugin
 			setupContent()
@@ -953,6 +952,7 @@ setupMap = ->
 		log "setupMap()"
 		if map?
 			log "map already initialized"
+			limitToBounds()
 		else if not L?
 			log "javascript not yet loaded"
 		else
@@ -961,6 +961,7 @@ setupMap = ->
 			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "Initialized MapBox map"
+			limitToBounds()
 
 # Setup map bounds
 limitToBounds = ->
@@ -974,6 +975,10 @@ limitToBounds = ->
 			if bounds? and loc1? and loc2?
 				map._layersMinZoom = map.getBoundsZoom(bounds.pad(0.05))
 				map.setMaxBounds(bounds.pad(0.05))
+				limit = () -> 
+					map._layersMinZoom = map.getBoundsZoom(bounds.pad(0.05))
+					map.setMaxBounds(bounds.pad(0.05))
+				window.setTimeout(limit, 100)
 				#map.fitBounds(bounds); # Causes problems, because it zooms to max all the time
 			else
 				log "Bounds not existing"
