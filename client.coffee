@@ -80,8 +80,6 @@ exports.render = ->
 			# Display the correct page
 			if page == 'main'
 				mainContent()
-			else if page == 'help'
-				helpContent()
 			else if page == 'scores'
 				scoresContent()
 			else if page == 'log'
@@ -97,8 +95,6 @@ exports.render = ->
 						Dom.text "Your team lost the game!"
 			if page == 'main'
 				endGameContent()
-			else if page == 'help'
-				helpContent()
 			else if page == 'scores'
 				scoresContent()
 			else if page == 'log'
@@ -120,7 +116,28 @@ exports.render = ->
 
 # Render info page (gear/info icon in top bar)
 exports.renderInfo = !->
-	helpContent()
+	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
+	Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
+	Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
+	Dom.text "A neutral beacon will take 30 seconds to conquer, but an occupied beacon will take one minute. You first need to drain the opponents' color, before you can fill it with yours! "
+	Dom.br()
+	Dom.br()
+	Dom.h2 "Rewards and winning"
+	Dom.text "You gain "+config.beaconValueInitial+" "
+	if config.beaconValueInitial==1 then Dom.text "point" else Dom.text "points"
+	Dom.text " for being the first team to conquer a certain beacon. "
+	Dom.text "Beacons that are in possession of your team, will have a circle around it in your team color. "
+	Dom.text "Every hour the beacon is in your posession, it will generate "+config.beaconHoldScore+" "
+	if config.beaconHoldScore==1 then Dom.text "point" else Dom.text "points"
+	Dom.text ". "
+	Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
+	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will decrease with "+config.beaconValueDecrease+" until a minimum of "+config.beaconValueMinimum+". "
+	Dom.text "The team with the highest score at the end of the game wins. "
+	Dom.text "If a team captures all beacons, the game will end quickly if the other teams stay inactive. "
+	Dom.h2 "Bugs and help"
+	Dom.text "Did you find a bug in the plugin? Do you have a question about the plugin that you cannot find the answer for? Contact 'thijs17' and we will try to answer you. If you are familiar with GitHub then you can also report the bug on our GitHub repository: "
+	Dom.a "https://github.com/VincentSmit/cappening/issues" # TODO: check how to get this link clickable
+	Dom.text "."
 							
 # Method that is called when admin changes settings (only restart game for now)
 exports.renderSettings = !->
@@ -618,27 +635,6 @@ mainContent = ->
 			ok= undefined;
 		,['ok', tr("Got it")]
 	
-# Help page 
-helpContent = ()->
-	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
-	Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
-	Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
-	Dom.text "A neutral beacon will take 30 seconds to conquer, but an occupied beacon will take one minute. You first need to drain the opponents' color, before you can fill it with yours! "
-	Dom.br()
-	Dom.br()
-	Dom.h2 "Rewards and winning"
-	Dom.text "You gain "+config.beaconValueInitial+" "
-	if config.beaconValueInitial==1 then Dom.text "point" else Dom.text "points"
-	Dom.text " for being the first team to conquer a certain beacon. "
-	Dom.text "Beacons that are in possession of your team, will have a circle around it in your team color. "
-	Dom.text "Every hour the beacon is in your posession, it will generate "+config.beaconHoldScore+" "
-	if config.beaconHoldScore==1 then Dom.text "point" else Dom.text "points"
-	Dom.text ". "
-	Dom.text "Unfortunately for you, your beacons can be conquered by other teams. " 
-	Dom.text "Every time a beacon is conquered the value of the beacon will drop. Scores for conquering a beacon will decrease with "+config.beaconValueDecrease+" until a minimum of "+config.beaconValueMinimum+". "
-	Dom.text "The team with the highest score at the end of the game wins. "
-	Dom.text "If a team captures all beacons, the game will end quickly if the other teams stay inactive. "
-
 # Scores page
 scoresContent = ->
 	#position = 0
