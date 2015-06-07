@@ -564,7 +564,18 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Drag the corners of the rectangle to define the gamearea. Choose this area wisely, this is where the map will be limited to."
+					Dom.text "Click here for more information."
+				Dom.onTap !->
+					Modal.show tr("Gamearea setup information"), !->
+						Dom.div !->
+							Dom.text "Drag the corners of the orange rectangle to define the gamearea. Choose this area wisely, this is where the map will be limited to during the game."
+							Dom.br()
+							Dom.br()
+							Dom.text "Your own location is drawn on the map as a pushpin."
+							Dom.style maxWidth: '300px', textAlign: 'left'
+					, (ok)->
+						ok= undefined;
+					,['ok', tr("Ok")]
 
 		else if currentPage is 'setup2' # Setup beacons
 			# Bar to indicate the setup progress
@@ -623,20 +634,46 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					if Plugin.agent().android? or Plugin.agent().ios?
-						Dom.text "Tap-and-hold"
-					else
-						Dom.text "Right-click"
-					Dom.text " to place beacon on the map. The circle indicates the capture area for this beacon. "
-					if Plugin.agent().android? or Plugin.agent().ios?
-						Dom.text "Tap-and-hold"
-					else
-						Dom.text "Right-click"
-					Dom.text " a beacon to delete it. Be sure to place beacons in places you and other happening members visit often."
+					Dom.text "Click here for more information."
+				Dom.onTap !->
+					Modal.show tr("Beacon setup information"), !->
+						Dom.div !->
+							if Plugin.agent().android? or Plugin.agent().ios?
+								Dom.text "Tap-and-hold"
+							else
+								Dom.text "Right-click"
+							Dom.text " to place beacon on the map. The circle indicates the capture area for a beacon, players will have to walk to that area to capture the beacon. "
+							if Plugin.agent().android? or Plugin.agent().ios?
+								Dom.text "Tap-and-hold"
+							else
+								Dom.text "Right-click"
+							Dom.text " a beacon to delete it. Be sure to place beacons in places you and other members of this Happening visit often."
+							Dom.br()
+							Dom.br()
+							Dom.text "It is recommended to place at least 10 beacons, depending on how many members this Happening has."
+							Dom.style maxWidth: '300px', textAlign: 'left'
+					, (ok)->
+						ok= undefined;
+					,['ok', tr("Ok")]
 	else
 		renderMap()
 		renderBeacons()
-		Modal.show("Admin/plugin owner is setting up a new game.")
+		Dom.div !->
+			Dom.cls 'infobar'
+			Dom.style top: '0', bottom: 'auto'
+			Dom.div !->
+				Dom.style
+					float: 'left'
+					marginRight: '10px'
+					width: '30px'
+					_flexGrow: '0'
+					_flexShrink: '0'
+				Icon.render data: 'info', color: '#fff', style: { paddingRight: '10px'}, size: 30
+			Dom.div !->
+				Dom.style
+					_flexGrow: '1'
+					_flexShrink: '1'
+				Dom.text "The admin/plugin owner is setting up a new game."
 
 # Home page with map
 mainContent = ->
@@ -1127,7 +1164,7 @@ renderBeacons = ->
 		else 
 			log "map not ready yet"
 		Obs.onClean ->
-			if beaconMarkers? and map?
+			if beaconMarkers? and map? and beaconCircles?
 				if markerDelClick?
 					marker.off('dblclick', markerDelClick)
 					marker.off('contextmenu', markerDelClick)
