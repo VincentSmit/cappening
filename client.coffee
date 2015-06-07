@@ -623,7 +623,16 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Right-click or hold to place beacon on the map. The circle indicates the capture area for this beacon. Double tap or hold to delete a beacon. Be sure to place beacons in places you and other happening members visit often."
+					if Plugin.agent().android? or Plugin.agent().ios?
+						Dom.text "Tap-and-hold"
+					else
+						Dom.text "Right-click"
+					Dom.text " to place beacon on the map. The circle indicates the capture area for this beacon. "
+					if Plugin.agent().android? or Plugin.agent().ios?
+						Dom.text "Tap-and-hold"
+					else
+						Dom.text "Right-click"
+					Dom.text " a beacon to delete it. Be sure to place beacons in places you and other happening members visit often."
 	else
 		renderMap()
 		renderBeacons()
@@ -651,11 +660,7 @@ mainContent = ->
 	
 # Scores page
 scoresContent = ->
-	#position = 0
-	Dom.div !->
-		Dom.style
-			paddingLeft: "14px"
-		Dom.h1 "Teams ranking"
+	Dom.h1 "Teams ranking"
 	Ui.list !->
 		Dom.style
 			padding: '0'
@@ -735,10 +740,7 @@ scoresContent = ->
 
 # Eventlog page
 logContent = ->
-	Dom.div !->
-		Dom.style
-			paddingLeft: "14px"
-		Dom.h1 "Eventlog"
+	Dom.h1 "Game events"
 	Ui.list !->
 		Dom.style
 			padding: '0'

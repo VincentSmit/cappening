@@ -63,7 +63,7 @@ exports.onGeoloc = (userId, geoloc) ->
 						#Last notification send, so that the user will not be spammed with notifications
 						Db.personal(userId).set('lastNotification', 'recieved', recieved)
 						Db.personal(userId).set('lastNotification', 'beaconNumber', beacon.key())
-						
+
 # Handle new users joining the happening
 exports.onJoin = (userId) ->
 	log '[onJoin()] userId='+userId+', users='+Plugin.userIds()
@@ -131,7 +131,7 @@ exports.client_addMarker = (client, location) ->
 		Db.shared.set 'game', 'beacons', nextNumber, 'owner', -1
 		Db.shared.set 'game', 'beacons', nextNumber, 'nextOwner', -1
 		Db.shared.set 'game', 'beacons', nextNumber, 'percentage', 0
-		Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', config.beaconValueInitial
+		Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', Config.beaconValueInitial
 		Db.shared.set 'game', 'beacons', nextNumber, 'action', "none"
 
 exports.client_deleteBeacon = (client, location) ->

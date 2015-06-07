@@ -1,7 +1,4 @@
 Dom.css
-# Fix headings
-	'H1':
-		margin: '0 5px 5px -12px' 
 # Main content page
 	'.bar-button':
 		height: "100%"
