@@ -15,10 +15,6 @@ exports.onInstall = ->
 # Game update
 exports.onUpgrade = ->
 	log '[onUpgrade()] at '+new Date()
-	# Check if the color array is defined correctly
-	if not Db.shared.peek('colors', '-1', 'name')?
-		log 'Initialized colors again'
-		initializeColors()
 
 	# Check version number and upgrade if required
 	version = Db.shared.peek('version')
@@ -26,12 +22,11 @@ exports.onUpgrade = ->
 	if not version?
 		version = 0
 	# Version checking
-	###
-	if version < 9
-		newVersion = 9
-		<Do stuff>
-	###
-
+	if version < 10
+		newVersion = 10
+		initializeColors()
+		Db.shared.remove 'history'
+	
 	# Write new version to the database
 	if newVersion isnt version
 		log '[onUpgrade()] Upgraded from version '+version+' to '+newVersion+'.'
