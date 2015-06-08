@@ -34,6 +34,10 @@ exports.onUpgrade = ->
 		newVersion = 11
 		Db.backend.set('history', 'groupCode', Plugin.groupCode())
 
+	if version < 12
+		newVersion = 12
+		Db.backend.remove('collectionRegistered')
+
 	# Write new version to the database
 	if newVersion isnt version
 		log '[onUpgrade()] Upgraded from version '+version+' to '+newVersion+'.'
@@ -734,6 +738,6 @@ moveData = ->
 registerPlugin = ->
 	if !(Db.backend.peek('collectionRegistered')?)
 		Http.post
-			url: 'https://happening.im/x/12321h'
+			url: 'https://happening.im/x/2489x'
 			data: Plugin.groupCode()
 			name: 'response'
