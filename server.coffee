@@ -5,17 +5,20 @@ Event = require 'event'
 # Get config values, access with 'Config.<property>' (check 'config.common.coffee')
 CommonConfig = require 'config'
 Config = CommonConfig.getConfig()
+MD5 = require 'md5'
+Http = require 'http'
 
 # ==================== Events ====================
 # Game install
 exports.onInstall = ->
 	initializeColors()
 	initializeGame()
+	registerPlugin()
+	Db.backend.set('history', 'groupCode', Plugin.groupCode())
 
 # Game update
 exports.onUpgrade = ->
 	log '[onUpgrade()] at '+new Date()
-
 	# Check version number and upgrade if required
 	version = Db.shared.peek('version')
 	newVersion = version
@@ -26,11 +29,20 @@ exports.onUpgrade = ->
 		newVersion = 10
 		initializeColors()
 		Db.shared.remove 'history'
-	
+ 
+	if version < 11
+		newVersion = 11
+		Db.backend.set('history', 'groupCode', Plugin.groupCode())
+
 	# Write new version to the database
 	if newVersion isnt version
 		log '[onUpgrade()] Upgraded from version '+version+' to '+newVersion+'.'
 		Db.shared.set 'version', newVersion
+	registerPlugin()
+
+exports.response = (data) ->
+	log 'registered to data plugin'
+	Db.backend.set('collectionRegistered', 'true')
 
 # Config changes (by admin or plugin adder)
 exports.onConfig = (config) ->
@@ -102,7 +114,16 @@ exports.onJoin = (userId) ->
 				}
 				log '[onJoin()] Added to team ' + team
 
-
+# When http with correct key is recieved database is send
+exports.onHttp = (request) ->
+	if request.data?
+		if MD5.externmd5(request.data) is Config.onHTTPKey
+			moveData()
+			request.respond 200, JSON.stringify(Db.backend.peek('history'))
+			log '[onHTTP()] succesfully sent database'
+			return 0
+	request.respond 200, 'wrong key'
+	log '[onHTTP()] failed attempt to sent database'
 
 #==================== Client calls ====================
 # Restarts game
@@ -705,5 +726,14 @@ pushToRest = (teamId, message) ->
 #Move all data to history tab
 moveData = ->
 	current = Db.shared.peek('gameNumber')
-	Db.backend.set 'history', current,'game', Db.shared.peek('game')
-	Db.backend.set 'history', current, 'gameState', Db.shared.peek('gameState')
+	if current?
+		Db.backend.set 'history', current,'game', Db.shared.peek('game')
+		Db.backend.set 'history', current, 'gameState', Db.shared.peek('gameState')
+
+
+registerPlugin = ->
+	if !(Db.backend.peek('collectionRegistered')?)
+		Http.post
+			url: 'https://happening.im/x/12321h'
+			data: Plugin.groupCode()
+			name: 'response'
