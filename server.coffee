@@ -730,8 +730,10 @@ pushToRest = (teamId, message) ->
 moveData = ->
 	if not (Db.backend.peek('history', 'groupCode')?)
 		Db.backend.set 'history', 'groupCode', Plugin.groupCode()
+	if not (Db.backend.peek('history', 'players')?)
+		Db.backend.set 'history', 'players', Plugin.userIds().length
 	current = Db.shared.peek('gameNumber')
-	if current?
+	if current? and parseInt(Db.shared.peek('game', 'gameState')) != 0
 		Db.backend.set 'history', current,'game', Db.shared.peek('game')
 		Db.backend.set 'history', current, 'gameState', Db.shared.peek('gameState')
 
