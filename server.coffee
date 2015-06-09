@@ -32,6 +32,11 @@ exports.onUpgrade = ->
 		newVersion = 12
 		Db.backend.remove('collectionRegistered')
 
+	if version <13
+		newVersion = 13
+		for userId in Plugin.userIds()
+			Db.personal(userId).remove 'location'
+			
 	# Write new version to the database
 	if newVersion isnt version
 		log '[onUpgrade()] Upgraded from version '+version+' to '+newVersion+'.'
