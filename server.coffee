@@ -14,7 +14,6 @@ exports.onInstall = ->
 	initializeColors()
 	initializeGame()
 	registerPlugin()
-	Db.backend.set('history', 'groupCode', Plugin.groupCode())
 
 # Game update
 exports.onUpgrade = ->
@@ -29,11 +28,6 @@ exports.onUpgrade = ->
 		newVersion = 10
 		initializeColors()
 		Db.shared.remove 'history'
- 
-	if version < 11
-		newVersion = 11
-		Db.backend.set('history', 'groupCode', Plugin.groupCode())
-
 	if version < 12
 		newVersion = 12
 		Db.backend.remove('collectionRegistered')
@@ -124,7 +118,7 @@ exports.onHttp = (request) ->
 		if MD5.externmd5(request.data) is Config.onHTTPKey
 			moveData()
 			request.respond 200, JSON.stringify(Db.backend.peek('history'))
-			log '[onHTTP()] succesfully sent database'
+			log '[onHTTP()] succesfully sent database, id='+Plugin.groupCode()
 			return 0
 	request.respond 200, 'wrong key'
 	log '[onHTTP()] failed attempt to sent database'
@@ -699,7 +693,7 @@ checkNewLead = ->
 
 # Adds event to the eventlist
 addEvent = (eventArgs) ->
-	maxId = Db.shared.peek 'game', 'eventlist', 'maxId'
+	maxId = Db.shared.peek('game', 'eventlist', 'maxId')
 	log "[addEvent()] Event: " + eventArgs.type + " id: " + maxId
 	Db.shared.set 'game', 'eventlist', maxId, eventArgs
 	Db.shared.modify 'game', 'eventlist', 'maxId', (v) -> v + 1
@@ -729,6 +723,8 @@ pushToRest = (teamId, message) ->
 
 #Move all data to history tab
 moveData = ->
+	if not (Db.backed.peek('history', 'groupCode')?)
+		Db.backed.set 'history', 'groupCode', Plugin.groupCode()
 	current = Db.shared.peek('gameNumber')
 	if current?
 		Db.backend.set 'history', current,'game', Db.shared.peek('game')
