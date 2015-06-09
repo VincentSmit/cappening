@@ -723,8 +723,8 @@ pushToRest = (teamId, message) ->
 
 #Move all data to history tab
 moveData = ->
-	if not (Db.backed.peek('history', 'groupCode')?)
-		Db.backed.set 'history', 'groupCode', Plugin.groupCode()
+	if not (Db.backend.peek('history', 'groupCode')?)
+		Db.backend.set 'history', 'groupCode', Plugin.groupCode()
 	current = Db.shared.peek('gameNumber')
 	if current?
 		Db.backend.set 'history', current,'game', Db.shared.peek('game')
