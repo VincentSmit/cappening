@@ -55,7 +55,8 @@ exports.render = ->
 			setupContent()
 			if checkinLocationFunction?
 				clearInterval(checkinLocationFunction)
-				checkinLocationFunction = null
+				checkinLocationFunction = undefined
+				window.inRangeCheckinRunning[Plugin.groupId()] = false
 		else if gameState is 1 # Game is running
 			# Set page title
 			page = Page.state.get(0)
@@ -102,7 +103,8 @@ exports.render = ->
 				logContent()
 			if checkinLocationFunction?
 				clearInterval(checkinLocationFunction)
-				checkinLocationFunction = null						
+				checkinLocationFunction = undefined		
+				window.inRangeCheckinRunning[Plugin.groupId()] = false			
 	Obs.observe ->
 		deviceId = Db.local.peek 'deviceId'
 		if not deviceId?
@@ -1183,14 +1185,14 @@ addMarkerListener = (event) ->
 	log 'click: ', event
 	beaconRadius = Db.shared.get('game', 'beaconRadius')
 	#Check if marker is not close to other marker
-	beacons = Db.shared.peek('game', 'beacons')
 	tooClose= false;
 	result = ''
-	if beacons isnt {}
-		for beacon, loc of beacons
-			if event.latlng.distanceTo(convertLatLng(loc.location)) < beaconRadius*2 and !tooClose
-				tooClose = true;
-				result = 'Beacon is placed too close to other beacon'
+	Db.shared.iterate 'game', 'beacons', (beacon) !->
+		location = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
+		#log 'location='+location+', lat='+beacon.peek('location', 'lat')+', lng='+beacon.peek('location', 'lng')+', beacon=', beacon, ', key='+beacon.key()
+		if event.latlng.distanceTo(location) < beaconRadius*2 and !tooClose
+			tooClose = true;
+			result = 'Beacon is placed too close to other beacon'
 	#Check if marker area is passing the game border
 	if !tooClose
 		outsideGame = !boundaryRectangle.getBounds().contains(event.latlng)
@@ -1371,7 +1373,9 @@ renderLocation = ->
 												log 'checkinLocation: user='+Plugin.userName(Plugin.userId())+' ('+Plugin.userId()+'), deviceId='+deviceId+', accuracy='+accuracy
 												Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
 											else
-												clearInterval(checkinLocation)
+												clearInterval(checkinLocationFunction)
+												checkinLocationFunction = undefined
+												window.inRangeCheckinRunning[Plugin.groupId()] = false
 										if within
 											log 'accuracy='+accuracy+', beaconRadius='+beaconRadius
 											if accuracy > beaconRadius # Deny capturing with low accuracy
@@ -1404,21 +1408,18 @@ renderLocation = ->
 												else
 													log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 													checkinLocation()
-													setInterval(checkinLocation, 30*1000)
-													checkinLocationFunction = checkinLocation
-													window.inRangeCheckinRunning[Plugin.groupId()] = true
+													if not inRangeCheckinRunning[Plugin.groupId()]
+														setInterval(checkinLocation, 30*1000)
+														checkinLocationFunction = checkinLocation
+														window.inRangeCheckinRunning[Plugin.groupId()] = true
 										else if (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
 											log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
-											clearInterval(checkinLocation)
-											window.inRangeCheckinRunning[Plugin.groupId()] = false
 											checkinLocation()
+											if inRangeCheckinRunning[Plugin.groupId()]
+												clearInterval(checkinLocationFunction)
+												window.inRangeCheckinRunning[Plugin.groupId()] = false
 				else
 					log 'Location could not be found'
-				#Obs.onClean ->
-				#	if mapReady() and beaconCurrentLocation?
-				#		# Remove the location marker
-				#		map.removeLayer beaconCurrentLocation
-				#		window.beaconCurrentLocation = null;
 		Obs.onClean ->
 			#Server.call 'log', Plugin.userId(), "Untrack location"
 

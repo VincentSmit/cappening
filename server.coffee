@@ -260,7 +260,8 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 				#log 'removed=', removed
 				updateBeaconStatus(beacon, removed)
 			else
-				refreshInrangeTimer(client, device)
+				if current
+					refreshInrangeTimer(client, device)
 
 #Update tutorial state
 exports.client_updateTutorialState = (userId, content) ->
@@ -514,7 +515,7 @@ exports.overtimeScore = (args) ->
 # args.beacon: beacon id
 # args.client: user id
 exports.inRangeTimeout = (args) ->
-	#log 'User '+Plugin.userName(args.client)+'('+args.client+') removed from inRange of beacon '+args.beacon
+	log 'User '+Plugin.userName(args.client)+'('+args.client+') removed from inRange of beacon '+args.beacon
 	Db.shared.remove 'game', 'beacons', args.beacon, 'inRange', args.client
 	updateBeaconStatus(Db.shared.ref('game', 'beacons', args.beacon), -999)
 
@@ -583,6 +584,8 @@ initializeGame = ->
 		Timer.cancel 'onCapture', {beacon: beacon.key()}
 		Timer.cancel 'onNeutralize', {beacon: beacon.key()}
 		Timer.cancel 'overtimeScore', {beacon: beacon.key()}
+		beacon.iterate 'inRange', (client) !->
+			Timer.cancel 'inRangeTimeout', {beacon: beacon.key(), client: client.key()}
 	# Reset database to defaults
 	Db.shared.set 'game', {}
 	#Db.shared.set 'game', 'bounds', {one: {lat: 52.249822176849, lng: 6.8396973609924}, two: {lat: 52.236578295702, lng: 6.8598246574402}} # TOOD remove
