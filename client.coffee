@@ -91,9 +91,9 @@ exports.render = ->
 			Page.setTitle !->
 				Dom.div !->
 					if Db.shared.peek( 'game', 'firstTeam') is getTeamOfUser(Plugin.userId())
-						Dom.text "Your team won the game!"
+						Dom.text "Your team won!"
 					else
-						Dom.text "Your team lost the game!"
+						Dom.text "Your team lost!"
 			if page == 'main'
 				endGameContent()
 			else if page == 'scores'
@@ -350,7 +350,7 @@ addEndGameBar = ->
 		if parseInt(Db.shared.peek('game', 'firstTeam')) is parseInt(getTeamOfUser(Plugin.userId()))
 			Dom.text "Your team won the game!"
 		else
-			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'name') + " won the game, good luck next round!"
+			Dom.text "Team " + Db.shared.peek('colors', Db.shared.peek('game', 'firstTeam'), 'name') + " won, good luck next round!"
 		if Plugin.userIsAdmin() or Plugin.ownerId() is Plugin.userId()
 			Dom.style paddingRight: '145px'
 			Dom.div !->
