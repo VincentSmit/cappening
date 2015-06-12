@@ -53,6 +53,8 @@ exports.render = ->
 		gameState = Db.shared.get('gameState')
 		if gameState is 0 # Setting up game by user that added plugin
 			setupContent()
+			Page.setTitle !->
+				Dom.text 'Setup'
 			if checkinLocationFunction?
 				clearInterval(checkinLocationFunction)
 				checkinLocationFunction = undefined
@@ -61,46 +63,51 @@ exports.render = ->
 			# Set page title
 			page = Page.state.get(0)
 			page = "main" if (not page? or page == '')
-			Obs.observe ->
-				nEnd = Db.shared.get('game', 'newEndTime')
-				end = Db.shared.get('game', 'endTime')
-				if nEnd? and nEnd isnt 0
-					end = nEnd		
-				# Make the subtitle black if the game is within 1 hour of ending
-				#log 'title end='+end+', nEdn='+nEnd
-				Page.setTitle !->
-					if (end - Plugin.time()) < 3600
-						Dom.style
-							color: "#000000"
-							fontWeight: 'bold'
-						Dom.text "Game ends "
-						Time.deltaText end
-						Dom.text "!"
-					else
-						Dom.text "Game ends "
-						Time.deltaText end
 			# Display the correct page
 			if page == 'main'
 				mainContent()
+				Obs.observe ->
+					nEnd = Db.shared.get('game', 'newEndTime')
+					end = Db.shared.get('game', 'endTime')
+					if nEnd? and nEnd isnt 0
+						end = nEnd		
+					# Make the subtitle black if the game is within 1 hour of ending
+					#log 'title end='+end+', nEdn='+nEnd
+					Page.setTitle !->
+						if (end - Plugin.time()) < 3600
+							Dom.text "Game ends "
+							Time.deltaText end
+							Dom.text "!"
+						else
+							Dom.text "Game ends "
+							Time.deltaText end
 			else if page == 'scores'
 				scoresContent()
+				Page.setTitle !->
+					Dom.text 'Ranking'
 			else if page == 'log'
 				logContent()
+				Page.setTitle !->
+					Dom.text 'Game events'
 		else if gameState is 2 # Game ended
 			page = Page.state.get(0)
 			page = "main" if (not page? or page == '')
-			Page.setTitle !->
-				Dom.div !->
-					if Db.shared.peek( 'game', 'firstTeam') is getTeamOfUser(Plugin.userId())
-						Dom.text "Your team won!"
-					else
-						Dom.text "Your team lost!"
 			if page == 'main'
 				endGameContent()
+				Page.setTitle !->
+					Dom.div !->
+						if Db.shared.peek( 'game', 'firstTeam') is getTeamOfUser(Plugin.userId())
+							Dom.text "Your team won!"
+						else
+							Dom.text "Your team lost!"
 			else if page == 'scores'
 				scoresContent()
+				Page.setTitle !->
+					Dom.text 'Ranking'
 			else if page == 'log'
 				logContent()
+				Page.setTitle !->
+					Dom.text 'Game events'				
 			if checkinLocationFunction?
 				clearInterval(checkinLocationFunction)
 				checkinLocationFunction = undefined		
@@ -699,7 +706,6 @@ mainContent = ->
 	
 # Scores page
 scoresContent = ->
-	Dom.h1 "Teams ranking"
 	Ui.list !->
 		Dom.style
 			padding: '0'
@@ -779,7 +785,6 @@ scoresContent = ->
 
 # Eventlog page
 logContent = ->
-	Dom.h1 "Game events"
 	Ui.list !->
 		Dom.style
 			padding: '0'
