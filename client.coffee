@@ -23,7 +23,7 @@ window.checkinLocationFunction = undefined
 exports.render = ->
 	log '8: FULL RENDER'
 
-	Server.call 'log', Plugin.userId(), Plugin.agent().android
+	#Server.send 'log', Plugin.userId(), Plugin.agent().android
 	version = Plugin.agent().android
 	if version?
 		if version <2.4 
@@ -587,7 +587,8 @@ setupContent = ->
 				Dom.onTap !->
 					Modal.show tr("Gamearea setup information"), !->
 						Dom.div !->
-							Dom.text "Drag the corners of the orange rectangle to define the gamearea. Choose this area wisely, this is where the map will be limited to during the game."
+							Dom.text "Drag the corners of the orange rectangle to define the gamearea."
+							#Dom.text " Choose this area wisely, this is where the map will be limited to during the game."
 							Dom.br()
 							Dom.br()
 							Dom.text "Your own location is drawn on the map as a pushpin."
@@ -820,8 +821,8 @@ logContent = ->
 						teamName = Db.shared.peek('colors', teamId, 'name')
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
-							Page.nav ''
 							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
+							Page.nav ''
 						Dom.div !->
 							Dom.style
 								width: '70px'
@@ -843,8 +844,8 @@ logContent = ->
 						teamName = Db.shared.peek('colors', teamId, 'name')
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
+							map.setView(L.latLng(Db.shared.peek('game', 'beacons', beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons', beaconId, 'location', 'lng')), 16)
 							Page.nav ''
-							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
 						Dom.div !->
 							Dom.style
 								width: '70px'
@@ -1037,7 +1038,7 @@ setupMap = ->
 		else
 			# Tile version
 			L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
-			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true, reuseTiles: true})
+			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true, reuseTiles: true, minZoom: 3, maxZoom: 21})
 			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
 			log "Initialized MapBox map"
 			limitToBounds()
@@ -1052,6 +1053,7 @@ limitToBounds = ->
 	Obs.observe ->
 		log "Map bounds and minzoom set"
 		if mapReady() and Db.shared.get('gameState') is 1
+			###
 			# Limit scrolling to the bounds and also limit the zoom level
 			loc1 = L.latLng(Db.shared.get('game', 'bounds', 'one', 'lat'), Db.shared.get('game', 'bounds', 'one', 'lng'))
 			loc2 = L.latLng(Db.shared.get('game', 'bounds', 'two', 'lat'), Db.shared.get('game', 'bounds', 'two', 'lng'))
@@ -1066,6 +1068,7 @@ limitToBounds = ->
 				#map.fitBounds(bounds); # Causes problems, because it zooms to max all the time
 			else
 				log "Bounds not existing"
+			###
 			Obs.onClean ->
 				if map?
 					log "  Map bounds and minzoom reset"
