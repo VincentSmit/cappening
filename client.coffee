@@ -1134,7 +1134,7 @@ renderBeacons = ->
 					popup = L.popup()
 						.setLatLng(location)
 						.setContent(popupString)
-					marker.bindPopup(popup)
+					marker.bindPopup(popup,  {closeOnClick: true, closeButton: false})
 					markerClick = () -> 
 						beaconMarkers[beacon.key()].togglePopup()		
 					marker.on('contextmenu', markerClick)
