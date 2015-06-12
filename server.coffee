@@ -192,34 +192,38 @@ exports.client_log = (userId, message) ->
 
 # Start the game
 exports.client_startGame = ->
-	setTimer()
-	userIds = Plugin.userIds()
-	Db.shared.set 'game', 'startTime', new Date()/1000
-	teams = Db.shared.peek('game','numberOfTeams')
-	team = 0
-	while(userIds.length > 0)
-		randomNumber = Math.floor(Math.random() * userIds.length)
-		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userScore', 0
-		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'captured', 0
-		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'neutralized', 0
-		Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userName', Plugin.userName(userIds[randomNumber])
-		log '[startGame()] Team', team, 'has player', Plugin.userName(userIds[randomNumber])
-		userIds.splice(randomNumber,1)
-		team++
-		team = 0 if team >= teams
-	Db.shared.iterate 'game', 'teams', (team) !->
-		Db.shared.set 'game', 'teams', team.key(), 'teamScore', 0
-		Db.shared.set 'game', 'teams', team.key(), 'captured', 0
-		Db.shared.set 'game', 'teams', team.key(), 'neutralized', 0
-	updateTeamRankings()
-	addEvent {
-		timestamp: new Date()/1000
-		type: "start"
-	}
-	Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
-	Event.create
-    	unit: 'startGame'
-    	text: "A new game of Conquest has started!"
+	if Db.shared.peek('gameState') is 0
+		setTimer()
+		userIds = Plugin.userIds()
+		Db.shared.set 'game', 'startTime', new Date()/1000
+		teams = Db.shared.peek('game','numberOfTeams')
+		team = 0
+		while(userIds.length > 0)
+			randomNumber = Math.floor(Math.random() * userIds.length)
+			Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userScore', 0
+			Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'captured', 0
+			Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'neutralized', 0
+			Db.shared.set 'game', 'teams', team, 'users', userIds[randomNumber], 'userName', Plugin.userName(userIds[randomNumber])
+			log '[startGame()] Team', team, 'has player', Plugin.userName(userIds[randomNumber])
+			userIds.splice(randomNumber,1)
+			team++
+			team = 0 if team >= teams
+		Db.shared.iterate 'game', 'teams', (team) !->
+			Db.shared.set 'game', 'teams', team.key(), 'teamScore', 0
+			Db.shared.set 'game', 'teams', team.key(), 'captured', 0
+			Db.shared.set 'game', 'teams', team.key(), 'neutralized', 0
+		updateTeamRankings()
+		addEvent {
+			timestamp: new Date()/1000
+			type: "start"
+		}
+		Db.shared.set 'gameState', 1 # Set gameState at the end, because this triggers a repaint at the client so we want all data prepared before that
+		Event.create
+			unit: 'startGame'
+			text: "A new game of Conquest has started!"
+	else
+		log '[client_startGame()] Tried to start the game while not in setup!'
+
 
 # Checkin location for capturing a beacon
 exports.client_checkinLocation = (client, location, device, accuracy) ->

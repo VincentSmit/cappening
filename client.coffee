@@ -576,7 +576,7 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Click here for more information."
+					Dom.text "Drag the corners of the orange rectangle to define the gamearea. Click here for more information."
 				Dom.onTap !->
 					Modal.show tr("Gamearea setup information"), !->
 						Dom.div !->
@@ -646,7 +646,16 @@ setupContent = ->
 					Dom.style
 						_flexGrow: '1'
 						_flexShrink: '1'
-					Dom.text "Click here for more information."
+					if Plugin.agent().android? or Plugin.agent().ios?
+						Dom.text "Tap-and-hold"
+					else
+						Dom.text "Right-click"
+					Dom.text " to place beacon on the map, "
+					if Plugin.agent().android? or Plugin.agent().ios?
+						Dom.text "tap-and-hold"
+					else
+						Dom.text "right-click"
+					Dom.text " a beacon to delete it. Click here for more information."
 				Dom.onTap !->
 					Modal.show tr("Beacon setup information"), !->
 						Dom.div !->
