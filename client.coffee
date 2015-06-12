@@ -1274,8 +1274,8 @@ renderLocation = ->
 							map.setView(latLngObj)
 						locationIcon = L.icon({
 							iconUrl: Plugin.resourceUri('location.png'),
-							iconSize:     [40, 40], 
-							iconAnchor:   [20, 40], 
+							iconSize:     [21, 40], 
+							iconAnchor:   [11, 40], 
 							popupAnchor:  [0, -40]
 						});
 						if not (beaconCurrentLocation?)
