@@ -1400,7 +1400,7 @@ renderLocation = ->
 															Dom.text 'Your accuracy of '+accuracy+' meter is higher than the maximum allowed '+beaconRadius+' meter.'
 											else
 												if inRangeValue?
-													if not inRangeCheckinRunning[Plugin.groupId()]
+													if not (inRangeCheckinRunning[Plugin.groupId()]?) or not (inRangeCheckinRunning[Plugin.groupId()])
 														checkinLocation()
 														setInterval(checkinLocation, 30*1000)
 														checkinLocationFunction = checkinLocation
@@ -1408,7 +1408,7 @@ renderLocation = ->
 												else
 													log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 													checkinLocation()
-													if not inRangeCheckinRunning[Plugin.groupId()]
+													if not (inRangeCheckinRunning[Plugin.groupId()]?) or not (inRangeCheckinRunning[Plugin.groupId()])
 														setInterval(checkinLocation, 30*1000)
 														checkinLocationFunction = checkinLocation
 														window.inRangeCheckinRunning[Plugin.groupId()] = true
