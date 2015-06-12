@@ -752,7 +752,7 @@ scoresContent = ->
 						Dom.style fontWeight: 'bold'
 					#log 'users: ', Plugin.users, ', length: ', Plugin.users.count().peek()
 					# To Do expand voor scores
-					if expanded.get() || Plugin.users.count().peek() <= 6
+					if expanded.get() || Plugin.users.count().peek() <= 10
 						team.iterate 'users', (user) !->
 							Dom.div !->
 								if parseInt(user.key())  isnt Plugin.userId()
@@ -778,7 +778,7 @@ scoresContent = ->
 						Dom.div !->
 							Dom.style fontSize: '75%', marginTop: '6px'
 							Dom.text "Tap for details"
-				if Plugin.users.count().peek() > 6
+				if Plugin.users.count().peek() > 10
 					Dom.onTap !->
 						expanded.set(!expanded.get())
 		, (team) -> [team.get('ranking')]
