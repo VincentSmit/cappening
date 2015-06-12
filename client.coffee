@@ -22,9 +22,9 @@ window.checkinLocationFunction = undefined
 # ========== Events ==========
 exports.render = ->
 	log '8: FULL RENDER'
-	if not window.inRangeCheckinRunning?
+	if not (window.inRangeCheckinRunning?)
 		window.inRangeCheckinRunning = {}
-	if not inRangeCheckinRunning[Plugin.groupId()]?
+	if not (inRangeCheckinRunning[Plugin.groupId()]?)
 		inRangeCheckinRunning[Plugin.groupId()] = false
 	window.restoreMapLocation = true
 	log 'restoreMapLocation='+restoreMapLocation
@@ -41,6 +41,9 @@ exports.render = ->
 			Db.local.set 'gameNumber', remote
 			# Do cleanup stuff
 			Db.local.remove 'currentSetupPage'
+			if inRangeCheckinRunning[Plugin.groupId()]
+				clearInterval(checkinLocationFunction)
+				window.inRangeCheckinRunning[Plugin.groupId()] = false
 
 	# Ask for location
 	if !Geoloc.isSubscribed()
