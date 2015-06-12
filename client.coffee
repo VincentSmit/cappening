@@ -22,6 +22,13 @@ window.checkinLocationFunction = undefined
 # ========== Events ==========
 exports.render = ->
 	log '8: FULL RENDER'
+
+	Server.call 'log', Plugin.userId(), Plugin.agent().android
+	version = Plugin.agent().android
+	if version?
+		if version <2.4 
+			Dom.text 'Sorry this game is unavailable for android version 2.3 or lower'
+			return 0
 	if not (window.inRangeCheckinRunning?)
 		window.inRangeCheckinRunning = {}
 	if not (inRangeCheckinRunning[Plugin.groupId()]?)
@@ -1206,10 +1213,11 @@ addMarkerListener = (event) ->
 	result = ''
 	Db.shared.iterate 'game', 'beacons', (beacon) !->
 		location = L.latLng(beacon.peek('location', 'lat'), beacon.peek('location', 'lng'))
-		#log 'location='+location+', lat='+beacon.peek('location', 'lat')+', lng='+beacon.peek('location', 'lng')+', beacon=', beacon, ', key='+beacon.key()
-		if event.latlng.distanceTo(location) < beaconRadius*2 and !tooClose
-			tooClose = true;
-			result = 'Beacon is placed too close to other beacon'
+		if location?
+			#log 'location='+location+', lat='+beacon.peek('location', 'lat')+', lng='+beacon.peek('location', 'lng')+', beacon=', beacon, ', key='+beacon.key()
+			if event.latlng.distanceTo(location) < beaconRadius*2 and !tooClose
+				tooClose = true;
+				result = 'Beacon is placed too close to other beacon'
 	#Check if marker area is passing the game border
 	if !tooClose
 		outsideGame = !boundaryRectangle.getBounds().contains(event.latlng)
