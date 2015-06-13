@@ -31,8 +31,8 @@ exports.render = ->
 			return 0
 	if not (window.inRangeCheckinRunning?)
 		window.inRangeCheckinRunning = {}
-	if not (inRangeCheckinRunning[Plugin.groupId()]?)
-		inRangeCheckinRunning[Plugin.groupId()] = false
+	if not (inRangeCheckinRunning[Plugin.groupCode()]?)
+		inRangeCheckinRunning[Plugin.groupCode()] = false
 	window.restoreMapLocation = true
 	log 'restoreMapLocation='+restoreMapLocation
 	#Server.call 'log', Plugin.userId(), "FULL RENDER"
@@ -48,9 +48,9 @@ exports.render = ->
 			Db.local.set 'gameNumber', remote
 			# Do cleanup stuff
 			Db.local.remove 'currentSetupPage'
-			if inRangeCheckinRunning[Plugin.groupId()]
+			if inRangeCheckinRunning[Plugin.groupCode()]
 				clearInterval(checkinLocationFunction)
-				window.inRangeCheckinRunning[Plugin.groupId()] = false
+				window.inRangeCheckinRunning[Plugin.groupCode()] = false
 
 	# Ask for location
 	if !Geoloc.isSubscribed()
@@ -68,7 +68,7 @@ exports.render = ->
 			if checkinLocationFunction?
 				clearInterval(checkinLocationFunction)
 				checkinLocationFunction = undefined
-				window.inRangeCheckinRunning[Plugin.groupId()] = false
+				window.inRangeCheckinRunning[Plugin.groupCode()] = false
 		else if gameState is 1 # Game is running
 			# Set page title
 			page = Page.state.get(0)
@@ -121,7 +121,7 @@ exports.render = ->
 			if checkinLocationFunction?
 				clearInterval(checkinLocationFunction)
 				checkinLocationFunction = undefined		
-				window.inRangeCheckinRunning[Plugin.groupId()] = false			
+				window.inRangeCheckinRunning[Plugin.groupCode()] = false			
 	Obs.observe ->
 		deviceId = Db.local.peek 'deviceId'
 		if not deviceId?
@@ -1403,13 +1403,13 @@ renderLocation = ->
 											else
 												clearInterval(checkinLocationFunction)
 												checkinLocationFunction = undefined
-												window.inRangeCheckinRunning[Plugin.groupId()] = false
+												window.inRangeCheckinRunning[Plugin.groupCode()] = false
 										if within
 											log 'accuracy='+accuracy+', beaconRadius='+beaconRadius
 											if accuracy > beaconRadius # Deny capturing with low accuracy
 												if not inRangeValue?
 													#clearInterval(checinLocation) # TODO check if this is required or causes problems
-													#inRangeCheckinRunning[Plugin.groupId()] = false
+													#inRangeCheckinRunning[Plugin.groupCode()] = false
 													log 'Did not checkin location, accuracy too low: '+accuracy
 													Dom.div !->
 														Dom.cls 'infobar'
@@ -1428,24 +1428,24 @@ renderLocation = ->
 															Dom.text 'Your accuracy of '+accuracy+' meter is higher than the maximum allowed '+beaconRadius+' meter.'
 											else
 												if inRangeValue?
-													if not (inRangeCheckinRunning[Plugin.groupId()]?) or not (inRangeCheckinRunning[Plugin.groupId()])
+													if not (inRangeCheckinRunning[Plugin.groupCode()]?) or not (inRangeCheckinRunning[Plugin.groupCode()])
 														checkinLocation()
 														setInterval(checkinLocation, 30*1000)
 														checkinLocationFunction = checkinLocation
-														window.inRangeCheckinRunning[Plugin.groupId()] = true
+														window.inRangeCheckinRunning[Plugin.groupCode()] = true
 												else
 													log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 													checkinLocation()
-													if not (inRangeCheckinRunning[Plugin.groupId()]?) or not (inRangeCheckinRunning[Plugin.groupId()])
+													if not (inRangeCheckinRunning[Plugin.groupCode()]?) or not (inRangeCheckinRunning[Plugin.groupCode()])
 														setInterval(checkinLocation, 30*1000)
 														checkinLocationFunction = checkinLocation
-														window.inRangeCheckinRunning[Plugin.groupId()] = true
+														window.inRangeCheckinRunning[Plugin.groupCode()] = true
 										else if (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
 											log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 											checkinLocation()
-											if inRangeCheckinRunning[Plugin.groupId()]
+											if inRangeCheckinRunning[Plugin.groupCode()]
 												clearInterval(checkinLocationFunction)
-												window.inRangeCheckinRunning[Plugin.groupId()] = false
+												window.inRangeCheckinRunning[Plugin.groupCode()] = false
 				else
 					log 'Location could not be found'
 		Obs.onClean ->
