@@ -540,7 +540,7 @@ setupContent = ->
 					# Corner 1
 					lat1 = Db.shared.get('game', 'bounds', 'one', 'lat')
 					lng1 =  Db.shared.get('game', 'bounds', 'one', 'lng')
-					if not lat1? or not lng1
+					if not lat1? or not lng1?
 						lat1 = 52.249822176849
 						lng1 = 6.8396973609924
 					loc1 = L.latLng(lat1, lng1)
@@ -552,7 +552,7 @@ setupContent = ->
 					# Corner 2
 					lat2 = Db.shared.get('game', 'bounds', 'two', 'lat')
 					lng2 = Db.shared.get('game', 'bounds', 'two', 'lng')
-					if not lat2? or not lng2
+					if not lat2? or not lng2?
 						lat2 = 52.236578295702
 						lng2 = 6.8598246574402
 					loc2 = L.latLng(lat2, lng2)
@@ -1300,13 +1300,14 @@ renderLocation = ->
 							Db.local.set('mapLocation', 'lng', latLngObj.lng)
 							Db.local.set('mapLocation', 'zoom', 16)
 							restoreMapLocationNow()
-						if not (Db.shared.peek('game', 'bounds', 'one', 'lat')?) and window.locationOne?
+						log 'bounds lat=',not (Db.shared.peek('game', 'bounds', 'one', 'lat')?), ', window.locationOne?=', window.locationOne?
+						if not (Db.shared.peek('game', 'bounds', 'one', 'lat')?)
 							one = L.latLng(latLngObj.lat+0.01,latLngObj.lng-0.02)
 							two = L.latLng(latLngObj.lat-0.01,latLngObj.lng+0.02)
 							Server.sync 'setBounds', one, two, !->
 								log 'predicting bounds change'
-								Db.shared.set 'game', 'bounds', {one: {lat: window.locationOne.getLatLng().lat, lng: window.locationOne.getLatLng().lng}, two: {lat: window.locationTwo.getLatLng().lat, lng: window.locationTwo.getLatLng().lng}}
-								log 'predicted bounds: ', {one: {lat: window.locationOne.getLatLng().lat, lng: window.locationOne.getLatLng().lng}, two: {lat: window.locationTwo.getLatLng().lat, lng: window.locationTwo.getLatLng().lng}}
+								Db.shared.set 'game', 'bounds', {one: {lat: one.lat, lng: one.lng}, two: {lat: two.lat, lng: two.lng}}
+								log 'predicted bounds: ', {one: {lat: one.lat, lng: one.lng}, two: {lat: two.lat, lng: two.lng}}
 							map.setView(latLngObj)
 						locationIcon = L.icon({
 							iconUrl: Plugin.resourceUri('location.png'),
