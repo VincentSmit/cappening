@@ -21,7 +21,7 @@ window.checkinLocationFunction = undefined
 
 # ========== Events ==========
 exports.render = ->
-	log '8: FULL RENDER'
+	log 'FULL RENDER'
 
 	#Server.send 'log', Plugin.userId(), Plugin.agent().android
 	version = Plugin.agent().android
@@ -824,7 +824,7 @@ logContent = ->
 							viewSet = ->
 								map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
 							setTimeout(viewSet, 50)
-							Page.nav ''
+							Page.back()
 						Dom.div !->
 							Dom.style
 								width: '70px'
@@ -849,7 +849,7 @@ logContent = ->
 							viewSet = ->
 								map.setView(L.latLng(Db.shared.peek('game', 'beacons', beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons', beaconId, 'location', 'lng')), 16)
 							setTimeout(viewSet, 50)
-							Page.nav ''
+							Page.back()
 						Dom.div !->
 							Dom.style
 								width: '70px'
