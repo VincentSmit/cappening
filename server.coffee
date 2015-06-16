@@ -221,6 +221,7 @@ exports.client_startGame = ->
 		Event.create
 			unit: 'startGame'
 			text: "A new game of Conquest has started!"
+			path: ['log']
 	else
 		log '[client_startGame()] Tried to start the game while not in setup!'
 
@@ -722,6 +723,7 @@ pushToTeam = (teamId, message) ->
     	unit: 'toTeam'
     	include: members
     	text: message
+    	path: ['log']
 
 # Sends a push notification, message, to all players not in team, teamId
 pushToRest = (teamId, message) ->
@@ -732,6 +734,7 @@ pushToRest = (teamId, message) ->
     	unit: 'toRest'
     	exclude: members
     	text: message
+    	path: ['log']
 
 #Move all data to history tab
 moveData = ->

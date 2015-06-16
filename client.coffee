@@ -12,6 +12,7 @@ Geoloc = require 'geoloc'
 Form = require 'form'
 Icon = require 'icon'
 Toast = require 'toast'
+Event = require 'event'
 # Get config values, access with 'Config.<property>' (check 'config.common.coffee')
 CommonConfig = require 'config'
 Config = CommonConfig.getConfig()
@@ -22,7 +23,7 @@ window.checkinLocationFunction = undefined
 
 # ========== Events ==========
 exports.render = ->
-	log 'FULL RENDER'
+	log 'FULL RENDER 3'
 
 	#Server.send 'log', Plugin.userId(), Plugin.agent().android
 	version = Plugin.agent().android
@@ -198,7 +199,7 @@ addBar = ->
 			Dom.div !->
 				Dom.text 'Events'
 				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
-
+			Event.renderBubble ['log']
 			Dom.cls 'bar-button'
 			Dom.onTap !->   
 				Page.nav 'log'
@@ -839,11 +840,13 @@ logContent = ->
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '100%'
+							if Event.isNew(capture.peek('timestamp'))
+								Dom.style color: '#5b0'
 							Dom.text "Team " + teamName + " captured a beacon"
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
-								Time.deltaText capture.peek('timestamp')if capture.peek('type') is "capture" and mapReady()
+								Time.deltaText capture.peek('timestamp')
 					else if capture.peek('type') is "captureAll"
 						beaconId = capture.peek('beacon')
 						teamId = capture.peek('conqueror')
@@ -868,6 +871,8 @@ logContent = ->
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '100%'
+							if Event.isNew(capture.peek('timestamp'))
+								Dom.style color: '#5b0'
 							Dom.text "Team " + teamName + " team captured all beacons"
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
@@ -889,6 +894,8 @@ logContent = ->
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '100%'
+							if Event.isNew(capture.peek('timestamp'))
+								Dom.style color: '#5b0'
 							Dom.text "Team " + teamName + " took the lead"
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
@@ -906,6 +913,8 @@ logContent = ->
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '16px'
+							if Event.isNew(capture.peek('timestamp'))
+								Dom.style color: '#5b0'
 							Dom.text "No longer are all beacons owned by one team"
 							started = Db.shared.peek 'game', 'startTime'
 							if started?
@@ -932,6 +941,8 @@ logContent = ->
 									borderBottom: '20px solid transparent'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '16px'
+							if Event.isNew(capture.peek('timestamp'))
+								Dom.style color: '#5b0'
 							Dom.text "Start of the game!"
 							started = Db.shared.peek 'game', 'startTime'
 							if started?
@@ -954,6 +965,8 @@ logContent = ->
 								backgroundSize: '50px 50px'
 						Dom.div !->
 							Dom.style Flex: 1, fontSize: '16px'
+							if Event.isNew(capture.peek('timestamp'))
+								Dom.style color: '#5b0'
 							Dom.text "Team " + teamName + " won the game"
 							started = Db.shared.peek 'game', 'startTime'
 							if started?
