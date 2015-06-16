@@ -1402,7 +1402,17 @@ renderLocation = ->
 												backgroundColor: Db.shared.peek('colors', getTeamOfUser(Plugin.userId()), 'hex')
 										Dom.div !->
 											Dom.cls 'arrowDivText'
-											Dom.text "You're " + distanceToPlayfield + " away"											
+											Dom.text "You're " + distanceToPlayfield + " away"	
+										Dom.div !->
+											Dom.onTap !->
+												map.setView(latLngObj, 16)
+											Dom.style 
+												position: 'absolute'
+												bottom: '0px'
+												left: '0px'
+												width: '160px'
+												height: '45px'
+												zIndex: '11'
 							Obs.onClean ->
 								# Deregister move/zoom listeners to update indication arrow
 								if mapReady()
