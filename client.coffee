@@ -11,6 +11,7 @@ CSS = require 'css'
 Geoloc = require 'geoloc'
 Form = require 'form'
 Icon = require 'icon'
+Toast = require 'toast'
 # Get config values, access with 'Config.<property>' (check 'config.common.coffee')
 CommonConfig = require 'config'
 Config = CommonConfig.getConfig()
@@ -824,6 +825,10 @@ logContent = ->
 							viewSet = ->
 								map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
 							setTimeout(viewSet, 50)
+							Toast.show !->
+								Dom.text 'Captured '
+								Time.deltaText(capture.peek('timestamp'))
+								Dom.text ' by team '+teamName
 							Page.back()
 						Dom.div !->
 							Dom.style
@@ -849,6 +854,10 @@ logContent = ->
 							viewSet = ->
 								map.setView(L.latLng(Db.shared.peek('game', 'beacons', beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons', beaconId, 'location', 'lng')), 16)
 							setTimeout(viewSet, 50)
+							Toast.show !->
+								Dom.text 'Captured '
+								Time.deltaText(capture.peek('timestamp'))
+								Dom.text ' by team '+teamName
 							Page.back()
 						Dom.div !->
 							Dom.style
