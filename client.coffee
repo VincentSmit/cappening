@@ -821,7 +821,9 @@ logContent = ->
 						teamName = Db.shared.peek('colors', teamId, 'name')
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
-							map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
+							viewSet = ->
+								map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
+							setTimeout(viewSet, 50)
 							Page.nav ''
 						Dom.div !->
 							Dom.style
@@ -844,7 +846,9 @@ logContent = ->
 						teamName = Db.shared.peek('colors', teamId, 'name')
 						log "print capture: teamId; " + teamId
 						Dom.onTap !->
-							map.setView(L.latLng(Db.shared.peek('game', 'beacons', beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons', beaconId, 'location', 'lng')), 16)
+							viewSet = ->
+								map.setView(L.latLng(Db.shared.peek('game', 'beacons', beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons', beaconId, 'location', 'lng')), 16)
+							setTimeout(viewSet, 50)
 							Page.nav ''
 						Dom.div !->
 							Dom.style
