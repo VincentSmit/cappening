@@ -24,6 +24,9 @@ window.checkinLocationFunction = undefined
 # ========== Events ==========
 exports.render = ->
 	log 'FULL RENDER 3'
+	Obs.onClean ->
+		log 'FULL CLEAN'
+		window.inRangeCheckinCount[Plugin.groupCode()] = 0
 	#Server.send 'log', Plugin.userId(), Plugin.agent().android
 	version = Plugin.agent().android
 	if version?
@@ -33,7 +36,12 @@ exports.render = ->
 	if not (window.inRangeCheckinRunning?)
 		window.inRangeCheckinRunning = {}
 	if not (inRangeCheckinRunning[Plugin.groupCode()]?)
-		inRangeCheckinRunning[Plugin.groupCode()] = false
+		window.inRangeCheckinRunning[Plugin.groupCode()] = false
+	if not (window.inRangeCheckinCount?)
+		window.inRangeCheckinCount = {}
+	if not (window.inRangeCheckinCount[Plugin.groupCode()]?)
+		window.inRangeCheckinCount[Plugin.groupCode()] = 0
+
 	window.restoreMapLocation = true
 	log 'restoreMapLocation='+restoreMapLocation
 	#Server.call 'log', Plugin.userId(), "FULL RENDER"
@@ -49,9 +57,7 @@ exports.render = ->
 			Db.local.set 'gameNumber', remote
 			# Do cleanup stuff
 			Db.local.remove 'currentSetupPage'
-			if inRangeCheckinRunning[Plugin.groupCode()]
-				clearInterval(checkinLocationFunction)
-				window.inRangeCheckinRunning[Plugin.groupCode()] = false
+			stopLocationSending()
 
 	# Ask for location
 	if !Geoloc.isSubscribed()
@@ -60,16 +66,14 @@ exports.render = ->
 	Obs.observe ->
 		mainElement = document.getElementsByTagName("main")[0]
 		mainElement.setAttribute 'id', 'main'
+		window.inRangeCheckinCount[Plugin.groupCode()] = 0 # Player is active, reset count
 		redraw.get();
 		gameState = Db.shared.get('gameState')
 		if gameState is 0 # Setting up game by user that added plugin
 			setupContent()
 			Page.setTitle !->
 				Dom.text 'Conquest: Setup'
-			if checkinLocationFunction?
-				clearInterval(checkinLocationFunction)
-				checkinLocationFunction = undefined
-				window.inRangeCheckinRunning[Plugin.groupCode()] = false
+			stopLocationSending()
 		else if gameState is 1 # Game is running
 			# Set page title
 			page = Page.state.get(0)
@@ -119,10 +123,7 @@ exports.render = ->
 				logContent()
 				Page.setTitle !->
 					Dom.text 'Conquest: Game events'				
-			if checkinLocationFunction?
-				clearInterval(checkinLocationFunction)
-				checkinLocationFunction = undefined		
-				window.inRangeCheckinRunning[Plugin.groupCode()] = false			
+			stopLocationSending()		
 	Obs.observe ->
 		deviceId = Db.local.peek 'deviceId'
 		if not deviceId?
@@ -137,6 +138,7 @@ exports.render = ->
 
 # Render info page (gear/info icon in top bar)
 exports.renderInfo = !->
+	window.inRangeCheckinCount[Plugin.groupCode()] = 0 # Player is active, reset count
 	Dom.text "On the main map there are several beacons. You need to venture to the real location of a beacon to conquer it. "
 	Dom.text "When you get in range of the beacon, you'll automatically start to conquer it. "
 	Dom.text "When the bar at the top of your screen has been filled with your team color, you've conquered the beacon. "
@@ -1265,6 +1267,7 @@ addMarkerListener = (event) ->
 # Listener for updating your location indicator
 indicationArrowListener = () ->
 	indicationArrowRedraw.incr()
+	window.inRangeCheckinCount[Plugin.groupCode()] = 0 # Player is active, reset count
 
 # Convert a location to a LatLng object
 convertLatLng = (location) ->
@@ -1434,13 +1437,12 @@ renderLocation = ->
 										inRangeValue = beacon.peek('inRange', Plugin.userId(), 'device')
 										accuracy = state.get('accuracy')
 										checkinLocation = ->
-											if parseInt(Db.shared.peek('gameState')) is 1
+											if parseInt(Db.shared.peek('gameState')) is 1 and window.inRangeCheckinCount[Plugin.groupCode()] < Config.afkCheckinLocation
+												window.inRangeCheckinCount[Plugin.groupCode()] = window.inRangeCheckinCount[Plugin.groupCode()]+1
 												log 'checkinLocation: user='+Plugin.userName(Plugin.userId())+' ('+Plugin.userId()+'), deviceId='+deviceId+', accuracy='+accuracy
 												Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
 											else
-												clearInterval(checkinLocationFunction)
-												checkinLocationFunction = undefined
-												window.inRangeCheckinRunning[Plugin.groupCode()] = false
+												stopLocationSending()
 										if within
 											log 'accuracy='+accuracy+', beaconRadius='+beaconRadius
 											if accuracy > beaconRadius # Deny capturing with low accuracy
@@ -1466,27 +1468,34 @@ renderLocation = ->
 											else
 												if inRangeValue?
 													if not (inRangeCheckinRunning[Plugin.groupCode()]?) or not (inRangeCheckinRunning[Plugin.groupCode()])
+														window.inRangeCheckinCount[Plugin.groupCode()] = 0
 														checkinLocation()
-														setInterval(checkinLocation, 30*1000)
+														setInterval(checkinLocation, Config.inRangeCheckinTime*1000)
 														checkinLocationFunction = checkinLocation
 														window.inRangeCheckinRunning[Plugin.groupCode()] = true
 												else
 													log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
+													window.inRangeCheckinCount[Plugin.groupCode()] = 0
 													checkinLocation()
 													if not (inRangeCheckinRunning[Plugin.groupCode()]?) or not (inRangeCheckinRunning[Plugin.groupCode()])
-														setInterval(checkinLocation, 30*1000)
+														setInterval(checkinLocation, Config.inRangeCheckinTime*1000)
 														checkinLocationFunction = checkinLocation
 														window.inRangeCheckinRunning[Plugin.groupCode()] = true
 										else if (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
 											log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 											checkinLocation()
-											if inRangeCheckinRunning[Plugin.groupCode()]
-												clearInterval(checkinLocationFunction)
-												window.inRangeCheckinRunning[Plugin.groupCode()] = false
+											stopLocationSending()
 				else
 					log 'Location could not be found'
 		Obs.onClean ->
 			#Server.call 'log', Plugin.userId(), "Untrack location"
+
+stopLocationSending = ->
+	if inRangeCheckinRunning[Plugin.groupCode()]
+		window.inRangeCheckinRunning[Plugin.groupCode()] = false
+	if checkinLocationFunction?
+		clearInterval(checkinLocationFunction)
+		checkinLocationFunction = undefined
 
 # ========== Functions ==========
 # Get the team id the user is added to

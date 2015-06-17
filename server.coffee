@@ -682,7 +682,7 @@ refreshInrangeTimer = (client, device) ->
 				#log 'Resetting timeout'
 				user.set 'time', new Date()/1000
 				Timer.cancel 'inRangeTimeout', {beacon: beacon.key(), client: client}
-				Timer.set 60*1000, 'inRangeTimeout', {beacon: beacon.key(), client: client}
+				Timer.set Config.inRangeKickTime*1000, 'inRangeTimeout', {beacon: beacon.key(), client: client}
 
 # function called everytime scores are modified to check wheter there is a new leading team or not
 checkNewLead = ->
