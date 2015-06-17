@@ -24,7 +24,6 @@ window.checkinLocationFunction = undefined
 # ========== Events ==========
 exports.render = ->
 	log 'FULL RENDER 3'
-
 	#Server.send 'log', Plugin.userId(), Plugin.agent().android
 	version = Plugin.agent().android
 	if version?
@@ -807,6 +806,7 @@ scoresContent = ->
 
 # Eventlog page
 logContent = ->
+	Event.showStar tr('Game events')
 	Ui.list !->
 		Dom.style
 			padding: '0'
