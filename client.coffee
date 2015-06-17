@@ -1422,6 +1422,7 @@ renderLocation = ->
 									map.off('moveend', indicationArrowListener)
 						# Checking if users are capable of taking over beacons
 						Obs.observe ->
+							window.inRangeCheckinCount[Plugin.groupCode()] = 0
 							if Db.shared.peek('gameState') is 1 # Only when the game is running, do something
 								log 'Checking beacon takeover'
 								Db.shared.iterate 'game', 'beacons', (beacon) !->
