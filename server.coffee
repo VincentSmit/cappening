@@ -393,6 +393,7 @@ exports.onCapture = (args) ->
 	beacon = Db.shared.ref 'game', 'beacons', args.beacon
 	nextOwner = beacon.peek('nextOwner')
 	inRangeOfTeam = getInrangePlayersOfTeamArray(args.beacon, nextOwner)
+	inRangeOfTeamString = getInrangePlayersOfTeam(args.beacon, nextOwner)
 	log '[onCapture()] Team ', nextOwner, ' has captured beacon ', beacon.key(), ', inRange players of team: '+ inRangeOfTeam
 	beacon.set 'percentage', 100
 	beacon.set 'owner', nextOwner
@@ -415,6 +416,7 @@ exports.onCapture = (args) ->
 	log 'allbeaconscapturedFinal', allBeaconsCaptured
 	endTime = Db.shared.peek('game', 'endTime')
 
+	log 'inRangeOfTeamString='+inRangeOfTeamString
 	# Handle push notifications and modify endTime, if needed
 	if allBeaconsCaptured and endTime-Plugin.time()>(Config.beaconPointsTime/1000)
 		end = Plugin.time() + Config.beaconPointsTime/1000 #in seconds
@@ -429,6 +431,7 @@ exports.onCapture = (args) ->
 			type: "captureAll"
 			beacon: beacon.key()
 			conqueror: nextOwner
+			members: inRangeOfTeamString
 		}
 		# Notifications
 		pushToTeam(nextOwner, "Your team captured all beacons! Hold for one hour and you will win this game!")
@@ -440,10 +443,11 @@ exports.onCapture = (args) ->
 			type: "capture"
 			beacon: beacon.key()
 			conqueror: nextOwner
+			members: inRangeOfTeamString
 		}
 		# Notifications
 		pushToTeam(nextOwner, "Your team captured a beacon!")
-		pushToRest(nextOwner, "Team " + Db.shared.peek('colors', nextOwner , 'name') + " captured a beacon")
+		pushToRest(nextOwner, userStringToFriendly(inRangeOfTeamString) + " of team " + Db.shared.peek('colors', nextOwner , 'name') + " captured a beacon")
 
 	# Give 1 person of the team the individual points
 	modifyScore inRangeOfTeam[0], beacon.peek('captureValue')
@@ -542,7 +546,7 @@ getInrangePlayers = (beacon) ->
 getInrangePlayersOfTeam = (beacon, team) ->
 	playersStr = undefined;
 	Db.shared.iterate 'game', 'beacons', beacon, 'inRange', (player) !->
-		if getTeamOfUser(player.key()) == team
+		if parseInt(getTeamOfUser(player.key())) == parseInt(team)
 			if playersStr?
 				playersStr = playersStr + ', ' + player.key()
 			else
@@ -552,9 +556,11 @@ getInrangePlayersOfTeam = (beacon, team) ->
 getInrangePlayersOfTeamArray = (beacon, team) ->
 	players = [];
 	Db.shared.iterate 'game', 'beacons', beacon, 'inRange', (player) !->
-		if parseInt(getTeamOfUser(player.key()), 10) == parseInt(team, 10)
+		if parseInt(getTeamOfUser(player.key())) == parseInt(team)
 			players.push(player.key())
 	return players
+
+
 
 # Update the rankings of teams depending on their score
 updateTeamRankings = ->
@@ -756,3 +762,19 @@ registerPlugin = ->
 			url: 'https://happening.im/x/2489x'
 			data: Plugin.groupCode()
 			name: 'response'
+
+# Copy found in client.coffee!
+userStringToFriendly = (users) ->
+	if (not (users?)) or users == ''
+		return undefined
+	split = users.split(', ')
+	if split.length == 0
+		return ""
+	result = Plugin.userName(parseInt(split[0]))
+	i=1
+	while i<(split.length-1)
+		result += ', ' + Plugin.username(parseInt(split[i]))
+		i++
+	if split.length > 1
+		result += ' and ' + Plugin.userName(parseInt(split[split.length-1]))
+	return result

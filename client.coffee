@@ -72,7 +72,7 @@ exports.render = ->
 		if gameState is 0 # Setting up game by user that added plugin
 			setupContent()
 			Page.setTitle !->
-				Dom.text 'Conquest: Setup'
+				Dom.text 'Conquest setup'
 			stopLocationSending()
 		else if gameState is 1 # Game is running
 			# Set page title
@@ -90,20 +90,20 @@ exports.render = ->
 					#log 'title end='+end+', nEdn='+nEnd
 					Page.setTitle !->
 						if (end - Plugin.time()) < 3600
-							Dom.text "Conquest: Game ends "
+							Dom.text "Conquest ends "
 							Time.deltaText end
 							Dom.text "!"
 						else
-							Dom.text "Conquest: Game ends "
+							Dom.text "Conquest ends "
 							Time.deltaText end
 			else if page == 'scores'
 				scoresContent()
 				Page.setTitle !->
-					Dom.text 'Conquest: Ranking'
+					Dom.text 'Conquest ranking'
 			else if page == 'log'
 				logContent()
 				Page.setTitle !->
-					Dom.text 'Conquest: Game events'
+					Dom.text 'Conquest game events'
 		else if gameState is 2 # Game ended
 			page = Page.state.get(0)
 			page = "main" if (not page? or page == '')
@@ -112,17 +112,17 @@ exports.render = ->
 				Page.setTitle !->
 					Dom.div !->
 						if Db.shared.peek( 'game', 'firstTeam') is getTeamOfUser(Plugin.userId())
-							Dom.text "Conquest: Your team won!"
+							Dom.text "Your team won!"
 						else
-							Dom.text "Conquest: Your team lost!"
+							Dom.text "Your team lost!"
 			else if page == 'scores'
 				scoresContent()
 				Page.setTitle !->
-					Dom.text 'Conquest: Ranking'
+					Dom.text 'Conquest ranking'
 			else if page == 'log'
 				logContent()
 				Page.setTitle !->
-					Dom.text 'Conquest: Game events'				
+					Dom.text 'Conquest game events'				
 			stopLocationSending()		
 	Obs.observe ->
 		deviceId = Db.local.peek 'deviceId'
@@ -823,7 +823,6 @@ logContent = ->
 						teamId = capture.peek('conqueror')
 						teamColor = Db.shared.peek('colors', teamId, 'hex')
 						teamName = Db.shared.peek('colors', teamId, 'name')
-						log "print capture: teamId; " + teamId
 						Dom.onTap !->
 							viewSet = ->
 								map.setView(L.latLng(Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lat'), Db.shared.peek('game', 'beacons' ,beaconId, 'location', 'lng')), 16)
@@ -831,7 +830,10 @@ logContent = ->
 							Toast.show !->
 								Dom.text 'Captured '
 								Time.deltaText(capture.peek('timestamp'))
-								Dom.text ' by team '+teamName
+								if capture.peek('members')?
+									Dom.text " by " + userStringToFriendly(capture.peek('members')) + ' of team ' + teamName
+								else
+									Dom.text ' by team '+teamName
 							Page.back()
 						Dom.div !->
 							Dom.style
@@ -844,7 +846,10 @@ logContent = ->
 							Dom.style Flex: 1, fontSize: '100%'
 							if Event.isNew(capture.peek('timestamp'))
 								Dom.style color: '#5b0'
-							Dom.text "Team " + teamName + " captured a beacon"
+							if capture.peek('members')?
+								Dom.text userStringToFriendly(capture.peek('members')) + ' of team ' + teamName + ' captured a beacon'
+							else
+								Dom.text "Team " + teamName + " captured a beacon"
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
@@ -862,7 +867,10 @@ logContent = ->
 							Toast.show !->
 								Dom.text 'Captured '
 								Time.deltaText(capture.peek('timestamp'))
-								Dom.text ' by team '+teamName
+								if capture.peek('members')?
+									Dom.text " by " + userStringToFriendly(capture.peek('members')) + ' of team ' + teamName
+								else
+									Dom.text ' by team '+teamName
 							Page.back()
 						Dom.div !->
 							Dom.style
@@ -876,6 +884,8 @@ logContent = ->
 							if Event.isNew(capture.peek('timestamp'))
 								Dom.style color: '#5b0'
 							Dom.text "Team " + teamName + " team captured all beacons"
+							if capture.peek('members')?
+								Dom.text " thanks to " + userStringToFriendly(capture.peek('members'))
 							Dom.div !->
 								Dom.style fontSize: '75%', marginTop: '6px'
 								Dom.text "Captured "
@@ -1528,3 +1538,20 @@ getInRange = (beacon) ->
 		else
 			players = Plugin.userName(user.key())
 	return players;
+
+userStringToFriendly = (users) ->
+	if (not (users?)) or users == ''
+		return undefined
+	split = users.split(', ')
+	if split.length == 0
+		return ""
+	result = Plugin.userName(parseInt(split[0]))
+	i=1
+	while i<(split.length-1)
+		result += ', ' + Plugin.username(parseInt(split[i]))
+		i++
+	if split.length > 1
+		result += ' and ' + Plugin.userName(parseInt(split[split.length-1]))
+	return result
+
+
