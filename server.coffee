@@ -294,10 +294,12 @@ updateBeaconStatus = (beacon, removed) ->
 	# Determine members per team
 	owner = beacon.peek('owner')
 	teamMembers = (0 for team in [0..5])
+	inRangeCount = 0
 	beacon.iterate 'inRange', (player) !->
 		if parseInt(player.key(), 10) != parseInt(removed, 10)
 			team = getTeamOfUser(player.key())
 			teamMembers[team] = teamMembers[team]+1
+			inRangeCount++
 	#log 'teamMembers count: ', teamMembers
 
 	# Determine who is competing
@@ -349,7 +351,7 @@ updateBeaconStatus = (beacon, removed) ->
 	else
 		# No progess, stand-off
 		beacon.set 'actionStarted', new Date()/1000
-		if competing.length > 1
+		if competing.length > 1 and inRangeCount > 0
 			beacon.set 'action', 'competing'
 			log '[checkinLocation()] Capture of beacon ', beacon.key(), ' on hold, competing teams: ', competing
 		else
