@@ -95,7 +95,7 @@ exports.onJoin = (userId) ->
 						min = count
 						lowest = []
 						lowest.push team.key()
-					else if team.count() == min
+					else if count == min
 						lowest.push team.key()
 				# Draw a random team from those
 				randomNumber = Math.floor(Math.random() * lowest.length)
