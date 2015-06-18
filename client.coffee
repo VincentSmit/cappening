@@ -1539,6 +1539,7 @@ getInRange = (beacon) ->
 			players = Plugin.userName(user.key())
 	return players;
 
+# Copy found in server.coffee!
 userStringToFriendly = (users) ->
 	if (not (users?)) or users == ''
 		return undefined
