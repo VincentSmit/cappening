@@ -1029,14 +1029,14 @@ renderMap = ->
 loadOpenStreetMap = ->
 	log "loadOpenStreetMap()"
 	# Only insert these the first time
-	if(not document.getElementById("mapboxJavascript")?) or (not (Db.local.peek('newMap5')?))
-		if (not (Db.local.peek('newMap5')?))
+	if(not document.getElementById("mapboxJavascript")?) or (not (Db.local.peek('newMap6')?))
+		if (not (Db.local.peek('newMap6')?))
 			if map?
 				map.remove()
 			window.beaconCurrentLocation = undefined
 			window.L = undefined
 			window.map = undefined
-			Db.local.set('newMap5', 1)
+			Db.local.set('newMap6', 1)
 			log 'Refreshing map'
 		log "Started loading OpenStreetMap files"
 		# Insert CSS
@@ -1083,13 +1083,19 @@ setupMap = ->
 			log "javascript not yet loaded"
 		else
 			# Tile version
-			window.map = L.map('OpenStreetMap', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true, reuseTiles: true, minZoom: 3, maxZoom: 20})
+			maxZoom = 18
+			if Plugin.agent().android? or Plugin.agent().ios?
+				maxZoom = 17
+			window.map = L.map('OpenStreetMap', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true, reuseTiles: true, minZoom: 3, maxZoom: maxZoom})
 
 			# Default OpenStreetMap tiles: maxZoom = 21
+			###
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 				detectRetina: true
 			}).addTo(map);
+			###
+			
 			# CartoDB dark tiles: maxZoom = 18
 			###
 			L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
@@ -1100,6 +1106,14 @@ setupMap = ->
 				-webkit-filter: contrast(110%) brightness(200%);
 			}
 			###
+
+			# MapQuest tiles
+			L.tileLayer('https://otile{s}-s.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.png', {
+				attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="https://developer.mapquest.com/content/osm/mq_logo.png">'
+				detectRetina: true
+				subdomains: ['1', '2', '3', '4']
+			}).addTo(map);
+
 			log "Initialized MapBox map"
 			limitToBounds()
 			map.on('moveend', saveMapLocation)
