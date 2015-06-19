@@ -1080,6 +1080,7 @@ setupMap = ->
 			# Default OpenStreetMap tiles: maxZoom = 21
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+				detectRetina: true
 			}).addTo(map);
 			# CartoDB dark tiles: maxZoom = 18
 			###
