@@ -1029,13 +1029,14 @@ renderMap = ->
 loadOpenStreetMap = ->
 	log "loadOpenStreetMap()"
 	# Only insert these the first time
-	if(not document.getElementById("mapboxJavascript")?) or (not (Db.local.peek('newMap4')?))
-		if (not (Db.local.peek('newMap4')?))
+	if(not document.getElementById("mapboxJavascript")?) or (not (Db.local.peek('newMap5')?))
+		if (not (Db.local.peek('newMap5')?))
 			if map?
 				map.remove()
+			window.beaconCurrentLocation = undefined
 			window.L = undefined
 			window.map = undefined
-			Db.local.set('newMap4', 1)
+			Db.local.set('newMap5', 1)
 			log 'Refreshing map'
 		log "Started loading OpenStreetMap files"
 		# Insert CSS
@@ -1362,7 +1363,7 @@ renderLocation = ->
 							iconAnchor:   [11, 40], 
 							popupAnchor:  [0, -40]
 						});
-						if not (beaconCurrentLocation?)
+						if not (beaconCurrentLocation?) or beaconCurrentLocation == undefined
 							window.beaconCurrentLocation = L.marker(latLngObj, {icon: locationIcon})
 							markerClick = () -> 
 								beaconCurrentLocation.togglePopup()	
