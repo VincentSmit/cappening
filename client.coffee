@@ -1029,7 +1029,14 @@ renderMap = ->
 loadOpenStreetMap = ->
 	log "loadOpenStreetMap()"
 	# Only insert these the first time
-	if(not document.getElementById("mapboxJavascript")?)
+	if(not document.getElementById("mapboxJavascript")?) or (not (Db.local.peek('newMap4')?))
+		if (not (Db.local.peek('newMap4')?))
+			if map?
+				map.remove()
+			window.L = undefined
+			window.map = undefined
+			Db.local.set('newMap4', 1)
+			log 'Refreshing map'
 		log "Started loading OpenStreetMap files"
 		# Insert CSS
 		css = document.createElement "link"
@@ -1304,7 +1311,7 @@ sameLocation = (location1, location2) ->
 
 # Check if the map can be used	
 mapReady = ->
-	return L? and map?
+	return L? and map? and L isnt undefined and map isnt undefined
 
 #Loop through all beacons see if they are still within boundaryRectangle
 checkAllBeacons = ->
