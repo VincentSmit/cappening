@@ -1088,7 +1088,7 @@ setupMap = ->
 				maxZoom = 17
 			window.map = L.map('OpenStreetMap', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true, reuseTiles: true, minZoom: 3, maxZoom: maxZoom})
 
-			# Default OpenStreetMap tiles: maxZoom = 21
+			# Default OpenStreetMap tiles (quite busy and distracting)
 			###
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
@@ -1096,7 +1096,7 @@ setupMap = ->
 			}).addTo(map);
 			###
 			
-			# CartoDB dark tiles: maxZoom = 18
+			# CartoDB dark tiles (not much contrast and brightness...)
 			###
 			L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
 				attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
