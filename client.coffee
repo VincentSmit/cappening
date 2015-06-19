@@ -180,7 +180,7 @@ addBar = ->
 			top: '0'
 			left: '0'
 			position: 'absolute'
-			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
+			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 0.3)"
 			backgroundColor: hexToRGBA(Db.shared.peek('colors', getTeamOfUser(Plugin.userId()), 'hex'), 0.9)
 			_textShadow: '0 0 5px #000000, 0 0 5px #000000' 
         # Removed help button moved to top of page, should be rewritten to history tab
@@ -1036,7 +1036,7 @@ loadOpenStreetMap = ->
 		css.setAttribute "rel", "stylesheet"
 		css.setAttribute "type", "text/css"
 		css.setAttribute "id", "mapboxCSS"
-		css.setAttribute "href", "https://api.tiles.mapbox.com/mapbox.js/v2.1.9/mapbox.css"
+		css.setAttribute "href", "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css"
 		document.getElementsByTagName("head")[0].appendChild css
 		
 		# Insert javascript
@@ -1053,7 +1053,7 @@ loadOpenStreetMap = ->
 			javascript.onload = ->
 				log "OpenStreetMap files loaded"
 				redraw.incr()
-		javascript.setAttribute 'src', 'https://api.tiles.mapbox.com/mapbox.js/v2.1.9/mapbox.js'
+		javascript.setAttribute 'src', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js'
 		document.getElementsByTagName('head')[0].appendChild javascript
 	else 
 		log "OpenStreetMap files already loaded"
@@ -1075,9 +1075,22 @@ setupMap = ->
 			log "javascript not yet loaded"
 		else
 			# Tile version
-			L.mapbox.accessToken = 'pk.eyJ1Ijoibmx0aGlqczQ4IiwiYSI6IndGZXJaN2cifQ.4wqA87G-ZnS34_ig-tXRvw'
-			window.map = L.mapbox.map('OpenStreetMap', 'nlthijs48.4153ad9d', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true, reuseTiles: true, minZoom: 3, maxZoom: 21})
-			layer = L.mapbox.tileLayer('nlthijs48.4153ad9d', {reuseTiles: true})
+			window.map = L.map('OpenStreetMap', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true, reuseTiles: true, minZoom: 3, maxZoom: 20})
+
+			# Default OpenStreetMap tiles: maxZoom = 21
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+			}).addTo(map);
+			# CartoDB dark tiles: maxZoom = 18
+			###
+			L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+				attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
+			}).addTo(map);
+			# brighter and more contrast
+			img.leaflet-tile.leaflet-tile-loaded {
+				-webkit-filter: contrast(110%) brightness(200%);
+			}
+			###
 			log "Initialized MapBox map"
 			limitToBounds()
 			map.on('moveend', saveMapLocation)

@@ -25,7 +25,7 @@ Dom.css
 		right: '0'
 		bottom: '0'
 		left: '0'
-		backgroundColor: '#030303'
+		backgroundColor: '#DDD'
 # Plugin setup pages
 	'.stepbar': # The bar at the top
 		color: "white"
@@ -190,7 +190,7 @@ Dom.css
 		position: 'absolute'
 		borderRadius: '15px'
 		zIndex: '10'
-		_boxShadow: '0 0 3px rgba(0,0,0,0.5)'
+		_boxShadow: '0 0 6px rgba(255, 255, 255, 0.5)'
 	'.indicationArrow:before':
 		content: '""'
 		display: 'block'
@@ -213,9 +213,11 @@ Dom.css
 		position: 'absolute'
 	'.arrowDivText':
 		fontSize: '12px'
-		color: '#fff'
+		color: '#000000'
+		fontWeight: 'bold'
 		bottom: '2px'
 		left: '50px'
 		height: '30px'
 		position: 'absolute'
 		zIndex: '10'
+		textShadow: '0 0 4px #FFFFFF, 0 0 4px #FFFFFF'
