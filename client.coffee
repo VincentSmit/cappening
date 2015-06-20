@@ -333,9 +333,9 @@ addProgressBar = ->
 						position: 'absolute'
 						left: '0'
 						top: '50px'
-						backgroundColor: "rgba(243,243,243,0.3)"
+						boxShadow: 'rgba(0, 0, 0, 0.6) 0px 2px 6px 0px'
+						backgroundColor: 'rgba(0, 0, 0, 0.3)'
 						border: '0'
-						boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 1)"
 					Dom.div !->
 						Dom.style
 							height: "25px"
@@ -1087,7 +1087,10 @@ setupMap = ->
 			if Plugin.agent().android? or Plugin.agent().ios?
 				maxZoom = 17
 			window.map = L.map('OpenStreetMap', {center: [52.249822176849, 6.8396973609924], zoom: 13, zoomControl:false, updateWhenIdle:false, detectRetina:true, reuseTiles: true, minZoom: 3, maxZoom: maxZoom})
-
+			# Add proper attribution for OpenStreetMap, Leaflet and MapQuest
+			map.attributionControl.addAttribution('© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> | <a href="http://leafletjs.com/" target="_blank">Leaflet</a> | <a href="http://www.mapquest.com/" target="_blank">MapQuest</a>');
+			map.attributionControl.setPrefix('') # Hide the attribution added by default for Leaflet (line above already includes it)
+			
 			# Default OpenStreetMap tiles (quite busy and distracting)
 			###
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1109,7 +1112,6 @@ setupMap = ->
 
 			# MapQuest tiles
 			L.tileLayer('https://otile{s}-s.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.png', {
-				attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="https://developer.mapquest.com/content/osm/mq_logo.png">'
 				detectRetina: true
 				subdomains: ['1', '2', '3', '4']
 			}).addTo(map);
