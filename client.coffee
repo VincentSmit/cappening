@@ -22,6 +22,7 @@ window.indicationArrowRedraw = Obs.create(0) # For indication arrow redraw
 window.checkinLocationFunction = undefined
 
 # ========== Events ==========
+# Main function, called when plugin is started
 exports.render = ->
 	log 'FULL RENDER 3'
 	Obs.onClean ->
@@ -172,6 +173,7 @@ exports.renderSettings = !->
 
 
 # ========== Content fuctions ==========
+#Method that renders bar on top of page.
 addBar = ->
 	Dom.div !->
 		Dom.style
@@ -183,17 +185,6 @@ addBar = ->
 			boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 0.3)"
 			backgroundColor: hexToRGBA(Db.shared.peek('colors', getTeamOfUser(Plugin.userId()), 'hex'), 0.9)
 			_textShadow: '0 0 5px #000000, 0 0 5px #000000' 
-        # Removed help button moved to top of page, should be rewritten to history tab
-		### 
-		Dom.div !->
-			Icon.render data: 'info', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
-			Dom.div !->
-				Dom.text 'Help'
-				Dom.style verticalAlign: 'middle', display: 'inline-block', marginLeft: '5px', fontSize: '13px'
-			Dom.cls 'bar-button'                
-			Dom.onTap !->
-				Page.nav 'help' 
-		###
         # Button to event log
 		Dom.div !->
 			Icon.render data: 'clipboard', color: '#fff', size: 30, style: {verticalAlign: 'middle'}
@@ -223,6 +214,7 @@ addBar = ->
 			Dom.onTap !->   
 				Page.nav 'scores'
 
+#Renders the progress bar when a capture is happening 
 addProgressBar = ->
 	Obs.observe ->
 		Db.shared.iterate 'game', 'beacons', (beacon) !->
@@ -363,7 +355,7 @@ addProgressBar = ->
 							textAlign: 'center'
 							fontSize: '15px'
 							_textShadow: '0 0 5px #000000, 0 0 5px #000000' # Double for extra visibility
-
+#Renders bar when game is ended. Displays the winner and admin can restart the game
 addEndGameBar = ->
 	Dom.div !->
 		Dom.cls 'endGameBar'
@@ -988,7 +980,7 @@ logContent = ->
 									Time.deltaText started
 		, (capture) -> (-capture.key())
 
-# End game page
+# End game main content page
 endGameContent = ->
 	log "endGameContent()"
 	addBar()
@@ -1026,6 +1018,7 @@ renderMap = ->
 	setupMap()
 	renderLocation();
 
+#Loads Open Street Map, so it can be inserted into the html
 loadOpenStreetMap = ->
 	log "loadOpenStreetMap()"
 	# Only insert these the first time
@@ -1163,6 +1156,7 @@ zoomToBounds = ->
 			if loc1? and loc2? and bounds?
 				map.fitBounds(bounds.pad(0.05));
 
+# Called when map is redrawn. Map is centered around your own lastest recieved location
 restoreMapLocationNow = ->
 	log 'restoreMapLocationNow() called, restoreMapLocation='+window.restoreMapLocation+', mapLocation='+JSON.stringify(Db.local.peek('mapLocation'))
 	if mapReady() and Db.local.peek('mapLocation')? and window.restoreMapLocation? and window.restoreMapLocation
@@ -1539,6 +1533,7 @@ renderLocation = ->
 		Obs.onClean ->
 			#Server.call 'log', Plugin.userId(), "Untrack location"
 
+#Function to stop the battery drain. Is called when 15 minutes have passed after you have closed the plugin.
 stopLocationSending = ->
 	if inRangeCheckinRunning[Plugin.groupCode()]
 		window.inRangeCheckinRunning[Plugin.groupCode()] = false
@@ -1557,6 +1552,7 @@ getTeamOfUser = (userId) ->
 	#	log 'Warning: Did not find team for userId=', userId
 	return result
 
+# Input hexadecimal value and opacity, returns the RGBA equivalent
 hexToRGBA = (hex, opacity) ->
 	result = 'rgba('
 	hex = hex.replace '#', ''
@@ -1568,6 +1564,7 @@ hexToRGBA = (hex, opacity) ->
 		result += [0, 0, 0, 0.0]
 	return result+')'
 
+#Returns the players that are inrange of the given beacon
 getInRange = (beacon) ->
 	players = undefined;
 	beacon.iterate 'inRange', (user) !->

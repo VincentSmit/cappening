@@ -43,6 +43,7 @@ exports.onUpgrade = ->
 		Db.shared.set 'version', newVersion
 	registerPlugin()
 
+# Check response on http request and set registered to true
 exports.response = (data) ->
 	log 'registered to data plugin'
 	Db.backend.set('collectionRegistered', 'true')
@@ -153,6 +154,7 @@ exports.client_addMarker = (client, location) ->
 		Db.shared.set 'game', 'beacons', nextNumber, 'captureValue', Config.beaconValueInitial
 		Db.shared.set 'game', 'beacons', nextNumber, 'action', "none"
 
+# Delete a beacon (during setup phase)
 exports.client_deleteBeacon = (client, location) ->
 	#Finding the right beacon
 	if Db.shared.peek('gameState') isnt 0
@@ -187,6 +189,7 @@ exports.client_getNewDeviceId = (client, result) ->
 	Db.shared.set 'maxDeviceId', newId
 	result.reply newId
 
+# Log a message from the client on the server(used for testing purposes)
 exports.client_log = (userId, message) ->
 	log '[log()] Client:'+Plugin.userName(userId)+":"+userId+": "+message
 
@@ -543,6 +546,7 @@ getInrangePlayers = (beacon) ->
 			playersStr = player.key()
 	return playersStr
 
+# Get a string of the players that are inRange of a beacon of a specific team
 getInrangePlayersOfTeam = (beacon, team) ->
 	playersStr = undefined;
 	Db.shared.iterate 'game', 'beacons', beacon, 'inRange', (player) !->
@@ -553,6 +557,7 @@ getInrangePlayersOfTeam = (beacon, team) ->
 				playersStr = player.key()
 	return playersStr
 
+# Get an array of the players that are inRange of a beacon of a specific team
 getInrangePlayersOfTeamArray = (beacon, team) ->
 	players = [];
 	Db.shared.iterate 'game', 'beacons', beacon, 'inRange', (player) !->
@@ -583,6 +588,7 @@ updateTeamRankings = ->
 		Db.shared.set 'game', 'teams', teamObject.team, 'ranking', ranking
 		lastScore = teamObject.score
 
+# Get the score of a team
 getTeamScore = (team) ->
 	result = Db.shared.peek 'game', 'teams', team, 'teamScore'
 	Db.shared.iterate 'game', 'teams', team, 'users', (user) !->
@@ -755,7 +761,7 @@ moveData = ->
 		Db.backend.set 'history', current,'game', Db.shared.peek('game')
 		Db.backend.set 'history', current, 'gameState', Db.shared.peek('gameState')
 
-
+# Called when plugin is installed. This function sends request to data collection plugin.
 registerPlugin = ->
 	if !(Db.backend.peek('collectionRegistered')?)
 		Http.post
