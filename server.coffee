@@ -263,6 +263,7 @@ exports.client_checkinLocation = (client, location, device, accuracy) ->
 						# clean takeover
 						beacon.remove 'inRange', client
 						removed = client
+						Timer.cancel 'inRangeTimeout', {beacon: beacon.key(), client: client}
 					else
 						log '[checkinLocation()] Denied removing from inRange, deviceId does not match: id=' + client + ', name=' + Plugin.userName(client) + ', deviceId=' + device, ', inRangeDevice=' + inRangeDevice
 				#log 'removed=', removed
