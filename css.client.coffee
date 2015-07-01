@@ -26,6 +26,9 @@ Dom.css
 		bottom: '0'
 		left: '0'
 		backgroundColor: '#DDD'
+# Ensure clicking the shadow of a marker goes to the element below (beacon circle in this case)
+	'.leaflet-shadow-pane img':
+		pointerEvents: 'none'
 # Plugin setup pages
 	'.stepbar': # The bar at the top
 		color: "white"
