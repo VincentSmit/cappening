@@ -529,7 +529,7 @@ exports.overtimeScore = (args) ->
 # args.beacon: beacon id
 # args.client: user id
 exports.inRangeTimeout = (args) ->
-	log 'User '+Plugin.userName(args.client)+'('+args.client+') removed from inRange of beacon '+args.beacon
+	log 'User '+Plugin.userName(args.client)+'('+args.client+') removed from inRange of beacon '+args.beacon+' (timeout)'
 	Db.shared.remove 'game', 'beacons', args.beacon, 'inRange', args.client
 	updateBeaconStatus(Db.shared.ref('game', 'beacons', args.beacon), -999)
 

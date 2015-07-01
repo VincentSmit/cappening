@@ -19,7 +19,7 @@ Config = CommonConfig.getConfig()
 
 window.redraw = Obs.create(0) # For full redraw
 window.indicationArrowRedraw = Obs.create(0) # For indication arrow redraw
-window.checkinLocationFunction = undefined
+window.checkinLocationFunctionId = undefined
 
 # ========== Events ==========
 # Main function, called when plugin is started
@@ -1482,7 +1482,7 @@ renderLocation = ->
 										checkinLocation = ->
 											if parseInt(Db.shared.peek('gameState')) is 1 and window.inRangeCheckinCount[Plugin.groupCode()] < Config.afkCheckinLocation
 												window.inRangeCheckinCount[Plugin.groupCode()] = window.inRangeCheckinCount[Plugin.groupCode()]+1
-												log 'checkinLocation: user='+Plugin.userName(Plugin.userId())+' ('+Plugin.userId()+'), deviceId='+deviceId+', accuracy='+accuracy
+												log 'checkinLocation: user='+Plugin.userName(Plugin.userId())+' ('+Plugin.userId()+'), deviceId='+deviceId+', accuracy='+accuracy+', count='+window.inRangeCheckinCount[Plugin.groupCode()]+'/'+Config.afkCheckinLocation+', gameState='+parseInt(Db.shared.peek('gameState'))
 												Server.send 'checkinLocation', Plugin.userId(), latLngObj, deviceId, accuracy
 											else
 												stopLocationSending()
@@ -1512,17 +1512,17 @@ renderLocation = ->
 												if inRangeValue?
 													if not (inRangeCheckinRunning[Plugin.groupCode()]?) or not (inRangeCheckinRunning[Plugin.groupCode()])
 														window.inRangeCheckinCount[Plugin.groupCode()] = 0
-														checkinLocation()
-														setInterval(checkinLocation, Config.inRangeCheckinTime*1000)
-														checkinLocationFunction = checkinLocation
+														checkinLocation()														
+														window.checkinLocationFunctionId = setInterval(checkinLocation, Config.inRangeCheckinTime*1000)
+														#log 'checkinLocation='+checkinLocation+', checkinLocationFunctionId='+window.checkinLocationFunctionId
 														window.inRangeCheckinRunning[Plugin.groupCode()] = true
 												else
 													log 'Trying beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
 													window.inRangeCheckinCount[Plugin.groupCode()] = 0
 													checkinLocation()
 													if not (inRangeCheckinRunning[Plugin.groupCode()]?) or not (inRangeCheckinRunning[Plugin.groupCode()])
-														setInterval(checkinLocation, Config.inRangeCheckinTime*1000)
-														checkinLocationFunction = checkinLocation
+														window.checkinLocationFunctionId = setInterval(checkinLocation, Config.inRangeCheckinTime*1000)
+														#log 'checkinLocation='+checkinLocation+', checkinLocationFunctionId='+window.checkinLocationFunctionId
 														window.inRangeCheckinRunning[Plugin.groupCode()] = true
 										else if (not within and inRangeValue? and (inRangeValue == deviceId || inRangeValue == 'true'))
 											log 'Trying stop of beacon takeover: userId='+Plugin.userId()+', location='+latLngObj+', deviceId='+deviceId
@@ -1535,11 +1535,12 @@ renderLocation = ->
 
 #Function to stop the battery drain. Is called when 15 minutes have passed after you have closed the plugin.
 stopLocationSending = ->
-	if inRangeCheckinRunning[Plugin.groupCode()]
+	log 'Trying to stop location checkin: running='+inRangeCheckinRunning[Plugin.groupCode()]+', count='+inRangeCheckinCount[Plugin.groupCode()]+', checkinLocationFunctionId='+window.checkinLocationFunctionId
+	if inRangeCheckinRunning[Plugin.groupCode()]?
 		window.inRangeCheckinRunning[Plugin.groupCode()] = false
-	if checkinLocationFunction?
-		clearInterval(checkinLocationFunction)
-		checkinLocationFunction = undefined
+	if window.checkinLocationFunctionId?
+		clearInterval(checkinLocationFunctionId)
+		window.checkinLocationFunctionId = undefined
 
 # ========== Functions ==========
 # Get the team id the user is added to
@@ -1584,7 +1585,7 @@ userStringToFriendly = (users) ->
 	result = Plugin.userName(parseInt(split[0]))
 	i=1
 	while i<(split.length-1)
-		result += ', ' + Plugin.username(parseInt(split[i]))
+		result += ', ' + Plugin.userName(parseInt(split[i]))
 		i++
 	if split.length > 1
 		result += ' and ' + Plugin.userName(parseInt(split[split.length-1]))
